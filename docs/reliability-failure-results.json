@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-11T22:57:36.465Z",
+  "checks": [
+    "empty recording blocked",
+    "pause/resume and stop flushes pending scroll",
+    "modal bounds/visibility and manual click delivery",
+    "password/OTP masked and actual IPC start blocked",
+    "unsupported frame blocker preserved through IPC",
+    "popup blocker preserved through IPC",
+    "drag blocker preserved through IPC",
+    "missing stops without retry or unintended dispatch",
+    "duplicate stops without retry or unintended dispatch",
+    "initial stops without retry or unintended dispatch",
+    "redirect stops without retry or unintended dispatch",
+    "unknown stops without retry or unintended dispatch",
+    "cancel stops without retry or unintended dispatch",
+    "deny stops without retry or unintended dispatch",
+    "input-element action buttons require approval before dispatch",
+    "captured link and browser back/forward navigation verified",
+    "Ctrl+A and native replacement verified"
+  ]
+}

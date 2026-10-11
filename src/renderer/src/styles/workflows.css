@@ -1,0 +1,27 @@
+.workflows-page { position: fixed; inset: 0; display: flex; overflow: hidden; background: radial-gradient(ellipse at 80% 0, #40361622, transparent 55%), #080908; color: var(--text); border: 1px solid var(--border); border-radius: 12px; }
+.workflows-sidebar { flex-shrink: 0; }
+.workflows-page-body { flex: 1; min-width: 0; overflow: auto; }
+.workflows-page-body > .titlebar { height: 40px; }
+.workflow-template-link { display: flex; justify-content: space-between; align-items: center; gap: 15px; padding: 15px; border: 1px solid #333; border-radius: 8px; font-size: 13px; }
+.workflow-template-link:hover { border-color: var(--accent); }
+.workflows-page-content { max-width: 1240px; margin: auto; padding: 58px 36px; }
+.workflows-page-title { display: flex; justify-content: space-between; align-items: center; gap: 25px; margin-bottom: 35px; }
+.workflows-page-title h1 { font-size: 60px; margin: 0 0 16px; }
+.workflows-page-title p:last-child { font-size: 14px; color: #aaa; margin: 0; line-height: 1.6; }
+.workflows-page-title .dash-button { font-size: 12px; min-height: 40px; }
+.workflows-page-content .dash-panel { padding: 22px; }
+.workflows-page-filters { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 20px; }
+.workflows-page-filters .workflow-tabs { flex: 1; }
+.workflows-page-filters .table-search { width: 240px; }
+.workflows-page-filters input { font-size: 12px; }
+.workflows-page .workflow-table th { padding: 12px; font-size: 11px; }
+.workflows-page .workflow-table td { padding: 18px 12px; font-size: 12px; }
+.workflows-page .workflow-name { font-size: 13px; }
+.workflows-page .workflow-tabs button { font-size: 12px; }
+.workflows-page .status { font-size: 11px; }
+.workflows-page .table-caption { margin-top: 20px; font-size: 11px; }
+.workflows-page .empty-state > svg { margin: auto; }
+@media (max-width: 650px) { .workflows-page-content { padding: 30px 16px; } .workflows-page-title { flex-wrap: wrap; } .workflows-page-title h1 { font-size: 48px; } .workflows-page-filters { flex-direction: column-reverse; align-items: stretch; gap: 20px; } .workflows-page-filters .table-search { width: 100%; } .workflows-page-content .dash-panel { padding: 14px; } }
+.workflows-page-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 5vw 28px; border-bottom: 1px solid var(--border); }
+.workflows-page-header .brand svg { width: 30px; height: 36px; }
+.workflows-page-header .brand span { font-size: 12px; }
