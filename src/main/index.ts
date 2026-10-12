@@ -31,6 +31,12 @@ function createWindow(): void {
     },
   })
   window.once('ready-to-show', () => window.show())
+  // Some Wayland compositors do not paint a hidden software-rendered window,
+  // so ready-to-show never fires even though the renderer finished loading.
+  // Showing after the first load breaks that circular dependency.
+  window.webContents.once('did-finish-load', () => {
+    if (!window.isDestroyed() && !window.isVisible()) window.show()
+  })
   let recovering = false
   window.webContents.on('render-process-gone', (_event, details) => {
     if (recovering || window.isDestroyed() || details.reason === 'clean-exit') return

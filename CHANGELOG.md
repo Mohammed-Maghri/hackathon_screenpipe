@@ -1,5 +1,12 @@
 # Ghost platform changes
 
+## Startup fix — 2026-10-12
+
+- Reproduced a Wayland startup failure: the renderer loaded successfully, but the hidden window never emitted `ready-to-show`.
+- Show the window after its first `did-finish-load` as well, avoiding dependence on a hidden-window paint event.
+- Added `scripts/check-startup.cjs` to check visibility, rendered UI and frame capture in an isolated real Electron session.
+- Verified default Wayland startup, TypeScript, production build and core tests.
+
 ## 0.1.0 — Initial platform, 2026-10-12
 
 This first repository commit includes the desktop platform, workflow UI, native teaching browser, recording persistence, and browser replay reliability work.
