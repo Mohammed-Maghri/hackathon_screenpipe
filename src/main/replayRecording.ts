@@ -1,17 +1,18 @@
 import type { BrowserWindow, WebContents } from 'electron'
-import type { ActionResult, PageEvidence, RecordedEvent, ReplayStatus, TargetDescriptor } from '../shared/recording'
+import type { FrameIdentity, ActionResult, PageEvidence, RecordedEvent, ReplayStatus, TargetDescriptor } from '../shared/recording'
 import { pageOperation, type PageRequest, type PageResult } from '../shared/pageOperation'
+import type { FrameBridge } from './frameBridge'
 import { browserURL } from './browserAddress'
 
 export function sameDestination(actual: string, expected: string) {
   const normalize = (value: string) => { const url = new URL(value); url.searchParams.sort(); return url.href }
   return normalize(actual) === normalize(expected)
 }
-export async function replayRecording(contents: WebContents, owner: BrowserWindow, steps: RecordedEvent[], signal: AbortSignal, report: (status: ReplayStatus) => void, approve: (event: RecordedEvent) => Promise<boolean>, visible: () => boolean = () => true) {
+export async function replayRecording(contents: WebContents, owner: BrowserWindow, steps: RecordedEvent[], signal: AbortSignal, report: (status: ReplayStatus) => void, approve: (event: RecordedEvent) => Promise<boolean>, visible: () => boolean = () => true, frames?: FrameBridge) {
   const results: ActionResult[] = steps.map(e => ({ sequence: e.sequence, type: e.type, state: 'pending' }))
   let attached = false
   let current: RecordedEvent | undefined, result: ActionResult | undefined, dispatched = false
-  const status = (state: ReplayStatus['state'], error: string | null = null): ReplayStatus => ({ state, completed: results.filter(r => ['verified', 'skipped'].includes(r.state)).length, total: steps.length, sequence: current?.sequence ?? null, action: current ? `${current.type}: ${(current.data.target as TargetDescriptor | undefined)?.accessibleName || (current.data.target as TargetDescriptor | undefined)?.label || (current.data.target as TargetDescriptor | undefined)?.text || 'recorded target'}` : 'Preparing', error, results: results.map(r => ({ ...r })) })
+  const status = (state: ReplayStatus['state'], error: string | null = null): ReplayStatus => ({ state, completed: results.filter(r => ['verified', 'skipped'].includes(r.state)).length, total: steps.length, sequence: current?.sequence ?? null, action: current ? `${current.type}${Array.isArray(current.data.framePath) && current.data.framePath.length ? ' in ' + (current.data.framePath as FrameIdentity[]).map(frame => `${frame.name || 'frame'} (${new URL(frame.url).origin})`).join(' / ') : ''}: ${(current.data.target as TargetDescriptor | undefined)?.accessibleName || (current.data.target as TargetDescriptor | undefined)?.label || (current.data.target as TargetDescriptor | undefined)?.text || 'recorded target'}` : 'Preparing', error, results: results.map(r => ({ ...r })) })
   const check = () => { if (signal.aborted || contents.isDestroyed() || owner.isDestroyed()) throw new Error('Replay cancelled.') }
   async function bounded<T>(promise: Promise<T>, timeout = 10000): Promise<T> {
     let timer: ReturnType<typeof setInterval> | undefined
@@ -23,7 +24,21 @@ export async function replayRecording(contents: WebContents, owner: BrowserWindo
     do { check(); const value = await test(); if (value) return value as NonNullable<Exclude<T, false>>; await new Promise(resolve => setTimeout(resolve, 50)) } while (Date.now() - start < timeout)
     throw new Error(message)
   }
-  const page = (request: PageRequest) => bounded(contents.executeJavaScriptInIsolatedWorld(1002, [{ code: `(${pageOperation.toString()})(${JSON.stringify(request)})` }])) as Promise<PageResult>
+  const pathOf = (event?: RecordedEvent) => (event?.data.framePath ?? []) as FrameIdentity[]
+  const page = (request: PageRequest): Promise<PageResult> => {
+    const path = pathOf(current)
+    if (path.length) {
+      if (!frames) throw new Error('Frame-aware replay is unavailable.')
+      return bounded(frames.page(path, request))
+    }
+    return bounded(contents.executeJavaScriptInIsolatedWorld(1002, [{ code: `(${pageOperation.toString()})(${JSON.stringify(request)})` }])) as Promise<PageResult>
+  }
+  const reachedFrameDestination = (event: RecordedEvent) => {
+    const path = pathOf(event).map(item => ({ ...item }))
+    if (!path.length || typeof event.data.destination !== 'string' || !frames) throw new Error('Invalid recorded frame navigation.')
+    path[path.length - 1]!.url = event.data.destination
+    try { return sameDestination(frames.resolve(path).url, event.data.destination) } catch (error) { if (String(error).includes('Ambiguous')) throw error; return false }
+  }
   const command = (method: string, params: Record<string, unknown> = {}) => bounded(contents.debugger.sendCommand(method, params))
   const key = async (key: string, code: string, virtualKey: number, modifiers = 0) => { await command('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode: virtualKey, modifiers }); await command('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode: virtualKey, modifiers }) }
   const targetOf = (event: RecordedEvent) => event.data.target as TargetDescriptor
@@ -34,9 +49,19 @@ export async function replayRecording(contents: WebContents, owner: BrowserWindo
     await until(() => !contents.isLoading(), 'The page did not finish loading.', 15000)
   }
   async function locate(event: RecordedEvent) {
-    return until(async () => { const found = await page({ op: 'locate', target: targetOf(event) }); return found.found && found }, 'The intended element is missing, disabled, covered, or not ready.')
+    return until(async () => {
+      try {
+        if (pathOf(event).length) await bounded(frames!.point(pathOf(event)))
+        const found = await page({ op: 'locate', target: targetOf(event) })
+        if (!found.found) return false
+        if (pathOf(event).length) { const translated = await bounded(frames!.point(pathOf(event), { x: found.x!, y: found.y! })); return { ...found, ...translated } }
+        return found
+      } catch (error) { if (/missing|not ready|unavailable|owner not found/i.test(String(error))) return false; throw error }
+    }, 'The intended element is missing, disabled, covered, or not ready.')
   }
   async function click(event: RecordedEvent) {
+    await locate(event)
+    if (frames) await bounded(frames.settle(pathOf(event)))
     const point = await locate(event)
     check(); dispatched = true
     await command('Input.dispatchMouseEvent', { type: 'mouseMoved', x: point.x!, y: point.y! })
@@ -62,7 +87,10 @@ export async function replayRecording(contents: WebContents, owner: BrowserWindo
       result.state = 'running'; report(status('running'))
       await ready()
       const event = current, target = targetOf(event)
-      if (event.type === 'navigation') {
+      if (event.type === 'frame-navigation') {
+        await until(() => reachedFrameDestination(event), 'Expected embedded-frame navigation was not reached.')
+        result.evidence = 'Embedded frame destination verified.'
+      } else if (event.type === 'navigation') {
         if (!sameDestination(contents.getURL(), event.url)) {
           if (event.data.source === 'address' || index === 0) await bounded(contents.loadURL(browserURL(event.url)), 20000)
           await until(() => sameDestination(contents.getURL(), event.url), 'Expected navigation was not reached; the destination differs from the recording.')
@@ -110,7 +138,7 @@ export async function replayRecording(contents: WebContents, owner: BrowserWindo
         } else {
           const evidence = (event.data.evidence ?? []) as PageEvidence[]
           const next = steps[index + 1]
-          const expectsNavigation = next?.type === 'navigation' && next.data.source !== 'address'
+          const expectsNavigation = (next?.type === 'navigation' && next.data.source !== 'address') || next?.type === 'frame-navigation'
           const focusOnly = event.type === 'click' && event.data.focusOnly === true
           if (evidence.length && !focusOnly && !expectsNavigation && await verifyEvidence(evidence)) throw new Error('Expected outcome already exists. Initial state differs; action not executed.')
           if (event.type === 'click' && target.tag === 'select') await page({ op: 'focus', target })
@@ -123,7 +151,7 @@ export async function replayRecording(contents: WebContents, owner: BrowserWindo
             const modifiers = (mods?.alt ? 1 : 0) | (mods?.ctrl ? 2 : 0) | (mods?.meta ? 4 : 0) | (mods?.shift ? 8 : 0)
             dispatched = true; await key(keyName, keyName.toLowerCase() === 'a' ? 'KeyA' : keyName, virtualKey, modifiers)
           } else throw new Error(`Unsupported execution: ${event.type}`)
-          if (expectsNavigation) await until(() => sameDestination(contents.getURL(), next.url), 'The action did not reach its recorded destination.')
+          if (expectsNavigation) await until(() => next.type === 'frame-navigation' ? reachedFrameDestination(next) : sameDestination(contents.getURL(), next.url), 'The action did not reach its recorded destination.')
           else if (event.type === 'keydown' && String(event.data.key).toLowerCase() === 'a' && ((event.data.modifiers as Record<string, boolean>)?.ctrl || (event.data.modifiers as Record<string, boolean>)?.meta)) await until(async () => (await page({ op: 'inspect', target })).selectionAll, 'Select-all shortcut did not select the field contents.')
           else if (focusOnly) await until(async () => (await page({ op: 'inspect', target })).focused, 'The input did not receive focus.')
           else if (evidence.length) await until(() => verifyEvidence(evidence), 'Action sent, but its recorded outcome was not observed. Do not retry automatically.')

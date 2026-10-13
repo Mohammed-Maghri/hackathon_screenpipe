@@ -6,7 +6,7 @@
 .workflow-template-link:hover { border-color: var(--accent); }
 .workflows-page-content { max-width: 1240px; margin: auto; padding: 58px 36px; }
 .workflows-page-title { display: flex; justify-content: space-between; align-items: center; gap: 25px; margin-bottom: 35px; }
-.workflows-page-title h1 { font-size: 60px; margin: 0 0 16px; }
+.workflows-page-title h1 { font-family: 'Geist Variable', sans-serif; font-weight: 600; line-height: 1.08; letter-spacing: -.045em; font-size: 54px; margin: 0 0 16px; }
 .workflows-page-title p:last-child { font-size: 14px; color: #aaa; margin: 0; line-height: 1.6; }
 .workflows-page-title .dash-button { font-size: 12px; min-height: 40px; }
 .workflows-page-content .dash-panel { padding: 22px; }
@@ -25,3 +25,5 @@
 .workflows-page-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 5vw 28px; border-bottom: 1px solid var(--border); }
 .workflows-page-header .brand svg { width: 30px; height: 36px; }
 .workflows-page-header .brand span { font-size: 12px; }
+
+.workflows-page .dashboard-dialog h2 { font-family: 'Geist Variable', sans-serif; font-size: 30px; font-weight: 600; letter-spacing: -.035em; }

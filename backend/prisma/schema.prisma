@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client"
+  output = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+datasource db {
+  provider = "postgresql"
+}
+enum WorkflowStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+enum NodeType {
+  TRIGGER
+  ACTION
+  CONDITION
+  TRANSFORM
+  OUTPUT
+}
+enum RunStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+enum NodeRunStatus {
+  PENDING
+  RUNNING
+  VERIFIED
+  FAILED
+  SKIPPED
+  UNKNOWN
+  NEEDS_APPROVAL
+  CANCELLED
+}
+model User {
+  id String @id @default(uuid()) @db.Uuid
+  email String @unique @db.VarChar(320)
+  name String? @db.VarChar(200)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  workflows Workflow[]
+}
+model Workflow {
+  id String @id @default(uuid()) @db.Uuid
+  ownerId String? @db.Uuid
+  owner User? @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  name String @db.VarChar(200)
+  description String? @db.Text
+  status WorkflowStatus @default(DRAFT)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  nodes WorkflowNode[]
+  edges WorkflowEdge[]
+  runs WorkflowRun[]
+  @@index([ownerId])
+  @@index([status, createdAt])
+  @@index([createdAt, id])
+}
+model WorkflowNode {
+  id String @id @default(uuid()) @db.Uuid
+  workflowId String @db.Uuid
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  type NodeType
+  label String @db.VarChar(200)
+  positionX Float @default(0)
+  positionY Float @default(0)
+  config Json @default("{}")
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  outgoing WorkflowEdge[] @relation("EdgeSource")
+  incoming WorkflowEdge[] @relation("EdgeTarget")
+  runs NodeRun[]
+  @@unique([id, workflowId])
+  @@index([workflowId])
+}
+model WorkflowEdge {
+  id String @id @default(uuid()) @db.Uuid
+  workflowId String @db.Uuid
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  sourceNodeId String @db.Uuid
+  targetNodeId String @db.Uuid
+  source WorkflowNode @relation("EdgeSource", fields: [sourceNodeId, workflowId], references: [id, workflowId], onDelete: Cascade)
+  target WorkflowNode @relation("EdgeTarget", fields: [targetNodeId, workflowId], references: [id, workflowId], onDelete: Cascade)
+  label String? @db.VarChar(200)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  @@unique([workflowId, sourceNodeId, targetNodeId])
+  @@index([sourceNodeId, workflowId])
+  @@index([targetNodeId, workflowId])
+}
+model WorkflowRun {
+  id String @id @default(uuid()) @db.Uuid
+  workflowId String @db.Uuid
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  status RunStatus @default(PENDING)
+  input Json?
+  output Json?
+  error Json?
+  startedAt DateTime? @db.Timestamptz(3)
+  finishedAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  nodeRuns NodeRun[]
+  @@unique([id, workflowId])
+  @@index([workflowId, createdAt])
+  @@index([status, createdAt])
+}
+model NodeRun {
+  id String @id @default(uuid()) @db.Uuid
+  workflowId String @db.Uuid
+  workflowRunId String @db.Uuid
+  workflowRun WorkflowRun @relation(fields: [workflowRunId, workflowId], references: [id, workflowId], onDelete: Cascade)
+  nodeId String @db.Uuid
+  node WorkflowNode @relation(fields: [nodeId, workflowId], references: [id, workflowId], onDelete: Restrict)
+  status NodeRunStatus @default(PENDING)
+  attempt Int @default(1)
+  input Json?
+  output Json?
+  error Json?
+  startedAt DateTime? @db.Timestamptz(3)
+  finishedAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  @@unique([workflowRunId, nodeId, attempt])
+  @@index([workflowRunId, workflowId])
+  @@index([nodeId, workflowId])
+  @@index([status, createdAt])
+}

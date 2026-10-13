@@ -1,12 +1,12 @@
 import { ipcRenderer } from 'electron'
+import { frameOperation } from '../shared/frameOperation'
 import { pageOperation } from '../shared/pageOperation'
 import type { PageEvidence } from '../shared/recording'
 
 // Isolated, sandboxed preload: no API is exposed to the website.
 let enabled = false
 let readyReported = false
-let framesReported = false
-function reportReady() { if (enabled && !readyReported && document.readyState !== 'loading') { readyReported = true; emit('page-ready', { iframeCount: document.querySelectorAll('iframe').length }) } }
+function reportReady() { if (enabled && !readyReported && document.readyState !== 'loading') { readyReported = true; emit('page-ready', { iframeCount: document.querySelectorAll('iframe,frame').length, framePolicy: 'frame-aware-v1' }) } }
 const pausedValues = new WeakMap<Element, string>()
 const clip = (value: string | null | undefined, length = 500) => (value ?? '').slice(0, length)
 function masked(element: Element) { return pageOperation({ op: 'describe' }, element).target?.redacted === true }
@@ -27,7 +27,6 @@ function outcome() {
   if (changed.length) { emit('action-outcome', { actionId: id, evidence: changed.slice(0, 8) }) }
 }
 const observer = new MutationObserver(() => {
-  if (enabled && !framesReported && document.querySelector('iframe')) { framesReported = true; emit('unsupported', { reason: 'This page contains frames; frame-aware capture is not supported.' }) }
   if (!pendingOutcome) return
   if (outcomeTimer) clearTimeout(outcomeTimer)
   outcomeTimer = setTimeout(outcome, 100)
@@ -48,6 +47,7 @@ function input(element: Element) {
   emit('input', { target: target(element), value: clip(value, 10000), truncated: !redacted && value.length > 10000, checked: element instanceof HTMLInputElement && ['checkbox', 'radio'].includes(element.type) ? element.checked : undefined, selectedValues: !redacted && element instanceof HTMLSelectElement ? [...element.selectedOptions].map(option => clip(option.value)) : undefined })
 }
 function flush() {
+  checkFrameFocus()
   if (scrollTimeout) { clearTimeout(scrollTimeout); scrollTimeout = undefined }
   for (const element of pendingScroll) emit('scroll', { target: target(element), scrollLeft: element.scrollLeft, scrollTop: element.scrollTop }); pendingScroll.clear()
   outcome()
@@ -55,10 +55,18 @@ function flush() {
 ipcRenderer.on('recorder:enabled', (_event, value: boolean) => {
   enabled = value === true
   reportReady()
+  checkFrameFocus()
   if (!enabled) { pendingOutcome = undefined; pendingScroll.clear(); if (scrollTimeout) clearTimeout(scrollTimeout) }
 })
 ipcRenderer.on('recorder:flush', () => { flush(); ipcRenderer.send('recorder:flushed') })
-ipcRenderer.send('recorder:ready')
+ipcRenderer.on('recorder:request', async (_event, message) => {
+  try {
+    if (message.operation === 'settle') await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+    const result = message.operation === 'settle' ? undefined : message.operation === 'flush' ? flush() : message.operation === 'owner' ? frameOperation(message.request) : pageOperation(message.request)
+    ipcRenderer.send('recorder:response', { id: message.id, result })
+  } catch (error) { ipcRenderer.send('recorder:response', { id: message.id, error: error instanceof Error ? error.message : 'Frame operation failed.' }) }
+})
+ipcRenderer.send('recorder:ready', { sandboxed: process.sandboxed })
 for (const type of ['click', 'dblclick', 'contextmenu', 'pointerdown', 'pointerup'] as const) {
   document.addEventListener(type, event => {
     const element = eventTarget(event); if (!enabled || !event.isTrusted || !element) return
@@ -102,4 +110,30 @@ document.addEventListener('scroll', event => {
 document.addEventListener('submit', event => { if (!event.isTrusted) return; flush(); const element = eventTarget(event); if (element) emit('submit', { target: target(element), causedBy: lastCause?.form === element && performance.now() - lastCause.time < 1500 ? lastCause.id : undefined }) }, true)
 window.addEventListener('pagehide', flush)
 window.addEventListener('DOMContentLoaded', reportReady)
-window.addEventListener('blur', () => { if (document.activeElement instanceof HTMLIFrameElement) emit('unsupported', { reason: 'Interaction inside an iframe is not supported.' }) })
+// Report entry so main can verify that the child has its own sandboxed recorder.
+const reportedFrames = new WeakSet<Element>()
+function reportFrame(element: Element) {
+  if (!enabled || reportedFrames.has(element)) return
+  reportedFrames.add(element)
+  const frame = element as HTMLIFrameElement
+  emit('frame-entry', { child: { name: frame.name || '', url: frame.src || 'about:blank' } })
+}
+function checkFrameFocus() {
+  let active = document.activeElement
+  while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement
+  if (active instanceof HTMLIFrameElement || active instanceof HTMLFrameElement) reportFrame(active)
+}
+// Chromium can update activeElement after the blur callback, so check both now
+// and in the next task. Flush checks it again before stop/pause acknowledges.
+window.addEventListener('blur', () => { checkFrameFocus(); setTimeout(checkFrameFocus, 0) })
+window.addEventListener('focus', checkFrameFocus)
+document.addEventListener('focusin', checkFrameFocus, true)
+document.addEventListener('load', event => {
+  if (event.target instanceof HTMLIFrameElement || event.target instanceof HTMLFrameElement) reportedFrames.delete(event.target)
+}, true)
+// Wheel and hover do not bubble out of frames: confirm child capture on entry.
+document.addEventListener('pointerover', event => {
+  if (!event.isTrusted) return
+  const frame = event.composedPath().find(item => item instanceof HTMLIFrameElement || item instanceof HTMLFrameElement)
+  if (frame instanceof Element) reportFrame(frame)
+}, true)

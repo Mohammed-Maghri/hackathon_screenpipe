@@ -1,4 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, session } from 'electron'
+import { prepareWorkflowDiscovery, listSavedWorkflows, getSavedWorkflow } from './discoveryBackend'
 import { registerTeachingBrowser } from './teachingBrowser'
 import { appendFile, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -62,6 +63,16 @@ function createWindow(): void {
 
 app.whenReady().then(() => {
   registerTeachingBrowser()
+  function authorizeBackend(event: Electron.IpcMainInvokeEvent) {
+    const window = BrowserWindow.fromWebContents(event.sender)
+    const trustedURL = new URL(devURL || '../renderer/index.html', import.meta.url).href
+    if (!window || event.senderFrame !== window.webContents.mainFrame || event.sender.getURL().split('#')[0] !== trustedURL.split('#')[0]) {
+      throw new Error('Unauthorized backend request')
+    }
+  }
+  ipcMain.handle('discovery:prepare', (event, input) => { authorizeBackend(event); return prepareWorkflowDiscovery(input) })
+  ipcMain.handle('workflows:list', (event, offset) => { authorizeBackend(event); return listSavedWorkflows(offset) })
+  ipcMain.handle('workflows:get', (event, id) => { authorizeBackend(event); return getSavedWorkflow(id) })
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false))
   session.defaultSession.setPermissionCheckHandler(() => false)
   ipcMain.on('window:control', (event, action: unknown) => {

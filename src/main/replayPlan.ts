@@ -3,18 +3,18 @@ import type { RecordedEvent, ReplayPreview, TargetDescriptor } from '../shared/r
 
 export function buildReplayPlan(events: RecordedEvent[]): { steps: RecordedEvent[]; preview: ReplayPreview } {
   const steps: RecordedEvent[] = [], blockers = new Set<string>()
-  const supported = new Set(['navigation', 'click', 'input', 'keydown', 'scroll', 'submit'])
+  const supported = new Set(['navigation', 'frame-navigation', 'click', 'input', 'keydown', 'scroll', 'submit'])
   const ignored = new Set(['pointerdown', 'pointerup', 'page-ready', 'action-outcome'])
   const stableId = (id?: string) => !!id && !/(:|\d{4,}|[a-f\d]{8}-|^(react|radix|headlessui|mui)[-_])/i.test(id)
   const target = (event: RecordedEvent) => event.data.target as TargetDescriptor | undefined
   const identity = (t?: TargetDescriptor) => t?.testId || t?.stableId || (t?.accessibleName ? JSON.stringify([t.role, t.accessibleName, t.context]) : t?.selector)
-  const same = (a: RecordedEvent, b: RecordedEvent) => a.url === b.url && identity(target(a)) === identity(target(b))
+  const same = (a: RecordedEvent, b: RecordedEvent) => a.url === b.url && JSON.stringify(a.data.framePath ?? []) === JSON.stringify(b.data.framePath ?? []) && identity(target(a)) === identity(target(b))
   const outcomes = new Map(events.filter(e => e.type === 'action-outcome').map(e => [e.data.actionId, e.data.evidence]))
   for (const original of events) {
     const event = { ...original, data: { ...original.data } }
-    if (event.type === 'page-ready' && Number(event.data.iframeCount) > 0) blockers.add('This page contains frames. Frame-aware recording is not supported; use a frame-free task.')
+    if (event.type === 'page-ready' && Number(event.data.iframeCount) > 0 && !['guarded-main-frame-v1', 'frame-aware-v1'].includes(String(event.data.framePolicy))) blockers.add('This older recording contains frames without interaction guards. Record the main-page task again with the updated recorder.')
     if (!supported.has(event.type)) {
-      if (!ignored.has(event.type)) blockers.add(`Unsupported action: ${event.type}. ${String(event.data.reason ?? 'Record a task without this action.')}`)
+      if (!ignored.has(event.type)) blockers.add(event.type === 'unsupported' && typeof event.data.reason === 'string' ? event.data.reason : `Unsupported action: ${event.type}. ${String(event.data.reason ?? 'Record a task without this action.')}`)
       continue
     }
     const t = target(event)
@@ -23,7 +23,7 @@ export function buildReplayPlan(events: RecordedEvent[]): { steps: RecordedEvent
     if (event.data.authenticationRequired) blockers.add('The recording includes an authentication URL. Authenticate manually and record a new task.')
     if (t?.redacted || event.data.value === '[REDACTED]') blockers.add('Manual authentication required. Pause capture, authenticate, then record a new task without sensitive fields.')
     if (event.data.truncated) blockers.add('An input was truncated; it cannot be reproduced accurately.')
-    if (!['navigation', 'submit'].includes(event.type) && (!t || !(stableId(t.id) || t.testId || t.accessibleName || t.label || t.text || t.placeholder || t.name || (event.type === 'scroll' && t.tag === 'html')))) blockers.add(`Event ${event.sequence} has no reliable target identity. Record again with semantic target information.`)
+    if (!['navigation', 'frame-navigation', 'submit'].includes(event.type) && (!t || !(stableId(t.id) || t.testId || t.accessibleName || t.label || t.text || t.placeholder || t.name || (event.type === 'scroll' && t.tag === 'html')))) blockers.add(`Event ${event.sequence} has no reliable target identity. Record again with semantic target information.`)
     if (outcomes.has(event.data.actionId)) event.data.evidence = outcomes.get(event.data.actionId)
     if (event.type === 'submit') {
       const cause = steps.find(e => e.data.actionId && e.data.actionId === event.data.causedBy)

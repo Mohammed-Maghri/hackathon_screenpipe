@@ -16,7 +16,7 @@ This is the current implementation report. The earlier `recording-and-replay-rev
 | Generic submit timing could duplicate or lose submissions | Captured submit events refer to the actual preceding trigger/form via an action ID. Unlinked submissions block replay. Select and checkbox input/change events are coalesced without a second toggle. |
 | Final debounced scroll was dropped | Stop/pause flush all pending scroll targets before acknowledgement. Main waits for acknowledgement and reports a timeout instead of silently declaring success. Text inputs are emitted immediately, with no unused debounce queue. |
 | Text typed during Pause could be captured later on blur | Paused field fingerprints suppress a deferred change event until the field actually changes after resuming. Sensitive values are not kept in those fingerprints. |
-| Page metadata could precede recorder enablement | Page readiness is reported once capture is enabled; dynamically present frames also create an explicit unsupported-action event. |
+| Page metadata could precede recorder enablement | Page readiness is reported once capture is enabled. New recordings distinguish unused frames from frame entry; focus and pointer-entry guards report unsupported frame activity. |
 | Exports omitted user input settings | Export version 2 includes original events plus saved non-sensitive input overrides. New recording metadata uses schema version 2; original logs are not rewritten. Older optional fields remain readable, but insufficient identity/evidence can stop old recordings safely. |
 | Credentials could appear in fields/navigation | Attribute and associated-label masking covers recognized password, payment, token, PIN and authentication-code fields. Authentication query/fragment values are redacted and their recordings blocked. No secret vault or cookie transfer was added. |
 
@@ -81,7 +81,7 @@ Historical scripts `check-action-recording.mjs`, `check-recording-replay.mjs`, `
 ## Remaining limits
 
 - There is no claim of general Slack, Google or arbitrary-site reliability. Real authenticated third-party flows were not acceptance-tested.
-- Frames, popups as recorded task steps, drag/drop, modified/middle clicks, double-click/context-menu replay, downloads, and unsupported clipboard/keyboard shortcuts are blocked, not simulated. Pages with frames are conservatively blocked even if a particular frame is unrelated to the task.
+- Popups as recorded task steps, drag/drop, modified/middle clicks, double-click/context-menu replay, downloads, and unsupported clipboard/keyboard shortcuts are blocked, not simulated. Unused frames do not block new main-page recordings. The frame bridge supports identified embedded frames with capture-ready recorders, but cross-origin readiness remains unreliable in the latest integration check (see below). Ambiguous or unavailable frames block replay. Old recordings without these guards keep their blockers and must be recorded again.
 - Ctrl/Cmd+A is supported with selection verification. Other captured navigation keys need an observable recorded result; unsupported outcomes stop. This is not a complete keyboard macro engine.
 - Native select state uses DOM selection/events rather than operating the operating-system popup menu. State is verified, but websites that require a different trusted-event sequence may reject it.
 - Contenteditable replacement supports plain text. Complex rich-editor transactions, formatting, IME composition, nested/closed shadow roots and virtualized offscreen items may be unsupported.
@@ -104,3 +104,27 @@ Historical scripts `check-action-recording.mjs`, `check-recording-replay.mjs`, `
 8. Independently check the resulting website data. For a negative check, remove the intended target or duplicate it in a local test page: replay should stop before clicking an uncertain element. Cancel another test at its approval prompt and confirm nothing is submitted.
 
 Do not retry a consequential action whose result is unknown without checking the website first.
+
+## Historical frame-presence correction (2026-10-12, superseded by frame bridge)
+
+The old implementation blocked every page containing an iframe, including unrelated embeds. New `page-ready` events declare `guarded-main-frame-v1`; their frame count alone is not a blocker. Main-page actions retain the same targeting and verification requirements. Entering a frame by focus or pointer remains unsupported, including same-origin frames. Pointer entry is conservative because wheel and hover activity inside a frame does not bubble to the recorder. It can block a task even when the pointer merely crosses an embed. No frame DOM contents or credentials are read.
+
+Focus is checked on blur (immediately and next task), focus changes, resume and stop/flush. Old recordings keep their existing blockers because their missing frame activity cannot be reconstructed. Restart Ghost and make a fresh recording to use the correction. Unsupported messages now show the actual reason without the redundant “Unsupported action: unsupported” prefix.
+
+Focused Electron check: `GHOST_TEST_FRAMES_ONLY=1 node scripts/check-failures.mjs` (after `npm run build`). It exercises unused static/dynamic frames, verified main-page replay, and same-origin/cross-origin frame-entry rejection through IPC, alongside the initial safety checks. Its report is separate from the historical full-suite report. During this change, full-suite attempts also encountered intermittent input-focus and drag-capture failures; those attempts are not passing full-suite results and this frame fix does not claim to resolve them.
+
+
+## Frame bridge implementation and latest validation (2026-10-13)
+
+The current implementation adds `frameBridge.ts` and sandboxed subframe recorders. It routes
+recorded actions through frame identities, resolves native input coordinates through parent frames,
+and retains blockers for ambiguous or unavailable frames. This supersedes the blanket frame-entry
+rejection described in the historical section above. Recording schema version 3 preserves old blockers.
+
+Pre-push validation: desktop and backend builds/typechecks, core tests, all 15 backend tests, and
+`node scripts/check-discovery.mjs` passed. `node scripts/check-frames.mjs` passed three same-origin
+iterations, then failed on the first cross-origin iteration because replay preview contained:
+“The entered embedded frame is ambiguous or its recorder is unavailable. Wait for it to load and record again.”
+The remaining nested-frame and failure checks were not reached in that invocation.
+`frame-support-results.json` and `reliability-frame-results.json` are historical reports, not evidence
+that the current full frame suite passed. The 20-repeat acceptance target remains unverified.

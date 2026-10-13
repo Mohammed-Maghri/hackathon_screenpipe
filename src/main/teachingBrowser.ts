@@ -1,10 +1,12 @@
-import { app, BrowserWindow, ipcMain, session, WebContentsView, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, ipcMain, session, webFrameMain, WebContentsView, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { applyInputs, type SavedInput } from './replaySettings'
 import { recordedURL } from '../shared/recordedURL'
 import { prepareReplay } from './prepareReplay'
 import { replayRecording } from './replayRecording'
+import { FrameBridge } from './frameBridge'
+import type { FrameIdentity } from '../shared/recording'
 import { readFile, writeFile } from 'node:fs/promises'
 import { RecordingStore } from './recordingStore'
 import type { BrowserBounds, BrowserState } from '../shared/browser'
@@ -12,7 +14,7 @@ import type { BrowserBounds, BrowserState } from '../shared/browser'
 import { browserURL, resolveBrowserAddress } from './browserAddress'
 
 export function registerTeachingBrowser() {
-  type Entry = { view: WebContentsView; owner: BrowserWindow; token: string; error: string | null; recording: RecordingStore; captureReady?: boolean; addressNavigation?: boolean; lastEventType?: string; approval?: { sequence: number; resolve: (approved: boolean) => void }; replay?: AbortController; popups?: Set<BrowserWindow> }
+  type Entry = { frames: FrameBridge; interactedFrames: Map<number, FrameIdentity[]>; view: WebContentsView; owner: BrowserWindow; token: string; error: string | null; recording: RecordingStore; captureReady?: boolean; addressNavigation?: boolean; lastEventType?: string; approval?: { sequence: number; resolve: (approved: boolean) => void }; replay?: AbortController; popups?: Set<BrowserWindow> }
   const entries = new Map<number, Entry>()
   const recordings = new Set<RecordingStore>()
   let quitFlushed = false
@@ -44,6 +46,7 @@ export function registerTeachingBrowser() {
   }
   function dispose(entry: Entry) {
     entry.replay?.abort()
+    entry.frames.dispose()
     entry.approval?.resolve(false)
     for (const popup of entry.popups ?? []) if (!popup.isDestroyed()) popup.close()
     void entry.recording.stop().catch(error => console.error('Recording save failed:', error))
@@ -72,19 +75,40 @@ export function registerTeachingBrowser() {
   function record(entry: Entry, type: string, url: string, data: Record<string, unknown>) {
     entry.lastEventType = type
     const safe = recordedURL(url)
-    if (typeof data.destination === 'string' && data.destination !== 'about:blank') data = { ...data, destination: recordedURL(data.destination).url }
+    if (typeof data.destination === 'string' && data.destination !== 'about:blank') { const destination = recordedURL(data.destination); data = { ...data, destination: destination.url, ...(destination.redacted ? { authenticationRequired: true } : {}) } }
     const event = entry.recording.append(type, safe.url, { ...data, ...(safe.redacted ? { authenticationRequired: true } : {}) })
     if (event && !entry.owner.isDestroyed()) entry.owner.webContents.send('recording:event', { sessionId: entry.token, event, status: entry.recording.status() })
   }
-  function guest(event: IpcMainEvent) { return [...entries.values()].find(entry => entry.view.webContents === event.sender && event.senderFrame === event.sender.mainFrame) }
-  ipcMain.on('recorder:ready', event => { const entry = guest(event); if (entry) { entry.captureReady = true; event.sender.send('recorder:enabled', entry.recording.state === 'recording') } })
+  function guest(event: IpcMainEvent) { return [...entries.values()].find(entry => entry.view.webContents === event.sender && event.senderFrame && entry.frames.accepts(event.senderFrame)) }
+  ipcMain.on('recorder:ready', (event, info) => { const entry = guest(event); if (entry && event.senderFrame) {
+    if (info?.sandboxed !== true) { record(entry, 'unsupported', event.sender.getURL(), { reason: 'Frame sandbox verification failed.' }); return }
+    entry.frames.markReady(event.senderFrame)
+    if (event.senderFrame === event.sender.mainFrame) entry.captureReady = true
+    event.senderFrame.send('recorder:enabled', entry.recording.state === 'recording')
+  } })
   ipcMain.on('recorder:event', (event, value: unknown) => {
     const entry = guest(event)
     if (!entry || entry.recording.state !== 'recording' || !value || typeof value !== 'object') return
     const payload = value as { type?: unknown; url?: unknown; data?: unknown }
-    if (typeof payload.type !== 'string' || !['click', 'dblclick', 'contextmenu', 'pointerdown', 'pointerup', 'drag-move', 'input', 'keydown', 'scroll', 'submit', 'page-ready', 'action-outcome', 'unsupported'].includes(payload.type) || typeof payload.url !== 'string' || !payload.data || typeof payload.data !== 'object' || Array.isArray(payload.data)) return
+    if (typeof payload.type !== 'string' || !['click', 'dblclick', 'contextmenu', 'pointerdown', 'pointerup', 'drag-move', 'input', 'keydown', 'scroll', 'submit', 'page-ready', 'action-outcome', 'unsupported', 'frame-entry'].includes(payload.type) || typeof payload.url !== 'string' || !payload.data || typeof payload.data !== 'object' || Array.isArray(payload.data)) return
     if (JSON.stringify(value).length > 64000) return
-    record(entry, payload.type, payload.url, payload.data as Record<string, unknown>)
+    const frame = event.senderFrame!
+    const data = payload.data as Record<string, unknown>
+    if (payload.type === 'frame-entry') {
+      const child = data.child as { name?: string; url?: string } | undefined
+      const matches = frame.frames.filter(item => child?.name ? item.name === child.name : item.url === child?.url)
+      if (matches.length !== 1 || !entry.frames.isReady(matches[0]!)) record(entry, 'unsupported', event.sender.getURL(), { reason: 'The entered embedded frame is ambiguous or its recorder is unavailable. Wait for it to load and record again.' })
+      return
+    }
+    try {
+      // Passive frame readiness must not block a task that never enters that frame.
+      if (payload.type === 'page-ready' && frame !== event.sender.mainFrame) return
+      const framePath = entry.frames.path(frame)
+      if (['click', 'input', 'keydown', 'scroll', 'submit'].includes(payload.type)) {
+        for (let item = frame; item.parent; item = item.parent) entry.interactedFrames.set(item.frameTreeNodeId, entry.frames.path(item))
+      }
+      record(entry, payload.type, event.sender.getURL(), { ...data, frame: framePath.length ? 'subframe' : 'main', framePath })
+    } catch (error) { record(entry, 'unsupported', event.sender.getURL(), { reason: error instanceof Error ? error.message : 'Unable to identify the embedded frame.' }) }
   })
   ipcMain.handle('recording:status', (event, token) => { const entry = get(event, token); if (!entry) throw new Error('Session closed.'); return entry.recording.status() })
   ipcMain.handle('recording:export', async (event, token) => { const entry = get(event, token); if (!entry) throw new Error('Session closed.'); return entry.recording.exportJSON() })
@@ -93,17 +117,10 @@ export function registerTeachingBrowser() {
     if (!['pause', 'resume', 'stop'].includes(String(action))) throw new Error('Unknown recording action.')
     if (entry.recording.state === 'stopped') return entry.recording.status()
     if (action !== 'resume') {
-      // Flush the last debounced field edit before changing the recording state.
-      await new Promise<void>((resolve, reject) => {
-        const complete = () => { clearTimeout(timeout); ipcMain.removeListener('recorder:flushed', done); resolve() }
-        const done = (sender: IpcMainEvent) => { if (guest(sender) === entry) complete() }
-        const timeout = setTimeout(() => { ipcMain.removeListener('recorder:flushed', done); reject(new Error('Recorder did not acknowledge flush. Wait for the page to finish loading, then stop again.')) }, 2000)
-        ipcMain.on('recorder:flushed', done)
-        entry.view.webContents.send('recorder:flush')
-      })
+      await entry.frames.flush()
     }
     entry.recording.state = action === 'resume' ? 'recording' : action === 'pause' ? 'paused' : 'stopped'
-    entry.view.webContents.send('recorder:enabled', action === 'resume')
+    entry.frames.setEnabled(action === 'resume')
     if (action === 'stop') return entry.recording.stop()
     await entry.recording.flush()
     return entry.recording.status()
@@ -132,7 +149,7 @@ export function registerTeachingBrowser() {
       void replayRecording(entry.view.webContents, entry.owner, plan.steps, controller.signal, status => {
         if (!entry.owner.isDestroyed()) entry.owner.webContents.send('replay:status', { sessionId: entry.token, status })
         if (status.state !== 'running') void writeFile(join(entry.recording.directory, 'last-replay.json'), JSON.stringify({ ...status, finishedAt: new Date().toISOString() }, null, 2), { mode: 0o600 }).catch(error => console.error('Replay result save failed:', error))
-      }, action => new Promise<boolean>(resolve => { entry.approval = { sequence: action.sequence, resolve } }), () => entry.view.getVisible()).finally(() => { entry.approval?.resolve(false); entry.approval = undefined; if (entry.replay === controller) entry.replay = undefined })
+      }, action => new Promise<boolean>(resolve => { entry.approval = { sequence: action.sequence, resolve } }), () => entry.view.getVisible(), entry.frames).finally(() => { entry.approval?.resolve(false); entry.approval = undefined; if (entry.replay === controller) entry.replay = undefined })
     } catch (error) { entry.replay = undefined; throw error }
   })
   ipcMain.handle('teaching:diagnostics', (event, token) => { const entry = get(event, token); if (!entry) throw new Error('Session closed.'); return { windowFocused: entry.owner.isFocused(), browserFocused: entry.view.webContents.isFocused(), visible: entry.view.getVisible(), captureReady: !!entry.captureReady, eventCount: entry.recording.count, lastEventType: entry.lastEventType, bounds: entry.view.getBounds() } })
@@ -147,8 +164,8 @@ export function registerTeachingBrowser() {
     const [, workflowId, nodeId] = window.webContents.getURL().match(/#\/workflows\/([^/]+)\/record\/([^/?#]+)/)!
     const recording = new RecordingStore(join(app.getPath('userData'), 'recordings'), decodeURIComponent(workflowId), decodeURIComponent(nodeId))
     recordings.add(recording)
-    const view = new WebContentsView({ webPreferences: { preload: fileURLToPath(new URL('../preload/recorder.cjs', import.meta.url)), session: browserSession, contextIsolation: true, nodeIntegration: false, sandbox: true, webSecurity: true } })
-    const entry: Entry = { view, owner: window, token, error: null, recording }
+    const view = new WebContentsView({ webPreferences: { preload: fileURLToPath(new URL('../preload/recorder.cjs', import.meta.url)), session: browserSession, contextIsolation: true, nodeIntegration: false, nodeIntegrationInSubFrames: true, sandbox: true, webSecurity: true } })
+    const entry: Entry = { view, owner: window, token, error: null, recording, frames: new FrameBridge(view.webContents), interactedFrames: new Map() }
     entries.set(window.id, entry)
     window.contentView.addChildView(view); position(entry, bounds)
     const contents = view.webContents
@@ -177,7 +194,25 @@ export function registerTeachingBrowser() {
     contents.on('did-start-loading', () => { entry.error = null; publish(entry) })
     contents.on('did-stop-loading', () => publish(entry))
     contents.on('did-navigate', (_event, url) => { record(entry, 'navigation', url, { source: entry.addressNavigation ? 'address' : 'page' }); entry.addressNavigation = false; publish(entry) })
-    contents.on('did-navigate-in-page', (_event, url, mainFrame) => { if (mainFrame) record(entry, 'navigation', url, { sameDocument: true, source: entry.addressNavigation ? 'address' : 'page' }); entry.addressNavigation = false; publish(entry) })
+    const frameNavigation = (url: string, processId: number, routingId: number) => {
+      const frame = webFrameMain.fromId(processId, routingId)
+      if (!frame) return
+      const previous = entry.interactedFrames.get(frame.frameTreeNodeId)
+      if (!previous || previous.at(-1)?.url === url) return
+      record(entry, 'frame-navigation', contents.getURL(), { framePath: previous, destination: url })
+      try { entry.interactedFrames.set(frame.frameTreeNodeId, entry.frames.path(frame)) } catch { entry.interactedFrames.delete(frame.frameTreeNodeId) }
+    }
+    contents.on('did-frame-navigate', (_event, url, _code, _text, mainFrame, processId, routingId) => {
+      if (mainFrame) entry.interactedFrames.clear()
+      else frameNavigation(url, processId, routingId)
+    })
+    contents.on('did-navigate-in-page', (_event, url, mainFrame, processId, routingId) => {
+      if (mainFrame) {
+        record(entry, 'navigation', url, { sameDocument: true, source: entry.addressNavigation ? 'address' : 'page' })
+        entry.addressNavigation = false
+      } else frameNavigation(url, processId, routingId)
+      publish(entry)
+    })
     contents.on('page-title-updated', () => publish(entry))
     contents.on('did-fail-load', (_event, code, description, _url, mainFrame) => { if (mainFrame && code !== -3) { entry.error = `Page could not load: ${description}`; publish(entry) } })
     contents.on('render-process-gone', () => { entry.error = 'The browser page stopped responding. Reload to try again.'; publish(entry) })

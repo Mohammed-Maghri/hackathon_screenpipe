@@ -1,3 +1,4 @@
+import electronPath from 'electron';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { readFile, mkdtemp, writeFile } from 'node:fs/promises';
@@ -15,13 +16,13 @@ const server=http.createServer((req,res)=>{
   if(mode==='duplicate')html=html.replace('<button id="go">Save item</button>','<button id="go">Save item</button><button id="go">Save item</button>');
   if(mode==='initial')html=html.replace('<span id="status" role="status"></span>','<span id="status" role="status">Saved item</span>');
   if(mode==='unknown')html=html.replaceAll("window.saves++;document.querySelector('#status').textContent='Saved item'","window.saves++");
-  if(mode==='frame')html=html.replace('</body>','<iframe src="/frame"></iframe></body>');
+  if(mode==='frame')html=html.replace('</body>','<iframe style="display:block;margin-top:900px" src="/frame"></iframe></body>');
   if(req.url==='/frame')html='<h1>Frame</h1><button>Inside frame</button>';
   res.end(html)
 });
 await new Promise(r=>server.listen(port,'127.0.0.1',r));
 const profile=await mkdtemp(join(tmpdir(),'ghost-reliability-'));
-const electron=spawn('node_modules/.bin/electron',['.','--ozone-platform=x11',`--remote-debugging-port=${debug}`,`--user-data-dir=${profile}`],{stdio:['ignore','ignore','pipe']});
+const electron=spawn(electronPath,['.','--ozone-platform=x11',`--remote-debugging-port=${debug}`,`--user-data-dir=${profile}`],{stdio:['ignore','ignore','pipe']});
 let errors='';electron.stderr.on('data',d=>{errors+=d.toString()});
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn,message,timeout=20000){const start=Date.now();do{const v=await fn();if(v)return v;await pause(50)}while(Date.now()-start<timeout);throw Error(message)}
@@ -57,7 +58,10 @@ await guest.eval(`document.querySelector('#scroll').scrollTop=110`);await until(
 // Modal visibility and native pointer delivery, via the real host UI.
 token=await open();await host.eval(`[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Need help')).click()`);await until(async()=>!(await api('diagnostics',token)).visible,'View not hidden for modal');await host.eval(`document.querySelector('.dialog-close').click()`);await until(async()=>(await api('diagnostics',token)).visible,'View not restored');await nativeClick('#go');await until(()=>guest.eval('window.saves===1'),'Click after modal failed');checks.push('modal bounds/visibility and manual click delivery');await stop(token);
 for(const field of ['password','otp']) {token=await open();await type('#'+field,'DO-NOT-STORE');await stop(token);const json=await api('recordingExport',token);assert.ok(!json.includes('DO-NOT-STORE'));assert.ok((await preview(token)).blockers.some(b=>b.includes('authentication')));await assert.rejects(()=>api('replayStart',token));}checks.push('password/OTP masked and actual IPC start blocked');
-token=await open('frame');await nativeClick('#go');await stop(token);assert.ok((await preview(token)).blockers.some(b=>b.includes('frames')));await assert.rejects(()=>api('replayStart',token));checks.push('unsupported frame blocker preserved through IPC');
+token=await open('frame');await nativeClick('#go');await until(()=>guest.eval('window.saves===1'),'Main-page save failed');await stop(token);assert.deepEqual((await preview(token)).blockers,[]);
+await host.eval('window.__replay=null');await api('replayStart',token);const frameApprovals=new Set();await until(async()=>{const state=await host.eval('window.__replay');if(state?.state==='needs-user-approval'&&!frameApprovals.has(state.sequence)){frameApprovals.add(state.sequence);await api('replayApprove',token,state.sequence,true)}return state && ['completed','failed','unknown'].includes(state.state)},'Main-page replay with iframe timed out');assert.equal((await host.eval('window.__replay')).state,'completed');checks.push('main-page recording and verified replay with an unrelated iframe');
+token=await open();await guest.eval(`(()=>{const frame=document.createElement('iframe');frame.hidden=true;frame.src='/frame';document.body.append(frame)})()`);await nativeClick('#go');await stop(token);assert.deepEqual((await preview(token)).blockers,[]);checks.push('dynamically inserted unused iframe does not block main-page capture');
+if (!process.env.GHOST_TEST_FRAMES_ONLY) {
 token=await open();await nativeClick('#popup');await until(async()=>JSON.parse(await api('recordingExport',token)).events.some(e=>e.type==='popup-open'),'Popup not recorded');await stop(token);assert.ok((await preview(token)).blockers.some(b=>b.includes('popup-open')));await assert.rejects(()=>api('replayStart',token));checks.push('popup blocker preserved through IPC');
 token=await open();const point=await guest.eval(`(()=>{const r=document.querySelector('#drag').getBoundingClientRect();return{x:r.x+20,y:r.y+20}})()`);await guest.call('Input.dispatchMouseEvent',{type:'mousePressed',...point,button:'left',clickCount:1});await guest.call('Input.dispatchMouseEvent',{type:'mouseMoved',x:point.x+50,y:point.y,button:'left',buttons:1});await guest.call('Input.dispatchMouseEvent',{type:'mouseReleased',x:point.x+50,y:point.y,button:'left',clickCount:1});await stop(token);assert.ok((await preview(token)).blockers.some(b=>b.includes('drag-move')));await assert.rejects(()=>api('replayStart',token));checks.push('drag blocker preserved through IPC');
 for(const scenario of ['missing','duplicate','initial','redirect','unknown','cancel','deny']) {
@@ -72,8 +76,9 @@ token=await open();await nativeClick('#input-button');await until(()=>guest.eval
 // Navigation and select-all are exercised through captured native events as well.
 token=await open();await nativeClick('#next');await until(()=>guest.eval(`location.pathname==='/next'`),'Manual navigation failed');await api('action',token,'back');await until(()=>guest.eval(`location.pathname==='/fixture'`),'Browser back failed');await api('action',token,'forward');await until(()=>guest.eval(`location.pathname==='/next'`),'Browser forward failed');await stop(token);await host.eval('window.__replay=null');await api('replayStart',token);const approved=new Set();await until(async()=>{const state=await host.eval('window.__replay');if(state?.state==='needs-user-approval'&&!approved.has(state.sequence)){approved.add(state.sequence);await api('replayApprove',token,state.sequence,true)}return state && ['completed','failed','unknown'].includes(state.state)},'Navigation replay timed out');assert.equal((await host.eval('window.__replay')).state,'completed');assert.equal(await guest.eval('location.pathname'),'/next');checks.push('captured link and browser back/forward navigation verified');
 token=await open();await type('#name','Existing');await guest.call('Input.dispatchKeyEvent',{type:'keyDown',key:'a',code:'KeyA',windowsVirtualKeyCode:65,modifiers:2});await guest.call('Input.dispatchKeyEvent',{type:'keyUp',key:'a',code:'KeyA',windowsVirtualKeyCode:65,modifiers:2});await guest.call('Input.insertText',{text:'Replacement'});await until(()=>guest.eval(`document.querySelector('#name').value==='Replacement'`),'Select-all typing failed');await stop(token);await host.eval('window.__replay=null');await api('replayStart',token);await until(()=>host.eval(`window.__replay && ['completed','failed','unknown'].includes(window.__replay.state)`),'Input replay did not finish');assert.equal((await host.eval('window.__replay')).state,'completed');assert.equal(await guest.eval(`document.querySelector('#name').value`),'Replacement');checks.push('Ctrl+A and native replacement verified');
+}
 console.log('PASS failure cases:',checks);
-await writeFile('docs/reliability-failure-results.json',JSON.stringify({date:new Date().toISOString(),checks},null,2));
+await writeFile(process.env.GHOST_TEST_FRAMES_ONLY ? 'docs/reliability-frame-results.json' : 'docs/reliability-failure-results.json',JSON.stringify({date:new Date().toISOString(),checks},null,2));
 console.log(JSON.stringify({counts,profile}));
 
 } catch(error){console.error('FAIL',error);if(host){console.error('Diagnostics',await host.eval(`window.__state && window.ghost.browser.diagnostics(window.__state.sessionId)`).catch(String));console.error('Replay',await host.eval('window.__replay').catch(String));}console.error('Profile',profile,'Electron log',errors.slice(-3000));process.exitCode=1}

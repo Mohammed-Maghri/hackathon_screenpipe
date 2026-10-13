@@ -15,7 +15,7 @@ export class RecordingStore {
   constructor(root: string, readonly workflowId: string, readonly nodeId: string) {
     this.directory = join(root, this.id)
     this.eventsPath = join(this.directory, 'events.jsonl')
-    this.queue = mkdir(this.directory, { recursive: true, mode: 0o700 }).then(() => writeFile(join(this.directory, 'session.json'), JSON.stringify({ schemaVersion: 2, id: this.id, workflowId, nodeId, startedAt: new Date(this.startedAt).toISOString(), environment: { electron: process.versions.electron, chromium: process.versions.chrome, platform: process.platform }, coordinates: 'CSS pixels; client relative to website viewport; page includes scroll; normalized element offsets included', limitations: ['Main frame and open shadow-root event targets only', 'No screenshots, clipboard contents, cookies, or network bodies', 'Sensitive fields are redacted; record after signing in', 'Input values limited to 10000 characters; scrolling is coalesced'] }, null, 2), { mode: 0o600 })).catch(error => { this.error = String(error) })
+    this.queue = mkdir(this.directory, { recursive: true, mode: 0o700 }).then(() => writeFile(join(this.directory, 'session.json'), JSON.stringify({ schemaVersion: 3, id: this.id, workflowId, nodeId, startedAt: new Date(this.startedAt).toISOString(), environment: { electron: process.versions.electron, chromium: process.versions.chrome, platform: process.platform }, coordinates: 'CSS pixels; client relative to website viewport; page includes scroll; normalized element offsets included', limitations: ['Main frame and uniquely identified nested frames; transformed frame geometry is unsupported', 'No screenshots, clipboard contents, cookies, or network bodies', 'Sensitive fields are redacted; record after signing in', 'Input values limited to 10000 characters; scrolling is coalesced'] }, null, 2), { mode: 0o600 })).catch(error => { this.error = String(error) })
   }
   append(type: string, url: string, data: Record<string, unknown>): RecordedEvent | null {
     if (this.state !== 'recording' || this.error) return null
@@ -39,6 +39,6 @@ export class RecordingStore {
     try { text = await readFile(this.eventsPath, 'utf8') } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
     let inputs = []
     try { inputs = JSON.parse(await readFile(join(this.directory, 'inputs.json'), 'utf8')) } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
-    return JSON.stringify({ ...metadata, exportVersion: 2, inputs, state: this.state, eventCount: this.count, events: text.trim().split('\n').filter(Boolean).map(line => JSON.parse(line)) }, null, 2)
+    return JSON.stringify({ ...metadata, exportVersion: 3, inputs, state: this.state, eventCount: this.count, events: text.trim().split('\n').filter(Boolean).map(line => JSON.parse(line)) }, null, 2)
   }
 }

@@ -14,9 +14,9 @@
 .run-button-group .dash-button:last-child { border-radius: 0 7px 7px 0; padding-inline: 11px; border-left-color: #fff5; }
 .editor-actions .more-editor { padding-inline: 10px; }
 .editor-title-row { display: flex; align-items: center; gap: 20px; padding-right: 310px; margin-top: 13px; }
-.editor-title-row h1 { font-family: Georgia, 'Times New Roman', serif; font-size: 33px; letter-spacing: -.02em; line-height: 1.15; margin: 0 auto 0 0; display: flex; align-items: center; gap: 20px; }
+.editor-title-row h1 { font-family: 'Geist Variable', sans-serif; font-weight: 600; font-size: 33px; letter-spacing: -.02em; line-height: 1.15; margin: 0 auto 0 0; display: flex; align-items: center; gap: 20px; }
 .editor-title-row h1 button { display: grid; place-items: center; padding: 3px; color: #bcbcbc; }
-.editor-title-input { font-family: Georgia, serif; font-size: 28px; color: #fff; width: 50%; background: #151515; border: 1px solid #756928; border-radius: 5px; padding: 3px 8px; margin-right: auto; }
+.editor-title-input { font-weight: 600; font-family: 'Geist Variable', sans-serif; font-size: 28px; color: #fff; width: 50%; background: #151515; border: 1px solid #756928; border-radius: 5px; padding: 3px 8px; margin-right: auto; }
 .editor-save-state { font-size: 10px; color: #929292; white-space: nowrap; }
 .editor-description { color: #b4b4b4; font-size: 12px; margin: 7px 310px 16px 0; line-height: 1.5; }
 .editor-tabs { display: flex; gap: 22px; height: 38px; }
@@ -120,7 +120,7 @@
 .log-row > span:last-child { display: flex; align-items: center; gap: 7px; }
 .log-success { color: #4fc080; }.log-warning { color: #e5c740; }
 .editor-tab-content { flex: 1; min-height: 490px; padding: 30px; border: 1px solid #24261f; border-radius: 8px; }
-.editor-tab-content h2 { font-family: Georgia, serif; font-size: 28px; font-weight: 400; margin: 0 0 12px; }
+.editor-tab-content h2 { font-family: 'Geist Variable', sans-serif; font-size: 28px; font-weight: 600; margin: 0 0 12px; }
 .editor-tab-content > p { color: #9da193; font-size: 12px; margin-bottom: 25px; line-height: 1.6; }
 .editor-step-row { display: flex; align-items: center; gap: 15px; width: 100%; padding: 15px; background: #10120e; border: 1px solid #292d24; border-radius: 8px; margin-bottom: 9px; text-align: left; }
 .editor-step-row.is-selected { border-color: #ac972d; }
@@ -198,3 +198,5 @@
   .node-popup > nav { gap: 8px; }
   .node-popup > nav button { min-width: 65px; }
 }
+
+.editor-shell .dashboard-dialog h2, .editor-not-found h1 { font-family: 'Geist Variable', sans-serif; font-weight: 600; letter-spacing: -.035em; }

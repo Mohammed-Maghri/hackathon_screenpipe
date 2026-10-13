@@ -3,6 +3,9 @@ import type { RecordedEvent, RecordingStatus, ReplayStatus, ReplayPreview } from
 import type { BrowserBounds, BrowserAction, BrowserState } from '../shared/browser'
 contextBridge.exposeInMainWorld('ghost', {
   platform: process.platform,
+  listWorkflows: (offset: number = 0) => ipcRenderer.invoke('workflows:list', offset),
+  getWorkflow: (id: string) => ipcRenderer.invoke('workflows:get', id),
+  prepareDiscovery: (input: import('../shared/discovery').DiscoveryRequest) => ipcRenderer.invoke('discovery:prepare', input),
   browser: {
     open: (token: string, url: string, bounds: BrowserBounds) => ipcRenderer.invoke('teaching:open', token, url, bounds),
     navigate: (token: string, url: string) => ipcRenderer.invoke('teaching:navigate', token, url),

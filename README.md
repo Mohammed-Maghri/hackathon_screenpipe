@@ -60,7 +60,7 @@ Following the [electron-vite setup](https://electron-vite.org/guide/), Vite 7 is
 
 ## Dashboard preview
 
-The dashboard follows the supplied reference with a fixed sidebar, editorial heading, discovery cards, workflow table, connection overview, and activity feed. Its content area scrolls independently; the welcome screen stays fixed to the window. At smaller widths, cards reflow and the overview moves below the workflow list.
+The dashboard follows the supplied reference with a fixed sidebar, editorial heading, discovery cards, workflow table, connection overview, and activity feed. Home fits the desktop window with a sans-serif heading and no page scrolling; compact panels contain overflow when needed. The welcome screen stays fixed to the window. At smaller widths, cards reflow and the overview moves below the workflow list.
 
 - Search by workflow or app; Ctrl/Cmd+K focuses search.
 - Filter saved workflows by All, Active, Scheduled, or Drafts.
@@ -92,3 +92,9 @@ See [Recording and replay reliability](docs/replay-reliability.md) for the imple
 Linux defaults to software rendering to avoid GPU/compositor failures on Wayland/Vulkan setups. Set `GHOST_SOFTWARE_RENDERING=0` to opt back into acceleration, or `GHOST_SOFTWARE_RENDERING=1` to force software rendering on any platform. This can reduce performance on graphics-heavy sites. The choice is applied before Electron starts its windows; fully restart Ghost after changing it.
 
 Process exits are logged under `<Electron userData>/logs/process-errors.jsonl`, with reason, exit code, and rendering mode. An app renderer crash opens a native Reload/Close dialog. Reload resets unsaved editor state; recordings already persisted on disk remain available. Buffer-limit warnings alone do not establish a crash cause.
+
+## Backend foundation
+
+The independent Fastify/PostgreSQL/Prisma API lives in [`backend/`](backend/README.md).
+It includes workflow CRUD, graph integrity, migrations, local Compose configuration
+and integration tests. The desktop app is not wired to this API yet.

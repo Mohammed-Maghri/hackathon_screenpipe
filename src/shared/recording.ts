@@ -1,3 +1,5 @@
+export interface FrameIdentity { name: string; url: string }
+
 export interface RecordedEvent {
   sequence: number
   timestamp: string
@@ -46,7 +48,7 @@ export interface TargetDescriptor {
   shadowHost?: string | null
   attributes?: Record<string, string>
   context?: { role: string; name: string; testId: string; id: string }
-  frame?: 'main'
+  frame?: 'main' | 'subframe'
 }
 export type ActionState = 'pending' | 'running' | 'verified' | 'failed' | 'skipped' | 'unknown' | 'needs-user-approval'
 export interface ActionResult { sequence: number; type: string; state: ActionState; evidence?: string }
