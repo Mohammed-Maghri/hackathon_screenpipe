@@ -284,3 +284,11 @@ For reviewing a failure, the useful questions are: Was the input captured? Was i
 | [pageOperation.ts](../src/shared/pageOperation.ts) | Target description, resolution, DOM operations, evidence checking. |
 | [frameBridge.ts](../src/main/frameBridge.ts) | Frame communication and coordinate translation. |
 | [recording.ts](../src/shared/recording.ts) | Shared event, target, preview, and result types. |
+
+## Saved browser steps and reusable credentials
+
+Stopping a recording now saves a workflow/node-specific reference under `recordings/.saved-nodes/`. Opening that browser step later restores the same recording in the stopped state, including its `inputs.json` overrides. The recording ID stays unchanged so encrypted passwords remain decryptable with the existing device-local key. Replay fetches the saved input values and encrypted passwords from the backend automatically; the normal test flow has no input editing form. If the backend is unavailable, it explicitly falls back to the local copy.
+
+Choose **Record again** to replace the task deliberately. Existing files remain on disk; an empty new recording does not replace the saved reference. This association is saved on Stop, Back, or exit after flushing pending inputs. Previously recorded sessions without a saved reference are not automatically selected.
+
+This saves reusable login inputs, not everlasting authentication. A website may still require a fresh verification code, changed password or external authentication. Input values and encrypted passwords are also saved to the backend. The decryption key remains on this computer; backend recovery requires that key. Restarting Ghost can reopen and run the saved task from its beginning; resuming an interrupted run in a different browser document is still rejected.

@@ -1,4 +1,5 @@
 import Fastify from 'fastify'
+import { registerRecordingSecretsRoutes } from './modules/recording-secrets/recording-secrets.routes.js'
 import { registerDocumentation } from './documentation/swagger.js'
 import { registerDiscoveryRoutes } from './modules/discovery/discovery.routes.js'
 import cors from '@fastify/cors'
@@ -22,6 +23,7 @@ export async function buildApp(env: Environment, database?: Database) {
     try { await db.$queryRaw`SELECT 1`; return { status: 'ok', database: 'up' } }
     catch { return reply.code(503).send({ status: 'unavailable', database: 'down' }) }
   })
-  registerWorkflowRoutes(app, new WorkflowService(db))
+  registerWorkflowRoutes(app, new WorkflowService(db), { apiKey: env.OPENAI_API_KEY, model: env.OPENAI_MODEL })
+  registerRecordingSecretsRoutes(app, db)
   return app
 }

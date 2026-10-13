@@ -18,16 +18,20 @@ import type { BrowserBounds, BrowserState } from '../shared/browser'
 import { browserURL, initialBrowserURL, resolveBrowserAddress } from './browserAddress'
 
 export function registerTeachingBrowser() {
-  type Entry = { authenticationPaused?: boolean; lastAction?: { id: string; at: number }; downloads?: Set<Electron.DownloadItem>; contents: Electron.WebContents; disposed?: boolean; frames: FrameBridge; interactedFrames: Map<number, FrameIdentity[]>; view: WebContentsView; owner: BrowserWindow; token: string; error: string | null; recording: RecordingStore; captureReady?: boolean; addressNavigation?: boolean; lastEventType?: string; approval?: { sequence: number; resolve: (approved: boolean) => void }; replay?: AbortController; popups?: Set<BrowserWindow> }
+  type Entry = { closing?: Promise<void>; attached?: boolean; lastBounds?: BrowserBounds; authenticationPaused?: boolean; lastAction?: { id: string; at: number }; downloads?: Set<Electron.DownloadItem>; contents: Electron.WebContents; disposed?: boolean; frames: FrameBridge; interactedFrames: Map<number, FrameIdentity[]>; view: WebContentsView; owner: BrowserWindow; token: string; error: string | null; recording: RecordingStore; captureReady?: boolean; addressNavigation?: boolean; lastEventType?: string; approval?: { sequence: number; resolve: (approved: boolean) => void }; replay?: AbortController; popups?: Set<BrowserWindow> }
   const vault = new LoginVault(join(app.getPath('userData'), 'saved-logins'), { available: () => safeStorage.isEncryptionAvailable() && (process.platform !== 'linux' || safeStorage.getSelectedStorageBackend() !== 'basic_text'), encrypt: value => safeStorage.encryptString(value), decrypt: value => safeStorage.decryptString(value) })
   const loginScope = (entry: Entry) => JSON.stringify([entry.recording.workflowId, entry.recording.nodeId])
   const entries = new Map<number, Entry>()
+  const closingEntries = new Set<Entry>()
+  const pendingSaves = new Set<Promise<void>>()
+  const pendingOpens = new Map<number, { token: string; cancel: () => void }>()
+  const modalOwners = new Map<number, Set<string>>()
   const recordings = new Set<RecordingStore>()
   let quitFlushed = false
   app.on('before-quit', event => {
     if (quitFlushed || !recordings.size) return
     event.preventDefault()
-    void Promise.all([...recordings].map(recording => recording.stop().catch(error => console.error('Recording save failed:', error)))).then(() => { quitFlushed = true; app.quit() })
+    void Promise.allSettled([...entries.values()].map(entry => dispose(entry))).then(() => Promise.allSettled([...pendingSaves])).then(() => { quitFlushed = true; app.quit() })
   })
   const browserSession = session.fromPartition('persist:ghost-teaching-browser')
   browserSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false))
@@ -64,29 +68,53 @@ export function registerTeachingBrowser() {
   function publish(entry: Entry) {
     if (!entry.disposed && !entry.owner.isDestroyed() && !entry.owner.webContents.isDestroyed() && !entry.contents.isDestroyed()) entry.owner.webContents.send('teaching:state', snapshot(entry))
   }
-  function dispose(entry: Entry) {
-    if (entry.disposed) return
-    entry.disposed = true
+  function dispose(entry: Entry): Promise<void> {
+    if (entry.closing) return entry.closing
+    if (entry.disposed) return Promise.resolve()
     entry.replay?.abort()
-    entry.frames.dispose()
-    for (const download of entry.downloads ?? []) download.cancel()
     entry.approval?.resolve(false)
     for (const popup of entry.popups ?? []) if (!popup.isDestroyed()) popup.close()
-    void entry.recording.stop().catch(error => console.error('Recording save failed:', error))
+    // Detach immediately, but keep the recorder alive long enough to flush its last inputs.
     if (entries.get(entry.owner.id) === entry) entries.delete(entry.owner.id)
-    if (!entry.owner.isDestroyed()) entry.owner.contentView.removeChildView(entry.view)
-    if (!entry.contents.isDestroyed()) entry.contents.close({ waitForBeforeUnload: false })
+    if (!entry.owner.isDestroyed() && entry.attached) entry.owner.contentView.removeChildView(entry.view)
+    entry.attached = false
+    entry.view.setVisible(false)
+    closingEntries.add(entry)
+    const saving = (async () => {
+      try {
+        if (!entry.contents.isDestroyed()) {
+          try { await entry.frames.flush() } catch (error) { record(entry, 'unsupported', entry.contents.getURL(), { reason: `Final input capture failed: ${String(error)}` }) }
+        }
+        if (entry.downloads?.size) record(entry, 'unsupported', entry.contents.getURL(), { reason: 'Recording closed before its download finished.' })
+        await entry.recording.stop(true)
+      } finally {
+        entry.disposed = true
+        closingEntries.delete(entry)
+        for (const download of entry.downloads ?? []) download.cancel()
+        entry.frames.dispose()
+        if (!entry.contents.isDestroyed()) entry.contents.close({ waitForBeforeUnload: false })
+      }
+    })()
+    entry.closing = saving
+    pendingSaves.add(saving)
+    void saving.catch(error => console.error('Recording save failed:', error)).finally(() => pendingSaves.delete(saving))
+    return saving
   }
   function position(entry: Entry, bounds: BrowserBounds) {
-    if (entry.disposed || entry.owner.isDestroyed() || entry.contents.isDestroyed()) return
+    if (entry.closing || entry.disposed || entry.owner.isDestroyed() || entry.contents.isDestroyed()) return
     if (!bounds || ![bounds.x, bounds.y, bounds.width, bounds.height].every(value => typeof value === 'number' && Number.isFinite(value))) return
     const [width, height] = entry.owner.getContentSize()
     const x = Math.max(0, Math.min(width, Math.round(bounds.x)))
     const y = Math.max(0, Math.min(height, Math.round(bounds.y)))
     const w = Math.max(0, Math.min(width - x, Math.round(bounds.width)))
     const h = Math.max(0, Math.min(height - y, Math.round(bounds.height)))
+    entry.lastBounds = bounds
+    const visible = bounds.visible === true && w > 0 && h > 0 && !modalOwners.get(entry.owner.id)?.size
+    entry.view.setVisible(visible)
+    if (!visible && entry.attached) { entry.owner.contentView.removeChildView(entry.view); entry.attached = false }
     entry.view.setBounds({ x, y, width: w, height: h })
-    entry.view.setVisible(bounds.visible === true && w > 0 && h > 0)
+    if (visible && !entry.attached) { entry.owner.contentView.addChildView(entry.view); entry.attached = true }
+
   }
   function load(entry: Entry, url: string) {
     if (entry.disposed || entry.contents.isDestroyed()) return
@@ -105,7 +133,7 @@ export function registerTeachingBrowser() {
     const event = entry.recording.append(type, safe.url, { ...data, ...(safe.redacted ? { authenticationRequired: true } : {}) })
     if (event && !entry.owner.isDestroyed()) entry.owner.webContents.send('recording:event', { sessionId: entry.token, event, status: entry.recording.status() })
   }
-  function guest(event: IpcMainEvent) { return [...entries.values()].find(entry => entry.contents === event.sender && event.senderFrame && entry.frames.accepts(event.senderFrame)) }
+  function guest(event: IpcMainEvent) { return [...entries.values(), ...closingEntries].find(entry => entry.contents === event.sender && event.senderFrame && entry.frames.accepts(event.senderFrame)) }
   ipcMain.on('recorder:ready', (event, info) => { const entry = guest(event); if (entry && event.senderFrame) {
     if (info?.sandboxed !== true) { record(entry, 'unsupported', event.sender.getURL(), { reason: 'Frame sandbox verification failed.' }); return }
     entry.frames.markReady(event.senderFrame)
@@ -157,12 +185,30 @@ export function registerTeachingBrowser() {
     try { await signInWithSavedLogin(entry.contents, entry.owner, login, controller.signal); return { ok: true } }
     finally { if (entry.replay === controller) entry.replay = undefined; publish(entry) }
   })
+  ipcMain.handle('recording:learned', async (event, workflowId: unknown, nodeIds: unknown) => {
+    owner(event)
+    if (typeof workflowId !== 'string' || !Array.isArray(nodeIds) || nodeIds.length > 500 || nodeIds.some(id => typeof id !== 'string')) throw new Error('Invalid workflow steps.')
+    await Promise.all([...pendingSaves])
+    return Promise.all(nodeIds.map(async nodeId => {
+      const saved = await RecordingStore.restore(join(app.getPath('userData'), 'recordings'), workflowId, nodeId)
+      if (!saved) return { nodeId, status: 'Needs teaching' }
+      let learned = false
+      try {
+        const replay = JSON.parse(await readFile(join(saved.directory, 'last-replay.json'), 'utf8'))
+        const exported = JSON.parse(await saved.exportJSON())
+        const plan = prepareReplay(exported.events, exported.inputs)
+        learned = replay.recordingId === saved.id && replay.planHash === saved.planHash(plan.steps) && !plan.preview.blockers.length && replay.state === 'completed' && replay.total > 0 && replay.completed === replay.total
+      } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
+      return { nodeId, status: learned ? 'Learned' : 'Recorded' }
+    }))
+  })
   ipcMain.handle('recording:status', (event, token) => { const entry = get(event, token); if (!entry) throw new Error('Session closed.'); return entry.recording.status() })
+  ipcMain.handle('recording:sync-secrets', (event, token) => { const entry = get(event, token); if (!entry) throw new Error('Session closed.'); return entry.recording.syncSecrets() })
   ipcMain.handle('recording:export', async (event, token) => { const entry = get(event, token); if (!entry) throw new Error('Session closed.'); return entry.recording.exportJSON() })
   ipcMain.handle('recording:control', async (event, token, action: unknown) => {
     const entry = get(event, token); if (!entry) throw new Error('Session closed.')
     if (!['pause', 'resume', 'stop'].includes(String(action))) throw new Error('Unknown recording action.')
-    if (entry.recording.state === 'stopped') return entry.recording.status()
+    if (entry.recording.state === 'stopped') return action === 'stop' ? entry.recording.stop(true) : entry.recording.status()
     if (action === 'resume' && entry.authenticationPaused) throw new Error('Finish signing in, then choose Start task recording to create a clean recording.')
     if (action !== 'resume' && entry.downloads?.size) throw new Error('A download is still running. Wait for it to finish before pausing or stopping.')
     if (action !== 'resume') {
@@ -170,16 +216,15 @@ export function registerTeachingBrowser() {
     }
     entry.recording.state = action === 'resume' ? 'recording' : action === 'pause' ? 'paused' : 'stopped'
     entry.frames.setEnabled(action === 'resume')
-    if (action === 'stop') return entry.recording.stop()
+    if (action === 'stop') return entry.recording.stop(true)
     await entry.recording.flush()
     return entry.recording.status()
   })
   async function replayPlan(entry: Entry) {
     if (entry.recording.state !== 'stopped') throw new Error('Stop recording before testing it.')
-    const events = JSON.parse(await entry.recording.exportJSON()).events
-    let inputs: SavedInput[] = []
-    try { inputs = JSON.parse(await readFile(join(entry.recording.directory, 'inputs.json'), 'utf8')) } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
-    return prepareReplay(events, inputs)
+    const { events, inputs, inputSource } = await entry.recording.replayData()
+    const plan = prepareReplay(events, inputs)
+    return { ...plan, preview: { ...plan.preview, inputSource } }
   }
   ipcMain.handle('replay:inputs', async (event, token, inputs: SavedInput[]) => {
     const entry = get(event, token); if (!entry || entry.replay) throw new Error('Session unavailable or replay running.')
@@ -199,6 +244,7 @@ export function registerTeachingBrowser() {
     })
     applyInputs(plan.steps, inputs)
     await writeFile(join(entry.recording.directory, 'inputs.json'), JSON.stringify(inputs, null, 2), { mode: 0o600 })
+    await entry.recording.syncSecrets()
   })
   ipcMain.handle('replay:artifact', async (event, token, runId: string, artifactId: string, action: string) => {
     const entry = get(event, token); if (!entry) throw new Error('Session closed.')
@@ -246,19 +292,52 @@ export function registerTeachingBrowser() {
   ipcMain.handle('teaching:diagnostics', (event, token) => { const entry = get(event, token); if (!entry) throw new Error('Session closed.'); return { windowFocused: entry.owner.isFocused(), browserFocused: entry.contents.isFocused(), visible: entry.view.getVisible(), captureReady: !!entry.captureReady, eventCount: entry.recording.count, lastEventType: entry.lastEventType, bounds: entry.view.getBounds() } })
   ipcMain.handle('replay:approve', (event, token, sequence, approved) => { const entry = get(event, token); if (!entry?.approval || entry.approval.sequence !== sequence || typeof approved !== 'boolean') throw new Error('No matching pending approval.'); entry.approval.resolve(approved); entry.approval = undefined })
   ipcMain.handle('replay:cancel', (event, token) => { const entry = get(event, token); entry?.replay?.abort(); entry?.approval?.resolve(false) })
-  ipcMain.handle('teaching:open', (event, token: unknown, address: unknown, bounds: BrowserBounds) => {
+  ipcMain.handle('teaching:open', async (event, token: unknown, address: unknown, bounds: BrowserBounds, fresh = false) => {
     const window = owner(event)
     if (typeof token !== 'string' || token.length > 100 || !/#\/workflows\/[^/]+\/record\//.test(window.webContents.getURL())) throw new Error('Open a workflow teaching page first.')
-    const url = initialBrowserURL(address)
+    let url = initialBrowserURL(address)
     const previous = entries.get(window.id)
     if (previous) dispose(previous)
     const [, workflowId, nodeId] = window.webContents.getURL().match(/#\/workflows\/([^/]+)\/record\/([^/?#]+)/)!
-    const recording = new RecordingStore(join(app.getPath('userData'), 'recordings'), decodeURIComponent(workflowId), decodeURIComponent(nodeId))
+    const root = join(app.getPath('userData'), 'recordings')
+    // Closing or replacing a route must also cancel startup before a native view exists.
+    pendingOpens.get(window.id)?.cancel()
+    const ownerContents = window.webContents
+    const ownerURL = ownerContents.getURL()
+    let cancelled = false
+    const request = { token, cancel: () => { cancelled = true } }
+    pendingOpens.set(window.id, request)
+    const cancelNavigation = (_event: Electron.Event, nextURL: string, _inPlace: boolean, mainFrame: boolean) => {
+      if (mainFrame && nextURL !== ownerURL) request.cancel()
+    }
+    const cancelInPage = (_event: Electron.Event, nextURL: string, mainFrame: boolean) => cancelNavigation(_event, nextURL, true, mainFrame)
+    ownerContents.on('did-start-navigation', cancelNavigation)
+    ownerContents.on('did-navigate-in-page', cancelInPage)
+    ownerContents.once('render-process-gone', request.cancel)
+    window.once('closed', request.cancel)
+    let recording: RecordingStore
+    try {
+      await Promise.all([...pendingSaves])
+      const restored = fresh === true ? null : await RecordingStore.restore(root, decodeURIComponent(workflowId), decodeURIComponent(nodeId))
+      if (restored?.state === 'stopped') {
+        const saved = JSON.parse(await restored.exportJSON())
+        const start = prepareReplay(saved.events).preview.startURL
+        if (start) url = initialBrowserURL(start)
+      }
+      if (cancelled || window.isDestroyed() || ownerContents.isDestroyed() || ownerContents.getURL() !== ownerURL) throw new Error('Teaching session closed.')
+      recording = restored ?? new RecordingStore(root, decodeURIComponent(workflowId), decodeURIComponent(nodeId))
+    } finally {
+      if (pendingOpens.get(window.id) === request) pendingOpens.delete(window.id)
+      ownerContents.removeListener('did-start-navigation', cancelNavigation)
+      ownerContents.removeListener('did-navigate-in-page', cancelInPage)
+      ownerContents.removeListener('render-process-gone', request.cancel)
+      window.removeListener('closed', request.cancel)
+    }
     recordings.add(recording)
     const view = new WebContentsView({ webPreferences: { preload: fileURLToPath(new URL('../preload/recorder.cjs', import.meta.url)), session: browserSession, contextIsolation: true, nodeIntegration: false, nodeIntegrationInSubFrames: true, sandbox: true, webSecurity: true } })
     const entry: Entry = { contents: view.webContents, view, owner: window, token, error: null, recording, frames: new FrameBridge(view.webContents), interactedFrames: new Map() }
     entries.set(window.id, entry)
-    window.contentView.addChildView(view); position(entry, bounds)
+    window.contentView.addChildView(view); entry.attached = true; position(entry, bounds)
     const contents = view.webContents
     contents.setWindowOpenHandler(({ url: next }) => {
       try {
@@ -307,7 +386,6 @@ export function registerTeachingBrowser() {
     contents.on('page-title-updated', () => publish(entry))
     contents.on('did-fail-load', (_event, code, description, _url, mainFrame) => { if (mainFrame && code !== -3) { entry.error = `Page could not load: ${description}`; publish(entry) } })
     contents.on('render-process-gone', () => { entry.error = 'The browser page stopped responding. Reload to try again.'; publish(entry) })
-    const ownerContents = window.webContents
     const onNavigate = () => { if (!/#\/workflows\/[^/]+\/record\//.test(window.webContents.getURL()) && entries.get(window.id) === entry) dispose(entry) }
     const onDestroy = () => { if (entries.get(window.id) === entry) dispose(entry) }
     window.webContents.on('did-navigate-in-page', onNavigate)
@@ -329,6 +407,24 @@ export function registerTeachingBrowser() {
     else if (action === 'reload') { entry.error = null; contents.reload() }
     else if (action === 'stop') contents.stop()
   })
+  ipcMain.handle('teaching:modal', (event, id: unknown, open: unknown) => {
+    const window = owner(event)
+    if (typeof id !== 'string' || id.length > 100 || typeof open !== 'boolean') throw new Error('Invalid modal state.')
+    let active = modalOwners.get(window.id)
+    if (!active) {
+      active = new Set(); modalOwners.set(window.id, active)
+      window.once('closed', () => modalOwners.delete(window.id))
+      window.webContents.on('did-start-navigation', (_event, _url, inPlace, mainFrame) => { if (mainFrame && !inPlace) active!.clear() })
+      window.webContents.on('render-process-gone', () => active!.clear())
+    }
+    if (open) active.add(id); else active.delete(id)
+    const entry = entries.get(window.id)
+    if (entry?.lastBounds) position(entry, entry.lastBounds)
+  })
   ipcMain.on('teaching:bounds', (event, token, bounds) => { try { const entry = get(event, token); if (entry) position(entry, bounds) } catch (error) { console.error('Teaching browser bounds update failed:', error) } })
-  ipcMain.handle('teaching:close', (event, token) => { const entry = get(event, token); if (entry) dispose(entry) })
+  ipcMain.handle('teaching:close', (event, token) => {
+    const pending = pendingOpens.get(owner(event).id)
+    if (pending && pending.token === token) pending.cancel()
+    const entry = get(event, token); if (entry) return dispose(entry)
+  })
 }

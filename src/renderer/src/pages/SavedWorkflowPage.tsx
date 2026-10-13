@@ -4,8 +4,8 @@ import { RecordStep } from './RecordStep'
 import { WorkflowEditor } from './WorkflowEditor'
 import { WorkflowSidebar } from '../components/WorkflowSidebar'
 import { cacheBackendWorkflow } from '../data/workflowStore'
-import { editorSnapshots, type EditorNode } from '../data/editorState'
-import type { AppName } from '../data/workflows'
+import { savedEditorNodes } from '../data/savedEditorNodes'
+import { editorSnapshots } from '../data/editorState'
 import type { SavedWorkflowDetail } from '../../../shared/discovery'
 
 export function SavedWorkflowPage({ recording = false }: { recording?: boolean }) {
@@ -22,16 +22,7 @@ export function SavedWorkflowPage({ recording = false }: { recording?: boolean }
       if (!result.ok) { setError(result.error); return }
       const workflow = result.workflow
       cacheBackendWorkflow(workflow)
-      const knownApps = ['Microsoft', 'Google', 'Slack', 'Notion', 'Excel', 'Gmail', 'Drive', 'Chrome', 'Screenpipe']
-      const nodes: EditorNode[] = workflow.nodes.map(node => ({
-        id: node.id, title: node.label, kind: node.config.stepType === 'browser' ? 'Browser action' : node.config.stepType === 'application' ? 'Application action' : node.type,
-        description: typeof node.config.description === 'string' ? node.config.description : '',
-        app: knownApps.includes(String(node.config.application)) ? node.config.application as AppName : undefined,
-        status: node.config.status === 'needs_recording' ? 'Needs teaching' : 'Needs configuration',
-        instructions: Array.isArray(node.config.instructions) ? node.config.instructions.filter((item): item is string => typeof item === 'string') : [],
-        startUrl: typeof node.config.startUrl === 'string' ? node.config.startUrl : null,
-        x: node.positionX, y: node.positionY,
-      }))
+      const nodes = savedEditorNodes(workflow)
       editorSnapshots.set(id, { nodes, title: workflow.name })
       setValue(workflow)
     }).catch(() => { if (active) setError('Unable to load workflow. Please retry.') })

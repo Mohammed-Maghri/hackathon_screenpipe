@@ -56,6 +56,8 @@ export async function mutateWorkflowBackend(path: string, input: unknown, method
     const result = await response.json()
     if (!response.ok) {
       const messages: Record<string, string> = {
+        WORKFLOW_CHANGED: 'This workflow changed while defining inputs. Reopen it and try again.',
+        INVALID_NODE_CONTRACT: 'An input/output binding is invalid. Review the node definitions.',
         AI_NOT_CONFIGURED: 'Set OPENAI_API_KEY in backend/.env, then restart the backend to generate the board.',
         AI_REJECTED: 'AI generation failed. Check the API key, model and quota, then retry.',
         AI_UNAVAILABLE: 'AI is unavailable or timed out. Retry this request.',

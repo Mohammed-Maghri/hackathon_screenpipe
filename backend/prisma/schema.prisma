@@ -129,3 +129,10 @@ model NodeRun {
   @@index([nodeId, workflowId])
   @@index([status, createdAt])
 }
+
+model RecordingSecret {
+  id String @id @db.VarChar(64)
+  payload Json
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}

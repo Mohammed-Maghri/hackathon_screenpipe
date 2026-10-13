@@ -1,4 +1,4 @@
-import { randomBytes, createCipheriv, createDecipheriv } from 'node:crypto'
+import { createHmac, randomBytes, createCipheriv, createDecipheriv } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -16,6 +16,7 @@ export class RecordingSecrets {
   }
   if (this.key.length !== 32) throw new Error('Invalid local recording encryption key.')
  }
+ backendToken(context: string) { return createHmac('sha256', this.key).update('ghost-backend-secrets-v1:' + context).digest('hex') }
  encrypt(value: string, context: string) {
   const iv = randomBytes(12), cipher = createCipheriv('aes-256-gcm', this.key, iv)
   cipher.setAAD(Buffer.from(context))

@@ -4,9 +4,9 @@ import { buildApp } from '../src/app.js'
 import type { Database } from '../src/database/client.js'
 import { generateDescription, buildGeneratedGraph } from '../src/modules/discovery/discovery.generate.js'
 const description = { name: 'Daily reporting', description: 'Review reporting data', steps: [
-  { name: 'Review Slack', description: 'Review daily updates', evidenceId: 'sim_obs_1' as const, application: 'Slack', type: 'browser' as const, startUrl: null, missingInformation: [] },
-  { name: 'Check metrics', description: 'Review metrics', evidenceId: 'sim_obs_2' as const, application: 'Company Dashboard', type: 'browser' as const, startUrl: null, missingInformation: [] },
-  { name: 'Prepare report', description: 'Prepare a spreadsheet', evidenceId: 'sim_obs_3' as const, application: 'Excel', type: 'application' as const, startUrl: null, missingInformation: [] },
+  { name: 'Review Slack', description: 'Review daily updates', evidenceId: 'sim_obs_1' as const, application: 'Slack', type: 'browser' as const, startUrl: null, contract: null, missingInformation: [] },
+  { name: 'Check metrics', description: 'Review metrics', evidenceId: 'sim_obs_2' as const, application: 'Company Dashboard', type: 'browser' as const, startUrl: null, contract: null, missingInformation: [] },
+  { name: 'Prepare report', description: 'Prepare a spreadsheet', evidenceId: 'sim_obs_3' as const, application: 'Excel', type: 'application' as const, startUrl: null, contract: null, missingInformation: [] },
 ] }
 test('AI contract, safe graph conversion and failures', async () => {
   const original = globalThis.fetch
@@ -26,7 +26,7 @@ test('AI contract, safe graph conversion and failures', async () => {
     assert.match(String(graph.nodes[0]!.config.description), /Review daily updates/)
     assert.match(String(graph.nodes[0]!.config.description), /Review metrics/)
     assert.equal(graph.nodes[0]!.config.recordingScope, 'browser_session')
-    const ordered = buildGeneratedGraph({ ...description, steps: [{ ...description.steps[0]!, startUrl: 'https://example.com/dashboard' }, description.steps[1]!, description.steps[2]!, description.steps[0]!] }, '40000000-0000-4000-8000-000000000001')
+    const ordered = buildGeneratedGraph({ ...description, steps: [{ ...description.steps[0]!, startUrl: 'https://example.com/dashboard' }, description.steps[1]!, description.steps[2]!, { ...description.steps[0]!, evidenceId: 'sim_obs_4' }] }, '40000000-0000-4000-8000-000000000001')
     assert.equal(ordered.nodes.length, 3)
     assert.equal(ordered.nodes[0]!.config.startUrl, 'https://example.com/dashboard')
     assert.equal(ordered.nodes[2]!.config.startUrl, null)

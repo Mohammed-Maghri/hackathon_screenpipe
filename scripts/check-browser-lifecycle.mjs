@@ -37,6 +37,21 @@ for(let i=0;i<20;i++){
  if(i%2===0)await api('close',token);
  else {await api('open',token+'-replacement','about:blank',{x:250,y:220,width:600,height:400,visible:true});await api('close',token+'-replacement');}
 }
+// Close while restoration is pending, without awaiting open first.
+for (let i = 0; i < 20; i++) {
+ await host.eval(`(async()=>{const token='pending-${i}';const opening=window.ghost.browser.open(token,${JSON.stringify(stalledURL)},{x:250,y:220,width:600,height:400,visible:true}).catch(()=>null);await window.ghost.browser.close(token);await opening})()`);
+}
+await pause(300);
+assert.equal((await pages()).filter(p=>p.type==='page' && p.id!==undefined).length,1,'Closing during startup left an orphan browser');
+// Competing opens must leave only the newest native view alive.
+await host.eval(`Promise.allSettled(Array.from({length:10},(_,i)=>window.ghost.browser.open('competing-'+i,${JSON.stringify(stalledURL)},{x:250,y:220,width:600,height:400,visible:true})))`);
+await api('close','competing-9');
+await pause(300);
+assert.equal((await pages()).filter(p=>p.type==='page').length,1,'Concurrent startup left an orphan browser');
+await host.eval(`(async()=>{const opening=window.ghost.browser.open('leaving',${JSON.stringify(stalledURL)},{x:250,y:220,width:600,height:400,visible:true}).catch(()=>null);location.hash='/workflows';await opening})()`);
+await pause(300);
+assert.equal((await pages()).filter(p=>p.type==='page').length,1,'Leaving the route left a browser visible');
+console.log('PASS: startup cancellation, concurrent opens, and route exit leave no orphan browsers');
 await pause(500);
 assert.ok(!/UnhandledPromiseRejection|Cannot read properties of undefined/.test(errors),errors);
 console.log('PASS: 20 pending navigations closed/replaced with no unhandled rejection');

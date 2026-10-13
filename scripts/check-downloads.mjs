@@ -40,6 +40,12 @@ await until(()=>host.eval(`[...document.querySelectorAll('button')].some(b=>b.te
 const plan=await api('replayPreview',token);assert.deepEqual(plan.blockers,[]);
 await host.eval(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Test recording').click()`);
 await until(()=>host.eval(`!!document.querySelector('dialog[open]')`),'Preview missing');
+const geometry=(await api('diagnostics',token)).bounds;
+await host.eval(`window.ghost.browser.bounds(${JSON.stringify(token)},${JSON.stringify({...geometry,visible:true})})`);
+await pause(100);
+assert.equal((await api('diagnostics',token)).visible,false,'Stale bounds must not reveal the native browser over a dialog');
+console.log('PASS modal: stale visible bounds cannot cover the replay dialog');
+
 await host.eval(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Start test · Fast').click()`);
 const approved=new Set();
 await until(async()=>{const s=await host.eval('window.__replay');if(s?.state==='needs-user-approval'&&!approved.has(s.sequence)){approved.add(s.sequence);await host.eval(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Approve this action')?.click()`)}return s&&['completed','failed','unknown','cancelled'].includes(s.state)},'Replay did not finish',70000);

@@ -3,17 +3,20 @@ export interface BrowserBounds { x: number; y: number; width: number; height: nu
 export interface BrowserState { authenticationPaused?: boolean; sessionId: string; url: string; title: string; loading: boolean; canGoBack: boolean; canGoForward: boolean; error: string | null }
 export type BrowserAction = 'back' | 'forward' | 'reload' | 'stop'
 export interface TeachingBrowser {
+  modal: (id: string, open: boolean) => Promise<void>
   loginStatus: (sessionId: string) => Promise<import('./login').LoginSummary>
   loginSave: (sessionId: string, input: import('./login').SavedLogin) => Promise<import('./login').LoginSummary>
   loginRemove: (sessionId: string) => Promise<void>
   loginRun: (sessionId: string) => Promise<{ok: true}>
 
-  open: (sessionId: string, url: string, bounds: BrowserBounds) => Promise<BrowserState>
+  open: (sessionId: string, url: string, bounds: BrowserBounds, fresh?: boolean) => Promise<BrowserState>
   navigate: (sessionId: string, url: string) => Promise<void>
   action: (sessionId: string, action: BrowserAction) => Promise<void>
   bounds: (sessionId: string, bounds: BrowserBounds) => void
   close: (sessionId: string) => Promise<void>
   recordingControl: (sessionId: string, action: 'pause' | 'resume' | 'stop') => Promise<RecordingStatus>
+  learnedSteps: (workflowId: string, nodeIds: string[]) => Promise<{ nodeId: string; status: 'Needs teaching' | 'Recorded' | 'Learned' }[]>
+  syncSecrets: (sessionId: string) => Promise<RecordingStatus>
   recordingStatus: (sessionId: string) => Promise<RecordingStatus>
   recordingExport: (sessionId: string) => Promise<string>
   replayArtifact: (sessionId: string, runId: string, artifactId: string, action: 'preview' | 'reveal') => Promise<string>

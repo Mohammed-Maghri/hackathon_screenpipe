@@ -9,6 +9,7 @@ interface Window {
     getWorkflow: (id: string) => Promise<import('../../shared/discovery').WorkflowDetailResult>
     mockDiscovery: (input: import('../../shared/discovery').DiscoveryRequest) => Promise<import('../../shared/discovery').DiscoveryPreparation>
     generateWorkflow: (input: import('../../shared/discovery').GenerateWorkflowRequest) => Promise<import('../../shared/discovery').WorkflowDetailResult>
+    defineWorkflowContracts: (id: string) => Promise<import('../../shared/discovery').WorkflowDetailResult>
     updateWorkflow: (id: string, input: import('../../shared/discovery').WorkflowUpdate) => Promise<import('../../shared/discovery').WorkflowDetailResult>
     platform: string
     controlWindow: (action: 'minimize' | 'maximize' | 'close') => void

@@ -204,3 +204,11 @@
 .editor-actions { flex-wrap: wrap; }
 @media (max-width: 900px) { .editor-actions { position: static; margin-top: 12px; } .editor-breadcrumb { padding-right: 0; } .editor-title-row { flex-wrap: wrap; } }
 @media (max-height: 650px) { .editor-header { padding-top: 8px; } .editor-description { display: none; } .editor-tabs { margin-top: 10px; } .editor-log.is-expanded { max-height: 120px; } }
+
+.node-data-contract { margin-top: 24px; font-size: 13px; line-height: 1.5; }
+.node-data-contract h4 { margin: 16px 0 8px; }
+.contract-field { padding: 10px 0; border-bottom: 1px solid var(--border, #e5e7eb); }
+.contract-field > small { display: block; opacity: .7; }
+.contract-field p { margin: 5px 0; }
+.contract-source { font-size: 12px; }
+.node-data-contract ul { padding-left: 18px; }

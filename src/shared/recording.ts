@@ -9,6 +9,7 @@ export interface RecordedEvent {
   data: Record<string, unknown>
 }
 export interface RecordingStatus {
+  secretSync?: 'none' | 'pending' | 'saved' | 'failed'
   id: string
   state: 'recording' | 'paused' | 'stopped'
   eventCount: number
@@ -16,6 +17,7 @@ export interface RecordingStatus {
   error: string | null
 }
 export interface ReplayPreview {
+  inputSource?: 'backend' | 'local'
   notes?: string[]
   inputs: { sequence: number; label: string; value: string; secret?: boolean; saved?: boolean }[]
   steps: number

@@ -73,6 +73,7 @@ app.whenReady().then(() => {
   ipcMain.handle('discovery:prepare', (event, input) => { authorizeBackend(event); return prepareWorkflowDiscovery(input) })
   ipcMain.handle('discovery:mock', (event, input) => { authorizeBackend(event); return mockWorkflowActivity(input) })
   ipcMain.handle('discovery:generate', (event, input) => { authorizeBackend(event); return mutateWorkflowBackend('/api/workflow-discovery/generate', input) })
+  ipcMain.handle('workflows:contracts', (event, id) => { authorizeBackend(event); if (typeof id !== 'string' || !/^[0-9a-f-]{36}$/i.test(id)) throw new Error('Invalid workflow ID'); return mutateWorkflowBackend(`/api/workflows/${id}/contracts`, {}) })
   ipcMain.handle('workflows:update', (event, id, input) => {
     authorizeBackend(event)
     if (typeof id !== 'string' || !/^[0-9a-f-]{36}$/i.test(id)) throw new Error('Invalid workflow ID')

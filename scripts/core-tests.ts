@@ -208,3 +208,20 @@ console.log('PASS duplicate input overrides: scrolling does not restore the orig
 const changingA=event('input',{value:'Original',target:{tag:'input',label:'Report',selector:'#react-12345'}})
 const changingB=event('input',{value:'Original',target:{tag:'input',label:'Report',selector:'#react-67890'}})
 assert.ok(prepareReplay([changingA,event('scroll'),changingB],[{sequence:changingA.sequence,label:'Report',value:'Edited'}]).steps.filter(e=>e.type==='input').every(e=>e.data.value==='Edited'))
+
+const savedRoot=await mkdtemp(join(tmpdir(),'ghost-saved-step-'))
+try {
+ const original=new RecordingStore(savedRoot,'workflow-reuse','login')
+ original.append('input','https://example.com/login',{target:{tag:'input',selector:'#password',credential:true},secretValue:'restore-test-secret'})
+ await original.stop(true)
+ await writeFile(join(original.directory,'inputs.json'),JSON.stringify([{sequence:1,label:'Password',value:'',secret:true,saved:true}]))
+ const restored=await RecordingStore.restore(savedRoot,'workflow-reuse','login')
+ assert.ok(restored);assert.equal(restored.id,original.id);assert.equal(restored.state,'stopped')
+ const exported=JSON.parse(await restored.exportJSON());assert.equal(exported.inputs.length,1)
+ assert.equal(restored.decryptInput(exported.events[0]),'restore-test-secret')
+ assert.ok(!JSON.stringify(exported).includes('restore-test-secret'))
+ assert.equal(await RecordingStore.restore(savedRoot,'other','login'),null)
+ const empty=new RecordingStore(savedRoot,'workflow-reuse','login');await empty.stop(true)
+ assert.equal((await RecordingStore.restore(savedRoot,'workflow-reuse','login'))?.id,original.id)
+ console.log('PASS saved steps: restore same recording, encrypted credentials and overrides; workflow isolation; empty recording preserves saved version')
+} finally { await rm(savedRoot,{recursive:true,force:true}) }

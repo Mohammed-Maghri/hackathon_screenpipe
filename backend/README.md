@@ -149,3 +149,23 @@ progress card, then choose Open board on the completed card and confirm it conta
 workflow, move a node, use Save changes, and reload. Return Home and reopen the saved card.
 
 The desktop Workflows page reads this paginated API directly, with search and status filters. New workflow saves an empty draft through POST /api/workflows. The table shows persisted update times, node counts and application images; it does not fabricate run history or schedules.
+
+### Recorded password backups
+
+The desktop automatically uploads encrypted recording passwords when recording stops, on exit, and when replay input replacements are saved. `POST`, `GET`, and `DELETE /api/recording-secrets` use a per-recording bearer capability derived by the desktop; the database stores its SHA-256 hash and an AES-256-GCM encrypted payload. Workflow/list APIs do not expose credentials. Remote backends require HTTPS; loopback development permits HTTP.
+
+The desktop retains the encryption key locally and can recover missing password ciphertext from the backend without re-entry. This does not provide cross-device key recovery: deleting the desktop key still requires recording credentials again. Offline replay uses the local encrypted copy. The recording screen shows backend sync success/failure and offers Retry password sync. Apply `npm run prisma:deploy` before running the updated backend. One-time verification codes remain subject to the website's expiration rules.
+
+Replay now fetches the encrypted input bundle before preview and execution. Version 2 includes ordinary field values, checkbox/select values, and saved replacements as well as passwords. Server values override stale local values. Existing password-only backups are upgraded automatically. The normal replay dialog has no input editing form and does not upload local values before running. An unavailable backend falls back to local inputs with an explicit message.
+
+### Node input/output definitions
+
+New generated workflows distinguish `browser`, `application`, `logic`, and `review` steps. Browser interactions remain whole-session recordings. Logic/review nodes have `config.contract` containing named typed inputs, upstream node/output bindings, typed outputs (including row fields), validation criteria, and a human-review requirement. Unknown business rules are explicit workflow inputs rather than invented thresholds.
+
+Use **Define inputs & outputs** on an existing board to call `POST /api/workflows/:id/contracts`. The backend derives contracts from saved node descriptions, preserves browser identities, checks binding/type compatibility, and saves the graph atomically. A concurrent edit or invalid response leaves the stored workflow unchanged. Graphs with execution history still require workflow versioning before replacement. The node inspector displays each source, output and validation criterion.
+
+Logic nodes also store `config.modelTask`: their description as instructions, input definitions, a strict JSON output schema, validation criteria, and review requirements. Editing/saving the node refreshes its model instructions. These definitions prepare future execution; this feature does not implement the full pipeline runner or claim that a described validation criterion has already passed. File outputs are artifact references; parsing their contents remains an execution task.
+
+Validation: `npm test` includes contract generation, invalid bindings, review gates, persistence, and concurrent-change protection. From the repository root, `node scripts/check-node-contracts.mjs` checks the desktop flow after building. An optional live model check is `node node_modules/tsx/dist/cli.mjs tests/node-contract-live.ts` from `backend/`; it uses synthetic inputs and writes no workflow records.
+
+AI execution is limited to `logic` nodes that parse, filter, check or analyze an earlier node's output. Such nodes must bind at least one required input to an upstream output. `executor` is `recording` for browsers, `application` for desktop actions, `human` for review, and `ai` only for data-processing logic. Non-AI nodes never retain a model task. An Excel download remains a browser output artifact; the consuming AI node declares `parse_artifact_contents` preparation before applying its description to the workbook data. This is an execution definition, not an implemented Excel parser.

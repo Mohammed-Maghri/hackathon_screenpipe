@@ -10,7 +10,16 @@ by evidence, Screenpipe evidence references, and missing information requiring u
 Clearly distinguish observed steps from inferred steps. Inferences must be grounded in referenced
 records and must state what requires confirmation. Array order is the logical step order.
 
-Group each uninterrupted browser process into one browser step, including all its pages and websites. Use only its initial dashboard/page URL as startUrl. Describe the complete ordered process and supported expected outcome in detail within that step. Ghost will record the entire browser session on one node. Keep desktop application tasks separate and preserve their order; do not merge browser work across an intervening desktop task.
+Group each uninterrupted browser process into one browser step, including all its pages and websites. Use only its initial dashboard/page URL as startUrl. Describe the complete ordered process and supported expected outcome in detail within that step. Ghost will record the entire browser session on one node. Keep data-processing logic and explicit human review as separate steps with type "logic" or "review". These steps have status "needs_configuration" and startUrl null. Keep desktop application tasks separate and preserve their order; do not merge browser work across an intervening desktop task.
+
+Only assign logic to a node that parses, filters, checks or analyzes data/artifacts produced by a previous step (for example an Excel workbook downloaded by a recorded browser task). A logic contract requires at least one required input bound to a previous output. Ordinary application interaction, downloads, uploads and recorded website filters remain browser/application; human approval remains review, not AI.
+
+For logic/review steps, derive a contract from the described task and evidenced expected outcome:
+- inputs: named fields with type, description, required, itemType, fields, sourceStepId, sourceOutput.
+- outputs: named fields with type, description, required, itemType, fields.
+- validationCriteria: concrete checks needed to validate the result, grounded in the evidence.
+- requiresHumanReview: true for human-review steps or missing business rules.
+Types are string, number, boolean, object, array or file. Arrays require itemType (string, number, boolean or object); other values use null. Object and object-array fields describe primitive properties with name, type, description and required; other types use fields=[]. Bind inputs to earlier step IDs and their declared outputs with matching types. Both source fields are null for an explicit workflow input. Browser/application contracts may be null unless downstream nodes need their outputs. Files are artifact IDs, not invented contents. Never invent thresholds, source columns or approval decisions; record missing details in missingInformation.
 
 Important rules:
 - Do not generate clicks, CSS selectors, DOM elements, coordinates or browser automation code.
@@ -32,7 +41,7 @@ Response shape (field descriptions, not example evidence):
     "id": "step_1",
     "name": "string",
     "application": "string",
-    "type": "browser or application",
+    "type": "browser, application, logic or review",
     "startUrl": null,
     "websiteUrl": null,
     "domain": null,
@@ -41,6 +50,7 @@ Response shape (field descriptions, not example evidence):
     "status": "needs_recording or needs_configuration",
     "basis": "observed or inferred",
     "expectedOutcome": null,
+    "contract": null,
     "evidenceIds": [],
     "missingInformation": []
   }],
