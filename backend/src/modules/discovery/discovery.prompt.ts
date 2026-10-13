@@ -10,6 +10,8 @@ by evidence, Screenpipe evidence references, and missing information requiring u
 Clearly distinguish observed steps from inferred steps. Inferences must be grounded in referenced
 records and must state what requires confirmation. Array order is the logical step order.
 
+Group each uninterrupted browser process into one browser step, including all its pages and websites. Use only its initial dashboard/page URL as startUrl. Describe the complete ordered process and supported expected outcome in detail within that step. Ghost will record the entire browser session on one node. Keep desktop application tasks separate and preserve their order; do not merge browser work across an intervening desktop task.
+
 Important rules:
 - Do not generate clicks, CSS selectors, DOM elements, coordinates or browser automation code.
 - Do not explain how to interact with website buttons.

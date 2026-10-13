@@ -54,7 +54,7 @@ Graph replacement and metadata updates are atomic. Graphs with any run history c
 | Method | Path | Behavior |
 | --- | --- | --- |
 | GET | `/health` | 200 when PostgreSQL responds; 503 otherwise |
-| GET | `/api/workflows` | Paginated summaries and total; `limit` (1–100), `offset`, optional `status`, `ownerId` |
+| GET | `/api/workflows` | Paginated summaries and total; `limit` (1–100), `offset`, optional `status`, `ownerId`, `search` (case-insensitive name/description, max 200 characters) |
 | POST | `/api/workflows` | Create metadata and optional graph; 201 with Location |
 | GET | `/api/workflows/:id` | Workflow including ordered nodes/edges; 404 when missing |
 | PATCH | `/api/workflows/:id` | Partial metadata update; nodes and edges must be provided together to replace graph |
@@ -88,45 +88,64 @@ Verified against the supplied PostgreSQL development server: migration deploymen
 
 Future integrations should enter through new modules/services. Keep remote integration configuration separate from credentials, version workflow definitions before introducing execution, and let the local Electron engine report run/node-run outcomes through a future authenticated API. These are boundaries for later implementation, not implemented features.
 
-## Discovery preparation and Swagger
+## Development mock discovery and board generation
 
-Start the backend with `npm run dev` in `backend/`. Interactive API documentation is at
-`http://127.0.0.1:3001/docs/`; OpenAPI JSON is at `/docs/json`.
-Health and all workflow CRUD endpoints include request and response documentation.
-Zod remains responsible for runtime validation; documentation does not strip request fields.
+Start the backend with `npm run dev` from `backend/`, and the desktop with `npm run dev`
+from the repository root. Swagger UI is at `http://127.0.0.1:3001/docs/`, JSON at `/docs/json`.
 
-`POST /api/workflow-discovery/prepare` accepts:
+Set `OPENAI_API_KEY` in the ignored `backend/.env`, and optionally `OPENAI_MODEL`
+(default `gpt-4.1-mini`). Credentials stay in the backend and are not exposed to Electron's
+renderer. Restart the backend after changing environment variables. The desktop defaults to
+`http://127.0.0.1:3001`; override through the main-process `GHOST_BACKEND_URL` environment variable.
 
-```json
-{"prompt":"Find my daily reporting process","timeRange":"Last 7 days"}
-```
+The Home button now follows this development flow:
 
-The supported ranges are `Last 24 hours`, `Last 7 days` (default), and `Last 30 days`.
-The response contains `status: "prepared"`, `integrationStatus: "not_connected"`, the range,
-and separate `messages` with system/user roles. The user message preserves the exact original
-input. The system prompt requires evidence-grounded, high-level descriptions with browser
-steps marked `needs_recording` and application steps marked `needs_configuration`.
-There are no provider calls, activity queries, saved discovery requests, generated workflows,
-or executed actions. Context attachments are not uploaded. Future provider responses have a
-strict schema, but evidence provenance must also be checked against the supplied records when
-that integration is implemented; a schema alone cannot establish provenance.
+1. `POST /api/workflow-discovery/mock` with `{prompt, timeRange}` waits five seconds and
+   returns a simulation-ready JSON acknowledgement. No fixed workflow or activity fixture
+   is returned. No Screenpipe process or API is used.
+2. `POST /api/workflow-discovery/generate` with `{prompt, timeRange, requestId}` sends the
+   original user input directly to OpenAI, asking it to mimic a high-level Screenpipe
+   discovery response. The model creates a plausible workflow tailored to that request,
+   with application names, step types, simulated evidence IDs and missing information.
+   It does not create browser automation instructions.
+3. The backend validates the result, maps observed application/type/URL/evidence metadata
+   from the validated simulated response, assigns UUIDs and canvas positions, creates sequential edges, and
+   transactionally persists the entire DRAFT graph in PostgreSQL.
+4. Home shows a Generating card while loading mock activity and generating/saving the board.
+   On success it becomes a Just created card with app artwork and an **Open board** action;
+   Home does not navigate automatically. Failed requests keep a retry card.
+   Opening the saved board and reloading fetches it again. **Save changes** persists
+   edited titles, node positions and details; the Home cards list the saved workflow.
 
-The desktop Home form uses the existing isolated preload/IPC architecture to call this endpoint.
-Start the desktop with `npm run dev` from the repository root. Its backend defaults to
-`http://127.0.0.1:3001`; override by launching with `GHOST_BACKEND_URL=https://your-backend.example npm run dev`.
-The variable is read by Electron's main process, not the renderer, and is not automatically loaded
-from `backend/.env`. Home styling is unchanged. Other sample cards and the local workflow store
-have not been migrated to backend data in this increment.
+Both mock/generate endpoints reject `NODE_ENV=production`. The simulated response varies
+with the prompt and is not evidence of the user's real activity. Generated descriptions
+are labeled `[Development mock]`, and nodes store `source: development_mock`. Browser
+nodes start at `needs_recording`, application nodes at `needs_configuration`. Unknown
+URLs remain null unless an explicit credential-free HTTP(S) URL without query/fragment was supplied in the prompt. All evidence IDs use a `sim_obs_` prefix; nodes also record `basis: simulated`. Attached context files are not uploaded. Full workflow execution is
+still separate from generation. Other sample overview statistics/activity are unchanged.
 
-Validation: `npm test` includes prompt/Swagger tests and the existing isolated PostgreSQL migration/CRUD
-suite. From the repository root, after building both projects, `node scripts/check-discovery.mjs`
-checks the real Electron Home form through IPC and Fastify, plus unavailable-backend handling.
+The mock delay is five seconds; AI generation and database persistence take additional time.
+Provider timeout, refusal, invalid output and database failures never show a successful board.
+A request UUID is retained in Home memory for retrying the same prompt/range and becomes the
+workflow UUID; an already-saved result is returned without regenerating. Concurrent duplicate
+requests within one server return 409. Across multiple servers, the database UUID constraint
+prevents duplicate workflows, but concurrent requests may still incur multiple AI calls.
+After restarting Home following an uncertain outcome, check saved cards before resubmitting.
 
-Home now loads saved workflow cards from `GET /api/workflows` through restricted Electron IPC,
-with four-item pagination, refresh, empty and error states. Reviewing a card fetches
-`GET /api/workflows/:id` and displays its saved nodes; it does not substitute sample nodes.
-The section is labeled **Your workflows**, since stored workflows are not evidence of activity-based
-recommendations. Submission shows a busy indicator while preparing the request and a persistent
-connection-required state afterward. Real AI generation remains disconnected; no generated result
-or successful discovery is simulated. Other sample overview statistics/activity are unchanged.
-The Electron test covers these states using an isolated test database double, not production records.
+The older `/api/workflow-discovery/prepare` remains available as a preparation-only endpoint.
+Runtime validation stays in Zod; Swagger metadata does not strip request fields.
+
+Implementation follows the [OpenAI Structured Outputs documentation](https://developers.openai.com/api/docs/guides/structured-outputs).
+
+Validation:
+- `npm test` in `backend/`: AI contract/error tests with a stubbed provider, a real five-second
+  mock-delay check, production guards, and isolated PostgreSQL migration/CRUD/generation persistence tests.
+- Build both projects, then run `node scripts/check-discovery.mjs` from the root: real Electron
+  Home → IPC → Fastify → generated canvas → edit/save/reload, using AI and database test doubles.
+- A separate development smoke request verified live OpenAI output. A GitHub/Trello/Notion request is used to verify prompt-tailored simulation independently of the old reporting fixture.
+
+Manual check: enter a reporting request on Home, submit once, watch the mock-loading then AI
+progress card, then choose Open board on the completed card and confirm it contains nodes and connections. Rename the
+workflow, move a node, use Save changes, and reload. Return Home and reopen the saved card.
+
+The desktop Workflows page reads this paginated API directly, with search and status filters. New workflow saves an empty draft through POST /api/workflows. The table shows persisted update times, node counts and application images; it does not fabricate run history or schedules.

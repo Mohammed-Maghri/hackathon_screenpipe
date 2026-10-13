@@ -7,21 +7,47 @@ import { spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { buildApp } from '../backend/dist/app.js'
 let saved = []
-const fixture = { id: '40000000-0000-4000-8000-000000000001', name: 'Backend-only test workflow', description: 'Persisted API fixture', status: 'DRAFT', updatedAt: new Date().toISOString(), _count: { nodes: 1, edges: 0 } }
+const env = { NODE_ENV: 'test', LOG_LEVEL: 'silent', CORS_ORIGINS: [], DATABASE_URL: 'postgresql://unused:unused@localhost/unused', OPENAI_API_KEY: 'test-only' }
 const database = {
   $disconnect: async () => {},
-  $transaction: operations => Promise.all(operations),
+  $transaction: operations => typeof operations === 'function' ? operations(database) : Promise.all(operations),
   workflow: {
-    findMany: async ({ skip, take }) => saved.slice(skip, skip + take),
+    findMany: async ({ skip, take }) => saved.slice(skip, skip + take).map(item => ({ ...item, _count: { nodes: item.nodes.length, edges: item.edges.length } })),
     count: async () => saved.length,
-    findUniqueOrThrow: async () => ({ ...fixture, nodes: [{ id: 'node-1', label: 'Real saved node', type: 'ACTION', positionX: 0, positionY: 0, config: {} }], edges: [] }),
+    delete: async ({ where }) => { saved = saved.filter(item => item.id !== where.id) },
+    findUnique: async ({ where }) => saved.find(item => item.id === where.id) ?? null,
+    findUniqueOrThrow: async ({ where }) => { const item = saved.find(item => item.id === where.id); if (!item) throw Error('Missing workflow'); return structuredClone(item) },
+    create: async ({ data }) => { const item = { ...data, ownerId: null, updatedAt: new Date().toISOString(), nodes: [], edges: [] }; saved.push(item); return item },
+    update: async ({ where, data }) => Object.assign(saved.find(item => item.id === where.id), data),
   },
+  workflowNode: {
+    createMany: async ({ data }) => { for (const node of data) saved.find(item => item.id === node.workflowId).nodes.push(node) },
+    deleteMany: async ({ where }) => { saved.find(item => item.id === where.workflowId).nodes = [] },
+  },
+  workflowEdge: {
+    createMany: async ({ data }) => { for (const edge of data) saved.find(item => item.id === edge.workflowId).edges.push(edge) },
+    deleteMany: async ({ where }) => { saved.find(item => item.id === where.workflowId).edges = [] },
+  },
+  workflowRun: { count: async () => 0, deleteMany: async () => {} },
 }
-let releasePreparation
-const preparationGate = new Promise(resolve => { releasePreparation = resolve })
-const backend = await buildApp({ NODE_ENV: 'test', LOG_LEVEL: 'silent', CORS_ORIGINS: [], DATABASE_URL: 'postgresql://unused:unused@localhost/unused' }, database)
+let aiCalls = 0
+const realFetch = globalThis.fetch
+let releaseAI
+const aiGate = new Promise(resolve => { releaseAI = resolve })
+globalThis.fetch = async (url, init) => {
+  if (String(url) !== 'https://api.openai.com/v1/responses') return realFetch(url, init)
+  aiCalls++
+  assert.equal(JSON.parse(init.body).input[0].content, '  Find my reporting routine\nKeep original whitespace 🚀  ')
+  await aiGate
+  return Response.json({ status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify({ name: 'Generated reporting board', description: 'Development example', steps: [
+    { name: 'Review Slack reports', description: 'Review updates', evidenceId: 'sim_obs_1', application: 'Slack', type: 'browser', startUrl: null, missingInformation: [] },
+    { name: 'Review metrics', description: 'Review metrics', evidenceId: 'sim_obs_2', application: 'Company Dashboard', type: 'browser', startUrl: null, missingInformation: [] },
+    { name: 'Prepare spreadsheet', description: 'Prepare report', evidenceId: 'sim_obs_3', application: 'Excel', type: 'application', startUrl: null, missingInformation: [] },
+  ] }) }] }] })
+}
+const backend = await buildApp(env, database)
 const requests = []
-backend.addHook('preHandler', async request => { if (request.url === '/api/workflow-discovery/prepare') { requests.push(request.body); await preparationGate } })
+backend.addHook('preHandler', async request => { if (request.url === '/api/workflow-discovery/generate') requests.push(request.body) })
 const address = await backend.listen({ port: 0, host: '127.0.0.1' })
 const profile = await mkdtemp('/tmp/ghost-discovery-test-')
 const child = spawn(electronPath, ['.', '--ozone-platform=x11', '--remote-debugging-port=0', `--user-data-dir=${profile}`], { env: { ...process.env, GHOST_BACKEND_URL: address }, stdio: ['ignore', 'ignore', 'pipe'] })
@@ -48,32 +74,84 @@ try {
   await until(() => evaluate('!!window.ghost?.prepareDiscovery && !!document.querySelector("textarea")'))
   await until(() => evaluate(`document.querySelector('.discovery-panel').textContent.includes('No saved workflows yet')`))
   assert.equal(await evaluate(`document.querySelector('.discovery-panel').textContent.includes('Daily Orders Report')`), false)
-  saved = [fixture]
-  await evaluate(`document.querySelector('.discovery-panel .text-button').click()`)
-  await until(() => evaluate(`document.querySelector('.discovery-panel').textContent.includes('Backend-only test workflow')`))
-  await evaluate(`document.querySelector('.discovery-panel .workflow-card button').click()`)
-  await until(() => evaluate(`document.querySelector('dialog')?.textContent.includes('Real saved node')`))
-  await evaluate(`document.querySelector('dialog button[aria-label="Close dialog"]').click()`)
   const original = '  Find my reporting routine\nKeep original whitespace 🚀  '
   await evaluate(`(() => { const field = document.querySelector('textarea'); Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(field, ${JSON.stringify(original)}); field.dispatchEvent(new Event('input', { bubbles: true })); })()`)
   await evaluate(`document.querySelector('.find-workflow').click()`)
+  const started = Date.now()
   await until(() => evaluate(`document.querySelector('.find-workflow').textContent.includes('Generating') && document.querySelector('.find-workflow').disabled`))
   await evaluate(`document.querySelector('.find-workflow').click()`)
-  await until(() => requests.length === 1)
-  releasePreparation()
-  await until(() => evaluate(`document.body.textContent.includes('Generation needs a Screenpipe AI connection')`))
-  assert.deepEqual(requests, [{ prompt: original, timeRange: 'Last 7 days' }])
-  assert.equal(await evaluate(`document.querySelector('textarea').value`), original)
-  assert.equal(await evaluate(`document.querySelector('.find-workflow').disabled`), false)
+  await until(() => aiCalls === 1)
+  assert.ok(Date.now() - started >= 4800, 'mock waits five seconds before AI')
+  assert.equal(await evaluate(`!!document.querySelector('.generation-card[aria-busy="true"]')`), true)
+  assert.equal(await evaluate(`document.querySelector('.generation-card').textContent.includes('Generating')`), true)
+  releaseAI()
+  await until(() => evaluate(`!!document.querySelector('.saved-workflow-card--new')`))
+  assert.equal(await evaluate(`location.hash`), '#/dashboard')
+  assert.equal(await evaluate(`!!document.querySelector('.generation-card')`), false)
+  await until(() => evaluate(`Array.from(document.querySelectorAll('.saved-workflow-apps img')).every(img => img.complete && img.naturalWidth > 0)`))
+  await evaluate(`document.querySelector('.saved-workflow-card--new .dash-button').click()`)
+  await until(() => evaluate(`!!document.querySelector('[data-page="workflow-editor"]')`))
+  assert.equal(requests.length, 1); assert.equal(requests[0].prompt, original)
+  assert.equal(saved.length, 1); assert.equal(saved[0].nodes.length, 2); assert.equal(saved[0].edges.length, 1)
+  assert.equal(await evaluate(`document.querySelectorAll('.canvas-node').length`), 2)
+  assert.ok(await evaluate(`document.body.textContent.includes('Development mock')`))
+  const browserNode = saved[0].nodes.find(node => node.config.stepType === 'browser')
+  const teachingURL = address + '/health'
+  await evaluate(`window.__teachingState=null;window.ghost.browser.onState(value=>window.__teachingState=value)`)
+  await evaluate(`document.querySelector('.node-${browserNode.id}').click()`)
+  await until(()=>evaluate(`!!document.querySelector('[aria-label="Starting dashboard URL"]')`))
+  await evaluate(`(()=>{const input=document.querySelector('[aria-label="Starting dashboard URL"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(teachingURL)});input.dispatchEvent(new Event('input',{bubbles:true}))})()`)
+  await evaluate(`document.querySelector('.recording-button').click()`)
+  await until(()=>saved[0].nodes.find(node=>node.id===browserNode.id)?.config.startUrl===teachingURL)
+  await until(()=>evaluate(`window.__teachingState?.url===${JSON.stringify(teachingURL)} && !window.__teachingState.loading`))
+  await evaluate('location.reload()')
+  await until(()=>evaluate(`document.querySelector('[aria-label="Website address"]')?.value===${JSON.stringify(teachingURL)} && !document.querySelector('[aria-label="Website address"]').disabled`))
+  await evaluate(`location.hash='/workflows/${saved[0].id}'`)
+  await until(()=>evaluate(`document.querySelectorAll('.canvas-node').length===2`))
+
+  await evaluate(`location.reload()`)
+  await until(() => evaluate(`document.querySelectorAll('.canvas-node').length === 2`))
+  await evaluate(`document.querySelector('[aria-label="Rename workflow"]').click()`)
+  await evaluate(`(() => { const field = document.querySelector('[aria-label="Workflow name"]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(field, 'Edited saved board'); field.dispatchEvent(new Event('input', { bubbles: true })) })()`)
+  await evaluate(`document.querySelector('[aria-label="Workflow name"]').blur()`)
+  await evaluate(`Array.from(document.querySelectorAll('.editor-actions button')).find(button => button.textContent === 'Save changes').click()`)
+  await until(() => saved[0].name === 'Edited saved board')
+  await evaluate(`location.reload()`)
+  await until(() => evaluate(`document.querySelector('h1')?.textContent.includes('Edited saved board')`))
+  await evaluate(`location.hash='/dashboard'`)
+  await until(() => evaluate(`document.querySelector('.discovery-panel')?.textContent.includes('Edited saved board')`))
+  await evaluate(`location.hash='/workflows'`)
+  await until(() => evaluate(`document.querySelector('.workflow-table')?.textContent.includes('Edited saved board')`))
+  assert.equal(await evaluate(`document.querySelector('.workflow-table').textContent.includes('Daily Orders Report')`), false)
+  await evaluate(`location.reload()`)
+  await until(() => evaluate(`document.querySelector('.workflow-table')?.textContent.includes('Edited saved board')`))
+  await evaluate(`location.hash='/dashboard'`)
+  await until(() => evaluate(`document.querySelector('.discovery-panel')?.textContent.includes('Edited saved board')`))
+  await evaluate(`location.hash='/workflows'`)
+  await until(() => evaluate(`!!document.querySelector('.workflow-table .workflow-delete')`))
+  await evaluate(`document.querySelector('.workflow-table .workflow-delete').click()`)
+  await until(() => evaluate(`document.body.textContent.includes('Delete workflow?')`))
+  await evaluate(`Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Cancel').click()`)
+  assert.equal(saved.length, 1)
+  await evaluate(`document.querySelector('.workflow-table .workflow-delete').click()`)
+  await evaluate(`Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Delete workflow').click()`)
+  await until(() => saved.length === 0)
+  await until(() => evaluate(`document.body.textContent.includes('No saved workflows yet')`))
+  await evaluate(`location.reload()`)
+  await until(() => evaluate(`document.body.textContent.includes('No saved workflows yet')`))
+  await evaluate(`location.hash='/dashboard'`)
+  await until(() => evaluate(`document.querySelector('.discovery-panel')?.textContent.includes('No saved workflows yet')`))
   await backend.close()
   await evaluate(`document.querySelector('.discovery-panel .text-button').click()`)
   await until(() => evaluate(`document.querySelector('.discovery-panel').textContent.includes('Unable to load workflows')`))
+  await evaluate(`(() => { const field = document.querySelector('textarea'); Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(field, 'Retry reporting'); field.dispatchEvent(new Event('input', { bubbles: true })) })()`)
   await evaluate(`document.querySelector('.find-workflow').click()`)
-  await until(() => evaluate(`document.body.textContent.includes('Unable to reach the Ghost backend')`))
-  assert.equal(await evaluate(`document.querySelector('textarea').value`), original)
-  console.log('PASS: real Electron loading/empty/saved workflows, refresh, node review, generation indicator, duplicate protection, provider-blocked state, backend errors and preserved input')
+  await until(() => evaluate(`document.querySelector('.generation-card--failed')?.textContent.includes('Retry generation')`))
+  assert.equal(await evaluate(`document.querySelector('.find-workflow').disabled`), false)
+  console.log('PASS: five-second mock, generating card, in-place completion, app images, AI contract, no duplicate submit, saved board, starting URL autosave/teaching/reload, edit/save/reload, Home cards, delete cancellation/confirmation/reload and backend failures (AI/database doubles)')
 } finally {
-  releasePreparation()
+  releaseAI()
+  globalThis.fetch = realFetch
   socket?.close()
   if (child.exitCode === null) { const exited = once(child, 'exit'); child.kill(); await exited }
   await backend.close()

@@ -13,7 +13,8 @@
     "start": "electron-vite preview",
     "postinstall": "install-electron",
     "test": "node scripts/check-core.mjs",
-    "test:electron": "npm run build && node scripts/check-reliability.mjs && node scripts/check-failures.mjs"
+    "test:electron": "npm run build && node scripts/check-reliability.mjs && node scripts/check-failures.mjs",
+    "test:resilience": "npm run build && node scripts/check-resilience.mjs"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",

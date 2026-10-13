@@ -128,3 +128,112 @@ iterations, then failed on the first cross-origin iteration because replay previ
 The remaining nested-frame and failure checks were not reached in that invocation.
 `frame-support-results.json` and `reliability-frame-results.json` are historical reports, not evidence
 that the current full frame suite passed. The 20-repeat acceptance target remains unverified.
+
+
+### Download and text-edit updates
+
+New recordings capture download start/completion, link the file to a recorded triggering action, and save each file under a unique name in the recording directory’s downloads folder. Replay requires approval for the trigger and verifies completion, filename, MIME type and the on-disk byte count. This does not verify business contents. Missing, interrupted, unassociated or unexpected downloads stop replay; actions are not retried automatically. Pause/Stop waits for the user to finish an active download. Old unsupported-download events remain blockers.
+
+Paste/cut/undo/redo shortcuts in editable non-sensitive fields use the captured resulting value, without reading the clipboard. A missing field result remains a blocker. Modified/non-left clicks and credentials remain unsupported. After manual login, Stop and choose New recording on this page; prior recordings are kept.
+
+Validation: node scripts/check-downloads.mjs exercises actual Electron recording, download completion, preview, approval and verified replay using a local CSV endpoint. Core regression tests cover edit outcomes, absent outcomes, completed/incomplete/unassociated downloads and preserved legacy blockers.
+
+### Manual authentication setup
+
+Visible password/one-time-code inputs now suspend capture locally in the preload and pause the main-process recording. The recording UI shows a sign-in banner. After the user signs in and navigates to the task page, Start task recording creates a separate session from the current URL, preserving the authenticated browser partition and the earlier recording. Resume cannot accidentally continue the sign-in recording. Older blocked previews also offer Start clean recording on current page. Modified-click blockers identify the action sequence, target and modifier keys; they are not silently discarded.
+
+Validated with `node scripts/check-auth-recording.mjs`: actual Electron automatic pause, excluded login values, current-page handoff and a new dashboard recording with no replay blockers. Detection is conservative and DOM-based; nonstandard authentication pages may still require manual pause.
+
+
+## Saved login
+Login settings on Record Step configure a login URL, exact signed-in URL, username,
+and password for that workflow/node. Save and sign in pauses capture, enters
+credentials using Chromium input, submits the unique standard form with
+requestSubmit, and requires the configured destination with no visible password
+field before proceeding. Start task recording on the dashboard afterward.
+Replay performs this login prerequisite before task actions.
+
+Remembered credentials use Electron safeStorage in a separate local vault.
+Linux basic_text storage is rejected; when no secure keyring is available,
+session-only credentials stay in memory until Ghost exits. Passwords are never
+returned in login summaries or included in recording exports. Forget saved login
+removes both the memory entry and encrypted file.
+
+Supported: same-origin standard forms with one username/email, one password and
+one submit button; HTTPS or loopback development URLs. Multi-stage OAuth,
+cross-origin forms, click-only login handlers, MFA/CAPTCHA, frames and ambiguous
+forms require separate support or manual authentication. Destination verification
+does not prove general account authorization. No automatic submission retry occurs.
+Old masked recordings cannot recover their passwords: configure Login settings
+and record a clean task after sign-in.
+
+Validation: core tests cover scope isolation, session-only storage, redacted
+summaries, unavailable-keyring rejection, URL validation and deletion.
+scripts/check-saved-login.mjs exercises real Electron saved login, capture,
+preview, automatic login before verified replay, export exclusion and forgetting.
+That test uses session-only storage; actual OS-keyring persistence is not covered
+by the integration test.
+
+## MVP update: direct encrypted input recording
+The default flow now records sign-in in the same session as the task. There is no
+Login settings button or automatic capture pause on password fields. Password
+and passcode inputs travel over the isolated recorder IPC, are encrypted before
+recording persistence or renderer publication, and are decrypted only during
+input replay. Login form actions do not require a second approval prompt.
+
+AES-256-GCM ciphertext uses a fresh nonce per value and is bound to the recording
+ID and recorded URL. The device-local random 256-bit key lives in
+recordings/.secrets/recording-key (0600, parent 0700). This MVP fallback needs no
+OS keyring; someone with access to both that file and the recordings can decrypt
+them. Exports contain ciphertext, never the key or plaintext secret.
+Previous masked recordings cannot recover missing values; record them again.
+One-time codes can be replayed as captured but may have expired.
+
+Validation: npm test includes ciphertext tampering, context binding, reopening
+the key, sanitized recording/export and replay planning. The real Electron test
+scripts/check-encrypted-recording.mjs records login and a dashboard action,
+previews, decrypts during native input replay and verifies the task outcome.
+
+## Hackathon dashboard verification — 2026-10-13
+Run against the real Next.js application at http://127.0.0.1:3100:
+- npm run build
+- npm test
+- node scripts/check-next-replay.mjs
+- GHOST_DEMO_PAGE=users node scripts/check-next-replay.mjs
+
+The script captures real Chromium typing, login submission, a right-click on the
+native status dropdown, keyboard selection and CSV export through Ghost's normal
+recording IPC. It stops, previews, then replays the same recording twenty times.
+Finance selects Paid; Users selects Active. It checks actual CSV files contain
+the selected status and exclude the other statuses, checks a new download per run,
+and alternates retained and cleared login state. Password plaintext is excluded
+from the recording export. The run-level authorization used by Start test is
+exercised and any unexpected per-action approval fails the test.
+
+Fixes: consolidate select navigation keys and select contextmenu gestures into
+the captured selectedValues when a corresponding selection exists. Unrelated
+context menus are not silently dropped. Start test authorizes the recorded
+actions for that run rather than asking again for each action; cancellation,
+target matching, input verification and download completion checks remain.
+
+Demo: open /login, record demo@forma.test / ghost-demo, sign in, select Paid on
+Finance (or open Customers and select Active), Export CSV, wait for the completed
+download, Stop recording, Test recording, Start test. Run the local Next server
+with npm --prefix tests start. Restart Ghost after rebuilding to load the changes.
+
+This verifies the login/filter/export demo on both dashboards, not arbitrary
+website workflows, native menu item execution, or customer/payment mutation flows.
+
+### Manual keyboard path
+Inspection of session b4b60842-f80d-43ac-ab22-de2fd8056d8b showed that encrypted
+password events were present, but replay stopped on event 27 (Tab from email)
+before reaching them. Tab now verifies that focus leaves the recorded source.
+Unnamed layout-container clicks with no recorded outcome or causal action are
+omitted even when repeated or followed by submission, rather than being clicked
+and failing outcome verification. Raw events remain available for inspection.
+
+The Next.js regression now uses mouse clicks and character-by-character native
+keyboard events, Tab from email to password, and repeated background clicks.
+It asserts incremental encrypted password events exist and runs the full
+login/filter/export workflow 20 times. This replaces the direct DOM-focus and
+single insertText helper previously used for fixture login.

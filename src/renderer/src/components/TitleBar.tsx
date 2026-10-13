@@ -1,4 +1,4 @@
-import { Minus, Square, X } from 'lucide-react'
+import { Minus, Square, X } from './ImageIcon'
 export function TitleBar({ onSkip }: { onSkip?: () => void }) {
   const desktop = window.ghost
   return <header className={`titlebar ${desktop?.platform === 'darwin' ? 'titlebar--mac' : ''}`}>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { motion } from 'motion/react'
-import { ArrowRight, Clock3, Play, ScanLine, Zap } from 'lucide-react'
+import { ArrowRight, Clock3, Play, ScanLine, Zap } from '../components/ImageIcon'
 import { TitleBar } from '../components/TitleBar'
 import { GhostLogo } from '../components/GhostLogo'
 import { FeatureRow } from '../components/FeatureRow'

@@ -17,7 +17,7 @@ export async function buildApp(env: Environment, database?: Database) {
   registerErrorHandler(app)
   await app.register(cors, { origin: env.CORS_ORIGINS, methods: ['GET', 'POST', 'PATCH', 'DELETE'], credentials: false })
   await registerDocumentation(app)
-  registerDiscoveryRoutes(app)
+  registerDiscoveryRoutes(app, new WorkflowService(db), env)
   app.get('/health', async (_request, reply) => {
     try { await db.$queryRaw`SELECT 1`; return { status: 'ok', database: 'up' } }
     catch { return reply.code(503).send({ status: 'unavailable', database: 'down' }) }

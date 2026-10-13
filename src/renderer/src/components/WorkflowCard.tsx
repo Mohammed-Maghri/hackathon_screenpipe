@@ -1,4 +1,4 @@
-import { ArrowRight, Clock3, MoreHorizontal } from 'lucide-react'
+import { ArrowRight, Clock3, MoreHorizontal } from './ImageIcon'
 import { AppMark } from './AppMark'
 import type { Workflow } from '../data/workflows'
 export function WorkflowCard({ workflow, featured, onReview }: { workflow: Workflow; featured: boolean; onReview: () => void }) {

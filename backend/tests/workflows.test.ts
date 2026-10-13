@@ -90,6 +90,36 @@ test('PostgreSQL migrations and workflow API integration', async t => {
       const run = await db.workflowRun.create({ data: { workflowId: a.id } })
       await assert.rejects(db.nodeRun.create({ data: { workflowId: a.id, workflowRunId: run.id, nodeId: b.nodes[0]!.id } }))
     })
+    await t.test('generated board persists, reopens and retries without duplicate writes', async () => {
+      const { generateAndSave } = await import('../src/modules/discovery/discovery.generate.js')
+      const { WorkflowService } = await import('../src/modules/workflows/workflow.service.js')
+      const original = globalThis.fetch
+      let calls = 0
+      globalThis.fetch = async () => { calls++; return Response.json({ status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify({ name: 'Generated test', description: 'Mock evidence', steps: [{ name: 'Review', description: 'Review mock updates', evidenceId: 'sim_obs_1', application: 'Slack', type: 'browser' as const, startUrl: null, missingInformation: [] }] }) }] }] }) }
+      try {
+        const requestId = randomUUID(), service = new WorkflowService(db)
+        const first = await generateAndSave(service, 'Review', requestId, { apiKey: 'test-only' })
+        const second = await generateAndSave(service, 'Review', requestId, { apiKey: 'test-only' })
+        assert.equal(first.id, requestId); assert.equal(second.id, requestId); assert.equal(calls, 1)
+        const loaded = (await api.inject(`/api/workflows/${requestId}`)).json()
+        assert.equal(loaded.nodes.length, 1); assert.equal(loaded.nodes[0].config.source, 'development_mock')
+        const patch = await api.inject({ method: 'PATCH', url: `/api/workflows/${requestId}`, payload: { name: 'Edited board' } })
+        assert.equal(patch.statusCode, 200); assert.equal((await api.inject(`/api/workflows/${requestId}`)).json().name, 'Edited board')
+      } finally { globalThis.fetch = original }
+    })
+    await t.test('workflow library searches persisted drafts and filters with pagination', async () => {
+      const response = await api.inject({ method: 'POST', url: '/api/workflows', payload: { name: 'Library unique draft', description: 'Quarterly invoice review' } })
+      assert.equal(response.statusCode, 201)
+      const draft = response.json()
+      assert.equal(draft.status, 'DRAFT'); assert.deepEqual(draft.nodes, [])
+      const result = (await api.inject('/api/workflows?search=QUARTERLY&status=DRAFT&limit=1')).json()
+      assert.equal(result.total, 1); assert.equal(result.items[0].id, draft.id)
+      assert.deepEqual(result.items[0].applicationIcons, [])
+      assert.equal((await api.inject('/api/workflows?search=QUARTERLY&status=ACTIVE')).json().total, 0)
+      assert.equal((await api.inject('/api/workflows?search=QUARTERLY&offset=1')).json().items.length, 0)
+      assert.equal((await api.inject('/api/workflows?search=' + 'a'.repeat(201))).statusCode, 400)
+      await api.inject({ method: 'DELETE', url: '/api/workflows/' + draft.id })
+    })
     await t.test('health returns 503 when database fails without leaking connection details', async () => {
       const original = db.$queryRaw
       db.$queryRaw = (() => Promise.reject(new Error('private database detail'))) as typeof db.$queryRaw

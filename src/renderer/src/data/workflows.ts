@@ -1,6 +1,7 @@
-export type AppName = 'Slack' | 'Notion' | 'Excel' | 'Gmail' | 'Drive' | 'Chrome' | 'Screenpipe'
+export type AppName = 'Microsoft' | 'Google' | 'Slack' | 'Notion' | 'Excel' | 'Gmail' | 'Drive' | 'Chrome' | 'Screenpipe'
 export type WorkflowStatus = 'Success' | 'Needs review' | 'Failed' | 'Draft'
 export interface Workflow {
+  persisted?: boolean
   id: string
   name: string
   description: string

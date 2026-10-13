@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { ChevronRight, CircleDot, Home, LayoutGrid, Library, Settings, Unplug } from 'lucide-react'
+import { ChevronRight, CircleDot, Home, LayoutGrid, Library, Settings, Unplug } from './ImageIcon'
 import { GhostLogo } from './GhostLogo'
 import { DashboardDialog } from './DashboardDialog'
 

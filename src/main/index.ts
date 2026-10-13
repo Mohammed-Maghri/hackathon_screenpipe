@@ -1,5 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, session } from 'electron'
-import { prepareWorkflowDiscovery, listSavedWorkflows, getSavedWorkflow } from './discoveryBackend'
+import { deleteSavedWorkflow, prepareWorkflowDiscovery, listSavedWorkflows, getSavedWorkflow, mutateWorkflowBackend, mockWorkflowActivity } from './discoveryBackend'
 import { registerTeachingBrowser } from './teachingBrowser'
 import { appendFile, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -71,7 +71,16 @@ app.whenReady().then(() => {
     }
   }
   ipcMain.handle('discovery:prepare', (event, input) => { authorizeBackend(event); return prepareWorkflowDiscovery(input) })
-  ipcMain.handle('workflows:list', (event, offset) => { authorizeBackend(event); return listSavedWorkflows(offset) })
+  ipcMain.handle('discovery:mock', (event, input) => { authorizeBackend(event); return mockWorkflowActivity(input) })
+  ipcMain.handle('discovery:generate', (event, input) => { authorizeBackend(event); return mutateWorkflowBackend('/api/workflow-discovery/generate', input) })
+  ipcMain.handle('workflows:update', (event, id, input) => {
+    authorizeBackend(event)
+    if (typeof id !== 'string' || !/^[0-9a-f-]{36}$/i.test(id)) throw new Error('Invalid workflow ID')
+    return mutateWorkflowBackend(`/api/workflows/${id}`, input, 'PATCH')
+  })
+  ipcMain.handle('workflows:list', (event, offset, options) => { authorizeBackend(event); return listSavedWorkflows(offset, options) })
+  ipcMain.handle('workflows:create', (event, input) => { authorizeBackend(event); return mutateWorkflowBackend('/api/workflows', input) })
+  ipcMain.handle('workflows:delete', (event, id) => { authorizeBackend(event); return deleteSavedWorkflow(id) })
   ipcMain.handle('workflows:get', (event, id) => { authorizeBackend(event); return getSavedWorkflow(id) })
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false))
   session.defaultSession.setPermissionCheckHandler(() => false)

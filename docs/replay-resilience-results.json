@@ -1,0 +1,50 @@
+{
+  "date": "2026-10-13T19:56:18.671Z",
+  "checks": [
+    {
+      "scenario": "slow",
+      "initialState": "completed",
+      "category": null
+    },
+    {
+      "scenario": "changed-id",
+      "initialState": "completed",
+      "category": null
+    },
+    {
+      "scenario": "duplicate",
+      "initialState": "failed",
+      "category": "TARGET_AMBIGUOUS"
+    },
+    {
+      "scenario": "missing",
+      "initialState": "failed",
+      "category": "TARGET_NOT_FOUND"
+    },
+    {
+      "scenario": "unknown",
+      "initialState": "unknown",
+      "category": "OUTCOME_UNKNOWN"
+    },
+    {
+      "scenario": "interrupt",
+      "initialState": "cancelled",
+      "category": "CANCELLED"
+    },
+    {
+      "scenario": "changed-page",
+      "initialState": "failed",
+      "category": "TARGET_NOT_FOUND"
+    },
+    {
+      "scenario": "unverifiable",
+      "initialState": "unknown",
+      "category": "OUTCOME_UNKNOWN"
+    },
+    {
+      "scenario": "unsupported",
+      "initialState": "failed",
+      "category": "ACTION_UNSUPPORTED"
+    }
+  ]
+}

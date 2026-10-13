@@ -6,18 +6,27 @@ const include = { nodes: { orderBy: { id: 'asc' as const } }, edges: { orderBy: 
 export class WorkflowService {
   constructor(private readonly db: Database) {}
   async list(query: ListWorkflows) {
-    const where = { status: query.status, ownerId: query.ownerId }
+    const where: Prisma.WorkflowWhereInput = { status: query.status, ownerId: query.ownerId, ...(query.search ? { OR: [{ name: { contains: query.search, mode: 'insensitive' } }, { description: { contains: query.search, mode: 'insensitive' } }] } : {}) }
     const [items, total] = await this.db.$transaction([
-      this.db.workflow.findMany({ where, skip: query.offset, take: query.limit, orderBy: [{ createdAt: 'desc' }, { id: 'asc' }], include: { _count: { select: { nodes: true, edges: true } } } }),
+      this.db.workflow.findMany({ where, skip: query.offset, take: query.limit, orderBy: [{ createdAt: 'desc' }, { id: 'asc' }], include: { _count: { select: { nodes: true, edges: true } }, nodes: { select: { config: true } } } }),
       this.db.workflow.count({ where }),
     ], { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead })
-    return { items, total, limit: query.limit, offset: query.offset }
+    return { items: items.map(({ nodes, ...workflow }) => ({ ...workflow, applications: [...new Set(nodes.flatMap(node => {
+      const config = node.config
+      return config && typeof config === 'object' && !Array.isArray(config) && typeof config.application === 'string' ? [config.application] : []
+    }))], applicationIcons: [...new Set(nodes.flatMap(node => {
+      const config = node.config
+      if (!config || typeof config !== 'object' || Array.isArray(config)) return []
+      if (config.stepType === 'browser') return ['Chrome']
+      return typeof config.application === 'string' ? [config.application] : []
+    }))] })), total, limit: query.limit, offset: query.offset }
   }
+  async find(id: string) { return this.db.workflow.findUnique({ where: { id }, include }) }
   async get(id: string) { return this.db.workflow.findUniqueOrThrow({ where: { id }, include }) }
-  async create(data: CreateWorkflow) {
+  async create(data: CreateWorkflow, id?: string) {
     return this.db.$transaction(async tx => {
       const { nodes, edges, ...metadata } = data
-      const workflow = await tx.workflow.create({ data: metadata })
+      const workflow = await tx.workflow.create({ data: { ...metadata, ...(id ? { id } : {}) } })
       if (nodes.length) await tx.workflowNode.createMany({ data: nodes.map(node => ({ ...node, config: node.config as Prisma.InputJsonObject, workflowId: workflow.id })) })
       if (edges.length) await tx.workflowEdge.createMany({ data: edges.map(edge => ({ ...edge, workflowId: workflow.id })) })
       return tx.workflow.findUniqueOrThrow({ where: { id: workflow.id }, include })

@@ -4,6 +4,8 @@ export interface DiscoveryRequest {
 }
 export type DiscoveryPreparation = { ok: true } | { ok: false; error: string }
 export interface SavedWorkflow {
+  applications?: string[]
+  applicationIcons?: string[]
   id: string
   name: string
   description: string | null
@@ -17,3 +19,12 @@ export interface SavedWorkflowDetail extends Omit<SavedWorkflow, '_count'> {
 }
 export type WorkflowListResult = { ok: true; items: SavedWorkflow[]; total: number } | { ok: false; error: string }
 export type WorkflowDetailResult = { ok: true; workflow: SavedWorkflowDetail } | { ok: false; error: string }
+export interface GenerateWorkflowRequest extends DiscoveryRequest { requestId: string }
+export interface WorkflowUpdate {
+  name: string
+  nodes: SavedWorkflowDetail['nodes']
+  edges: SavedWorkflowDetail['edges']
+}
+
+export interface WorkflowListOptions { limit?: number; status?: SavedWorkflow['status']; search?: string }
+export interface WorkflowCreate { name: string; description: string }

@@ -20,10 +20,20 @@
 .workflows-page .workflow-tabs button { font-size: 12px; }
 .workflows-page .status { font-size: 11px; }
 .workflows-page .table-caption { margin-top: 20px; font-size: 11px; }
-.workflows-page .empty-state > svg { margin: auto; }
+.workflows-page .empty-state > :is(svg, .ui-image-icon) { margin: auto; }
 @media (max-width: 650px) { .workflows-page-content { padding: 30px 16px; } .workflows-page-title { flex-wrap: wrap; } .workflows-page-title h1 { font-size: 48px; } .workflows-page-filters { flex-direction: column-reverse; align-items: stretch; gap: 20px; } .workflows-page-filters .table-search { width: 100%; } .workflows-page-content .dash-panel { padding: 14px; } }
 .workflows-page-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 5vw 28px; border-bottom: 1px solid var(--border); }
-.workflows-page-header .brand svg { width: 30px; height: 36px; }
+.workflows-page-header .brand :is(svg, .ui-image-icon) { width: 30px; height: 36px; }
 .workflows-page-header .brand span { font-size: 12px; }
 
 .workflows-page .dashboard-dialog h2 { font-family: 'Geist Variable', sans-serif; font-size: 30px; font-weight: 600; letter-spacing: -.035em; }
+
+.workflow-delete { color: #ff7777; }
+.workflow-table .workflow-delete { margin-left: 16px; }
+.workflows-page-filters { flex-wrap: wrap; }
+.workflows-page-filters .workflow-tabs { min-width: 0; flex-wrap: wrap; }
+.workflows-page-filters .table-search { max-width: 100%; }
+.workflows-page .workflow-table-wrap { max-width: 100%; overflow-x: auto; }
+.workflows-page .workflow-table td:last-child { white-space: nowrap; }
+@media (max-width: 900px) { .workflows-page-content { padding: 28px 18px; } .workflows-page-title { flex-wrap: wrap; gap: 16px; } .workflows-page-title h1 { font-size: 38px; } }
+@media (max-width: 650px) { .workflows-page-filters { flex-direction: row; gap: 12px; } .workflows-page-filters .table-search, .workflows-page-filters .workflow-tabs { flex-basis: 100%; } .workflows-page-content { padding: 20px 12px; } .workflows-page-title h1 { font-size: 30px; } }

@@ -8,13 +8,13 @@ const key = (frame: WebFrameMain) => `${frame.processId}:${frame.frameToken}`
 const equalURL = (a: string, b: string) => { try { const x = new URL(a), y = new URL(b); x.searchParams.sort(); y.searchParams.sort(); return x.href === y.href } catch { return a === b } }
 export class FrameBridge {
   private ready = new Set<string>()
-  private pending = new Map<string, { frame: string; resolve: (value: any) => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout> }>()
+  private pending = new Map<string, { frame: string; resolve: (value: any) => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout>; cleanup?: () => void }>()
   constructor(private contents: WebContents) { ipcMain.on('recorder:response', this.response) }
   private response = (event: IpcMainEvent, value: { id: string; result?: unknown; error?: string }) => {
     if (event.sender !== this.contents || !event.senderFrame || !value || typeof value.id !== 'string') return
     const pending = this.pending.get(value.id)
     if (!pending || pending.frame !== key(event.senderFrame)) return
-    clearTimeout(pending.timer); this.pending.delete(value.id)
+    clearTimeout(pending.timer); pending.cleanup?.(); this.pending.delete(value.id)
     value.error ? pending.reject(new Error(value.error)) : pending.resolve(value.result)
   }
   accepts(frame: WebFrameMain) { return !frame.isDestroyed() && !frame.detached && this.contents.mainFrame.framesInSubtree.some(item => key(item) === key(frame)) }
@@ -44,16 +44,20 @@ export class FrameBridge {
     if (!this.isReady(frame)) throw new Error('Embedded frame recorder is not ready or unavailable.')
     return frame
   }
-  request<T>(frame: WebFrameMain, operation: 'page' | 'owner' | 'flush' | 'settle', request?: PageRequest | FrameRequest): Promise<T> {
+  request<T>(frame: WebFrameMain, operation: 'page' | 'owner' | 'flush' | 'settle', request?: PageRequest | FrameRequest, signal?: AbortSignal): Promise<T> {
+    if (signal?.aborted) return Promise.reject(new Error('Frame operation cancelled.'))
     if (!this.isReady(frame)) return Promise.reject(new Error('Frame recorder is unavailable.'))
     const id = randomUUID()
     return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => { this.pending.delete(id); reject(new Error('Frame operation timed out.')) }, 2500)
-      this.pending.set(id, { frame: key(frame), resolve, reject, timer })
-      try { frame.send('recorder:request', { id, operation, request }) } catch { clearTimeout(timer); this.pending.delete(id); reject(new Error('Frame was detached.')) }
+      const cleanup = () => signal?.removeEventListener('abort', abort)
+      const abort = () => { clearTimeout(timer); this.pending.delete(id); cleanup(); reject(new Error('Frame operation cancelled.')) }
+      const timer = setTimeout(() => { this.pending.delete(id); cleanup(); reject(new Error('Frame operation timed out.')) }, 2500)
+      this.pending.set(id, { frame: key(frame), resolve, reject, timer, cleanup })
+      signal?.addEventListener('abort', abort, { once: true })
+      try { frame.send('recorder:request', { id, operation, request }) } catch { clearTimeout(timer); cleanup(); this.pending.delete(id); reject(new Error('Frame was detached.')) }
     })
   }
-  page(path: FrameIdentity[], request: PageRequest) { return this.request<PageResult>(this.resolve(path), 'page', request) }
+  page(path: FrameIdentity[], request: PageRequest, signal?: AbortSignal) { return this.request<PageResult>(this.resolve(path), 'page', request, signal) }
   async point(path: FrameIdentity[], point?: { x: number; y: number }) {
     const chain: WebFrameMain[] = [this.contents.mainFrame]
     for (let i = 1; i <= path.length; i++) chain.push(this.resolve(path.slice(0, i)))
@@ -68,7 +72,7 @@ export class FrameBridge {
   async flush() { await Promise.all(this.contents.mainFrame.framesInSubtree.filter(frame => this.isReady(frame)).map(frame => this.request(frame, 'flush'))) }
   dispose() {
     ipcMain.removeListener('recorder:response', this.response)
-    for (const pending of this.pending.values()) { clearTimeout(pending.timer); pending.reject(new Error('Browser session closed.')) }
+    for (const pending of this.pending.values()) { clearTimeout(pending.timer); pending.cleanup?.(); pending.reject(new Error('Browser session closed.')) }
     this.pending.clear(); this.ready.clear()
   }
 }

@@ -1,6 +1,8 @@
 import { HashRouter, Route, Routes, useParams } from 'react-router'
 import { MotionConfig } from 'motion/react'
 import { Welcome } from './pages/Welcome'
+import { useWorkflows } from './data/workflowStore'
+import { SavedWorkflowPage } from './pages/SavedWorkflowPage'
 import { WorkflowEditor } from './pages/WorkflowEditor'
 import { RecordStep } from './pages/RecordStep'
 import { Workflows } from './pages/Workflows'
@@ -8,12 +10,15 @@ import { Dashboard } from './pages/Dashboard'
 
 function RecordingPage() {
   const { id, nodeId } = useParams()
+  const local = useWorkflows().find(item => item.id === id)
+  if (id && /^[0-9a-f-]{36}$/i.test(id) && (!local || local.persisted)) return <SavedWorkflowPage key={`${id}/${nodeId}`} recording />
   return <RecordStep key={`${id}/${nodeId}`} />
 }
 
 function WorkflowPage() {
   const { id } = useParams()
-  return <WorkflowEditor key={id} />
+  const local = useWorkflows().find(item => item.id === id)
+  return (!local || local.persisted) && id && /^[0-9a-f-]{36}$/i.test(id) ? <SavedWorkflowPage key={id} /> : <WorkflowEditor key={id} />
 }
 
 export function App() {

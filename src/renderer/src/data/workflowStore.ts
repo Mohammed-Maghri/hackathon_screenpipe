@@ -13,3 +13,9 @@ export function addWorkflowDraft(name: string, description: string, steps: strin
   listeners.forEach(listener => listener())
   return workflow
 }
+
+export function cacheBackendWorkflow(value: import('../../../shared/discovery').SavedWorkflowDetail) {
+  const workflow: Workflow = { persisted: true, id: value.id, name: value.name, description: value.description ?? '', apps: [], seen: 0, lastRun: 'Never', status: 'Draft', nextRun: '—', steps: value.nodes.map(node => node.label) }
+  workflows = [...workflows.filter(item => item.id !== value.id), workflow]
+  listeners.forEach(listener => listener())
+}

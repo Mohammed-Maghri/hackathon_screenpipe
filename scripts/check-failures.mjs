@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 
-const port=9341, debug=9231;
+const port=Number(process.env.GHOST_TEST_PORT||9341), debug=Number(process.env.GHOST_DEBUG_PORT||9231);
 let mode='normal';
 const standard=await readFile('scripts/fixtures/failures.html','utf8');
 const server=http.createServer((req,res)=>{
@@ -22,7 +22,7 @@ const server=http.createServer((req,res)=>{
 });
 await new Promise(r=>server.listen(port,'127.0.0.1',r));
 const profile=await mkdtemp(join(tmpdir(),'ghost-reliability-'));
-const electron=spawn(electronPath,['.','--ozone-platform=x11',`--remote-debugging-port=${debug}`,`--user-data-dir=${profile}`],{stdio:['ignore','ignore','pipe']});
+const electron=spawn(electronPath,['.',`--ozone-platform=${process.env.GHOST_TEST_PLATFORM || 'x11'}`,`--remote-debugging-port=${debug}`,`--user-data-dir=${profile}`],{stdio:['ignore','ignore','pipe']});
 let errors='';electron.stderr.on('data',d=>{errors+=d.toString()});
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn,message,timeout=20000){const start=Date.now();do{const v=await fn();if(v)return v;await pause(50)}while(Date.now()-start<timeout);throw Error(message)}
@@ -51,19 +51,19 @@ async function open(scenario='normal') {
 }
 const stop=token=>api('recordingControl',token,'stop');
 const preview=token=>api('replayPreview',token);
-const checks=[];
+const checks=[];checks.push=(...items)=>{console.log('PASS',...items);return Array.prototype.push.apply(checks,items)};
 let token=await open();await stop(token);assert.ok((await preview(token)).blockers.some(b=>b.includes('no replayable')));checks.push('empty recording blocked');
 token=await open();await api('recordingControl',token,'pause');const before=await api('recordingStatus',token);await type('#name','Paused');assert.equal((await api('recordingStatus',token)).eventCount,before.eventCount);await api('recordingControl',token,'resume');await nativeClick('#go');await until(()=>guest.eval('window.saves===1'),'Manual click failed');
 await guest.eval(`document.querySelector('#scroll').scrollTop=110`);await until(()=>guest.eval('window.scrollSeen'),'Scroll not delivered');await stop(token);let data=JSON.parse(await api('recordingExport',token));assert.ok(data.events.some(e=>e.type==='scroll'&&e.data.scrollTop===110));assert.ok(!data.events.some(e=>e.data.value==='Paused'));checks.push('pause/resume and stop flushes pending scroll');
 // Modal visibility and native pointer delivery, via the real host UI.
 token=await open();await host.eval(`[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Need help')).click()`);await until(async()=>!(await api('diagnostics',token)).visible,'View not hidden for modal');await host.eval(`document.querySelector('.dialog-close').click()`);await until(async()=>(await api('diagnostics',token)).visible,'View not restored');await nativeClick('#go');await until(()=>guest.eval('window.saves===1'),'Click after modal failed');checks.push('modal bounds/visibility and manual click delivery');await stop(token);
-for(const field of ['password','otp']) {token=await open();await type('#'+field,'DO-NOT-STORE');await stop(token);const json=await api('recordingExport',token);assert.ok(!json.includes('DO-NOT-STORE'));assert.ok((await preview(token)).blockers.some(b=>b.includes('authentication')));await assert.rejects(()=>api('replayStart',token));}checks.push('password/OTP masked and actual IPC start blocked');
+for(const field of ['password','otp']) {token=await open();await type('#'+field,'DO-NOT-STORE');await stop(token);const json=await api('recordingExport',token);assert.ok(!json.includes('DO-NOT-STORE'));assert.deepEqual((await preview(token)).blockers,[]);assert.ok((await preview(token)).inputs.some(input=>input.secret&&input.saved));}checks.push('password/OTP encrypted, preview masked, no plaintext export');
 token=await open('frame');await nativeClick('#go');await until(()=>guest.eval('window.saves===1'),'Main-page save failed');await stop(token);assert.deepEqual((await preview(token)).blockers,[]);
 await host.eval('window.__replay=null');await api('replayStart',token);const frameApprovals=new Set();await until(async()=>{const state=await host.eval('window.__replay');if(state?.state==='needs-user-approval'&&!frameApprovals.has(state.sequence)){frameApprovals.add(state.sequence);await api('replayApprove',token,state.sequence,true)}return state && ['completed','failed','unknown'].includes(state.state)},'Main-page replay with iframe timed out');assert.equal((await host.eval('window.__replay')).state,'completed');checks.push('main-page recording and verified replay with an unrelated iframe');
 token=await open();await guest.eval(`(()=>{const frame=document.createElement('iframe');frame.hidden=true;frame.src='/frame';document.body.append(frame)})()`);await nativeClick('#go');await stop(token);assert.deepEqual((await preview(token)).blockers,[]);checks.push('dynamically inserted unused iframe does not block main-page capture');
 if (!process.env.GHOST_TEST_FRAMES_ONLY) {
 token=await open();await nativeClick('#popup');await until(async()=>JSON.parse(await api('recordingExport',token)).events.some(e=>e.type==='popup-open'),'Popup not recorded');await stop(token);assert.ok((await preview(token)).blockers.some(b=>b.includes('popup-open')));await assert.rejects(()=>api('replayStart',token));checks.push('popup blocker preserved through IPC');
-token=await open();const point=await guest.eval(`(()=>{const r=document.querySelector('#drag').getBoundingClientRect();return{x:r.x+20,y:r.y+20}})()`);await guest.call('Input.dispatchMouseEvent',{type:'mousePressed',...point,button:'left',clickCount:1});await guest.call('Input.dispatchMouseEvent',{type:'mouseMoved',x:point.x+50,y:point.y,button:'left',buttons:1});await guest.call('Input.dispatchMouseEvent',{type:'mouseReleased',x:point.x+50,y:point.y,button:'left',clickCount:1});await stop(token);assert.ok((await preview(token)).blockers.some(b=>b.includes('drag-move')));await assert.rejects(()=>api('replayStart',token));checks.push('drag blocker preserved through IPC');
+token=await open();const point=await guest.eval(`(()=>{const e=document.querySelector('#drag');e.scrollIntoView({block:'center'});const r=e.getBoundingClientRect();return{x:r.x+20,y:r.y+20}})()`);await guest.call('Input.dispatchMouseEvent',{type:'mousePressed',...point,button:'left',clickCount:1});await guest.call('Input.dispatchMouseEvent',{type:'mouseMoved',x:point.x+50,y:point.y,button:'left',buttons:1});await guest.call('Input.dispatchMouseEvent',{type:'mouseReleased',x:point.x+50,y:point.y,button:'left',clickCount:1});await stop(token);assert.ok((await preview(token)).blockers.some(b=>b.includes('drag-move')));await assert.rejects(()=>api('replayStart',token));checks.push('drag blocker preserved through IPC');
 for(const scenario of ['missing','duplicate','initial','redirect','unknown','cancel','deny']) {
   token=await open();await nativeClick('#go');await until(()=>guest.eval(`document.querySelector('#status').textContent==='Saved item'`),'Save not observed');await stop(token);assert.deepEqual((await preview(token)).blockers,[]);
   mode=['cancel','deny'].includes(scenario)?'normal':scenario;await host.eval('window.__replay=null');await api('replayStart',token);

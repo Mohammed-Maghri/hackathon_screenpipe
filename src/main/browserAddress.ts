@@ -17,3 +17,8 @@ export function resolveBrowserAddress(value: unknown): string {
   if (hasScheme || localAddress || domain) return browserURL(input)
   return `https://www.google.com/search?q=${encodeURIComponent(input)}`
 }
+
+/** Only teaching-session initialization may open an empty internal tab. */
+export function initialBrowserURL(value: unknown): string {
+  return value === 'about:blank' ? 'about:blank' : browserURL(value)
+}

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { ArrowLeft, ArrowRight, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, X } from './ImageIcon'
 import { Button } from './Button'
 import { GhostLogo } from './GhostLogo'
 export type DialogKind = 'start' | 'explain'

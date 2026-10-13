@@ -22,7 +22,7 @@ function validateGraph(data: { nodes?: z.infer<typeof node>[]; edges?: z.infer<t
 export const createWorkflowSchema = z.object({ ...fields, status: fields.status.default('DRAFT'), nodes: fields.nodes.default([]), edges: fields.edges.default([]) }).strict().superRefine(validateGraph)
 export const updateWorkflowSchema = z.object(fields).partial().strict().refine(v => Object.keys(v).length > 0, 'At least one field is required').superRefine(validateGraph)
 export const workflowParamsSchema = z.object({ id: uuid }).strict()
-export const listWorkflowsSchema = z.object({ limit: z.coerce.number().int().min(1).max(100).default(20), offset: z.coerce.number().int().min(0).max(100000).default(0), status: fields.status.optional(), ownerId: uuid.optional() }).strict()
+export const listWorkflowsSchema = z.object({ limit: z.coerce.number().int().min(1).max(100).default(20), offset: z.coerce.number().int().min(0).max(100000).default(0), status: fields.status.optional(), search: z.string().trim().max(200).optional(), ownerId: uuid.optional() }).strict()
 export type CreateWorkflow = z.infer<typeof createWorkflowSchema>
 export type UpdateWorkflow = z.infer<typeof updateWorkflowSchema>
 export type ListWorkflows = z.infer<typeof listWorkflowsSchema>

@@ -8,11 +8,13 @@ let enabled = false
 let readyReported = false
 function reportReady() { if (enabled && !readyReported && document.readyState !== 'loading') { readyReported = true; emit('page-ready', { iframeCount: document.querySelectorAll('iframe,frame').length, framePolicy: 'frame-aware-v1' }) } }
 const pausedValues = new WeakMap<Element, string>()
+const capturedSecrets = new WeakMap<Element, string>()
 const clip = (value: string | null | undefined, length = 500) => (value ?? '').slice(0, length)
+function credential(element: Element) { return element instanceof HTMLInputElement && (element.type === 'password' || /one-time-code|otp|passcode|pin/i.test([element.autocomplete, element.name, element.id].join(' '))) }
 function masked(element: Element) { return pageOperation({ op: 'describe' }, element).target?.redacted === true }
 function target(element: Element) {
   const rect = element.getBoundingClientRect()
-  return { ...pageOperation({ op: 'describe' }, element).target!, rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height }, cookieConsent: /cookie|consent/i.test(element.closest('[role=dialog],dialog,[id*=cookie],[class*=cookie],[id*=consent],[class*=consent]')?.textContent ?? '') }
+  return { ...pageOperation({ op: 'describe' }, element).target!, credential: credential(element), loginAction: !!element.closest('form')?.querySelector('input[type=password],input[autocomplete=one-time-code]'), rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height }, cookieConsent: /cookie|consent/i.test(element.closest('[role=dialog],dialog,[id*=cookie],[class*=cookie],[id*=consent],[class*=consent]')?.textContent ?? '') }
 }
 let pendingOutcome: { id: string; element: Element; before: PageEvidence[] } | undefined
 let outcomeTimer: ReturnType<typeof setTimeout> | undefined
@@ -39,14 +41,20 @@ function emit(type: string, data: Record<string, unknown>) {
 function eventTarget(event: Event) { const element = event.composedPath().find(item => item instanceof Element) as Element | undefined; return element?.closest('button,a[href],[role=button],input,textarea,select,[contenteditable=true]') ?? element }
 function point(event: MouseEvent, element: Element) {
   const box = element.getBoundingClientRect()
-  return { clientX: event.clientX, clientY: event.clientY, pageX: event.pageX, pageY: event.pageY, screenX: event.screenX, screenY: event.screenY, elementX: event.clientX - box.x, elementY: event.clientY - box.y, relativeX: box.width ? (event.clientX - box.x) / box.width : 0, relativeY: box.height ? (event.clientY - box.y) / box.height : 0, button: event.button, buttons: event.buttons, modifiers: { alt: event.altKey, ctrl: event.ctrlKey, meta: event.metaKey, shift: event.shiftKey } }
+  return { clientX: event.clientX, clientY: event.clientY, pageX: event.pageX, pageY: event.pageY, screenX: event.screenX, screenY: event.screenY, elementX: event.clientX - box.x, elementY: event.clientY - box.y, relativeX: box.width ? (event.clientX - box.x) / box.width : 0, relativeY: box.height ? (event.clientY - box.y) / box.height : 0, button: event.button, buttons: event.buttons, detail: event.detail, pointerType: event instanceof PointerEvent ? event.pointerType : 'mouse', modifiers: { alt: event.altKey, ctrl: event.ctrlKey, meta: event.metaKey, shift: event.shiftKey } }
 }
 function input(element: Element) {
+  if (enabled && credential(element)) capturedSecrets.set(element, (element as HTMLInputElement).value)
   const redacted = masked(element)
   const value = redacted ? '[REDACTED]' : element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement ? element.value : element.textContent ?? ''
-  emit('input', { target: target(element), value: clip(value, 10000), truncated: !redacted && value.length > 10000, checked: element instanceof HTMLInputElement && ['checkbox', 'radio'].includes(element.type) ? element.checked : undefined, selectedValues: !redacted && element instanceof HTMLSelectElement ? [...element.selectedOptions].map(option => clip(option.value)) : undefined })
+  emit('input', { target: target(element), value: clip(value, 10000), ...(credential(element) ? { secretValue: (element as HTMLInputElement).value } : {}), truncated: !redacted && value.length > 10000, checked: element instanceof HTMLInputElement && ['checkbox', 'radio'].includes(element.type) ? element.checked : undefined, selectedValues: !redacted && element instanceof HTMLSelectElement ? [...element.selectedOptions].map(option => clip(option.value)) : undefined })
 }
 function flush() {
+  // Autofill/password managers may not emit the usual trusted input event.
+  // Capture current credentials before a submit/navigation/stop loses the DOM.
+  if (enabled) for (const element of document.querySelectorAll<HTMLInputElement>('input')) {
+    if (credential(element) && (element.value || capturedSecrets.has(element)) && capturedSecrets.get(element) !== element.value) input(element)
+  }
   checkFrameFocus()
   if (scrollTimeout) { clearTimeout(scrollTimeout); scrollTimeout = undefined }
   for (const element of pendingScroll) emit('scroll', { target: target(element), scrollLeft: element.scrollLeft, scrollTop: element.scrollTop }); pendingScroll.clear()
@@ -77,14 +85,24 @@ for (const type of ['click', 'dblclick', 'contextmenu', 'pointerdown', 'pointeru
       lastCause = { id: actionId, time: performance.now(), form: element instanceof HTMLButtonElement || element instanceof HTMLInputElement ? element.form : null }
       outcomeTimer = setTimeout(outcome, 100)
     }
-    emit(type, { actionId, target: target(element), pointer: point(event, element) })
+    const descriptor = target(element)
+    const background = type === 'click' && ['form', 'div', 'section', 'main', 'body', 'html'].includes(descriptor.tag ?? '') && !descriptor.role && !descriptor.accessibleName && !descriptor.text
+    emit(type, { actionId, target: descriptor, pointer: point(event, element), ...(background ? { background: true } : {}) })
+    if (background) queueMicrotask(() => { if (document.activeElement) emit('focus-outcome', { actionId, target: target(document.activeElement) }) })
   }, true)
 }
+let pendingTab: string | undefined
+document.addEventListener('focusin', event => {
+ if (!pendingTab || !enabled) return
+ const element = eventTarget(event)
+ if (element) emit('focus-outcome', { actionId: pendingTab, target: target(element) })
+ pendingTab = undefined
+}, true)
 let lastMove = 0
 document.addEventListener('pointermove', event => { if (!event.isTrusted || !event.buttons || performance.now() - lastMove < 100) return; lastMove = performance.now(); const element = eventTarget(event); if (element) emit('drag-move', { target: target(element), pointer: point(event, element) }) }, true)
 for (const type of ['input', 'change'] as const) document.addEventListener(type, event => {
   const element = eventTarget(event); if (!event.isTrusted || !element) return
-  const fingerprint = masked(element) ? '[REDACTED]' : element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement ? JSON.stringify([element.value, element instanceof HTMLInputElement ? element.checked : null]) : element.textContent ?? ''
+  const fingerprint = masked(element) && !credential(element) ? '[REDACTED]' : element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement ? JSON.stringify([element.value, element instanceof HTMLInputElement ? element.checked : null]) : element.textContent ?? ''
   if (!enabled) { pausedValues.set(element, fingerprint); return }
   if (pausedValues.get(element) === fingerprint) return
   pausedValues.delete(element)
@@ -92,11 +110,14 @@ for (const type of ['input', 'change'] as const) document.addEventListener(type,
 }, true)
 document.addEventListener('keydown', event => {
   const element = eventTarget(event)
-  if (!event.isTrusted || !element || masked(element)) return
+  if (!event.isTrusted || !element || (masked(element) && !credential(element))) return
+  if ((event.ctrlKey || event.metaKey) && !event.altKey && ['v', 'x', 'z', 'y'].includes(event.key.toLowerCase()) && element.matches('input:not([type=password]),textarea,[contenteditable=true]')) {
+    emit('edit-shortcut', { target: target(element), key: event.key.toLowerCase() }); return
+  }
   // Printable text is captured as a field value, never as a global keylogger.
   if ((event.ctrlKey || event.metaKey || event.altKey) && event.key.length === 1 && !((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a')) { emit('unsupported', { reason: 'This shortcut is not yet supported by verified replay. Use the field editor for replacement text.' }); return }
   if (!((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') && !['Enter', 'Tab', 'Escape', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) return
-  flush(); const actionId = crypto.randomUUID(); lastCause = { id: actionId, time: performance.now(), form: element.closest('form') }; pendingOutcome = { id: actionId, element, before: pageOperation({ op: 'snapshot' }).evidence ?? [] }; emit('keydown', { actionId, target: target(element), key: event.key, code: event.code, modifiers: { alt: event.altKey, ctrl: event.ctrlKey, meta: event.metaKey, shift: event.shiftKey } })
+  flush(); const actionId = crypto.randomUUID(); pendingTab = event.key === 'Tab' ? actionId : undefined; lastCause = { id: actionId, time: performance.now(), form: element.closest('form') }; pendingOutcome = { id: actionId, element, before: pageOperation({ op: 'snapshot' }).evidence ?? [] }; emit('keydown', { actionId, target: target(element), key: event.key, code: event.code, modifiers: { alt: event.altKey, ctrl: event.ctrlKey, meta: event.metaKey, shift: event.shiftKey } })
 }, true)
 let scrollTimeout: ReturnType<typeof setTimeout> | undefined
 const pendingScroll = new Set<Element>()

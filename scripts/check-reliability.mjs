@@ -13,7 +13,7 @@ const standard=await readFile('scripts/fixtures/standard.html','utf8');
 const server=http.createServer((req,res)=>{res.setHeader('Content-Type',req.url==='/app.js'?'text/javascript':'text/html');if(req.url==='/app.js')res.end(bundle.outputFiles[0].text);else if(req.url.startsWith('/next'))res.end('<h1>Next page</h1>');else if(req.url.includes('kind=A'))res.end(standard);else res.end(`<html><head><title>Dashboard fixture</title><style>body{font:16px sans-serif;padding:10px}label{display:block;margin:6px}button{margin:6px}.layout-1 form{display:flex;flex-direction:column}.layout-1 label{order:1}.layout-1 button{order:2}</style></head><body><div id="root"></div><script>window.__variant=${variant}</script><script src="/app.js"></script></body></html>`)});
 await new Promise(r=>server.listen(port,'127.0.0.1',r));
 const profile=await mkdtemp(join(tmpdir(),'ghost-reliability-'));
-const electron=spawn(electronPath,['.','--ozone-platform=x11',`--remote-debugging-port=${debug}`,`--user-data-dir=${profile}`],{stdio:['ignore','ignore','pipe']});
+const electron=spawn(electronPath,['.',`--ozone-platform=${process.env.GHOST_TEST_PLATFORM || 'x11'}`,`--remote-debugging-port=${debug}`,`--user-data-dir=${profile}`],{stdio:['ignore','ignore','pipe']});
 let errors='';electron.stderr.on('data',d=>{errors+=d.toString()});
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn,message,timeout=20000){const start=Date.now();do{const v=await fn();if(v)return v;await pause(50)}while(Date.now()-start<timeout);throw Error(message)}
