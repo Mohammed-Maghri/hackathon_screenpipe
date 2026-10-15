@@ -1,6 +1,6 @@
 import type { AppName, Workflow } from './workflows'
 export type NodeStatus = 'Ready' | 'Recorded' | 'Learned' | 'Needs teaching' | 'Needs configuration'
-export type EditorNode = { contract?: import('../../../shared/nodeContract').NodeContract; startUrl?: string | null; id: string; title: string; kind: string; description: string; app?: AppName; status: NodeStatus; instructions: string[]; x: number; y: number }
+export type EditorNode = { outputCapture?: { textSelector?: string; tableSelector?: string; jsonSelector?: string }; processing?: import('../../../shared/dataProcessing').ProcessingConfig; contract?: import('../../../shared/nodeContract').NodeContract; startUrl?: string | null; id: string; title: string; kind: string; description: string; app?: AppName; status: NodeStatus; instructions: string[]; x: number; y: number }
 const initialNodes: EditorNode[] = [
   { id: 'trigger', title: 'Trigger', kind: 'Every day at 9:00', description: 'Start this workflow every morning.', status: 'Ready', instructions: ['Run every day at 9:00'], x: 75, y: 100 },
   { id: 'slack', title: 'Read Slack Reports', kind: 'Browser action', description: 'Open #reports, read the daily summary messages.', app: 'Slack', status: 'Needs teaching', instructions: ['Open Slack (web or app)', 'Go to #reports channel', 'Read the latest messages', 'Extract key information'], x: 310, y: 90 },
@@ -15,4 +15,4 @@ export function makeNodes(workflow: Workflow): EditorNode[] {
   return [{ ...initialNodes[0], instructions: [...initialNodes[0].instructions] }, ...workflow.steps.map((step, index) => ({ id: `step-${index}`, title: step, kind: 'Browser action', description: step, app: workflow.apps[index % workflow.apps.length], status: 'Needs teaching' as NodeStatus, instructions: [step], x: 310 + (index % 2) * 300, y: 90 + Math.floor(index / 2) * 190 }))]
 }
 
-export const editorSnapshots = new Map<string, { nodes: EditorNode[]; title: string }>()
+export const editorSnapshots = new Map<string, { nodes: EditorNode[]; title: string; connections?: string[][] }>()

@@ -43,6 +43,7 @@ export interface ReplayStatus {
   runId?: string
   startedAt?: string
   finishedAt?: string
+  structuredOutputs?: Record<string, import('./dataProcessing').DataValue>
   artifacts?: ReplayArtifact[]
  workflowId?: string
  recordingId?: string

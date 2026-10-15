@@ -1,3 +1,4 @@
+import { captureBrowserOutputs } from './dataProcessing/captureOutputs'
 import { LoginVault } from './loginVault'
 import { signInWithSavedLogin } from './savedLogin'
 import type { SavedLogin } from '../shared/login'
@@ -277,6 +278,10 @@ export function registerTeachingBrowser() {
       const runId = checkpoint?.runId ?? randomUUID(), startedAt = checkpoint?.startedAt ?? new Date().toISOString()
       void replayRecording(entry.contents, entry.owner, plan.steps, controller.signal, async status => {
         status = { ...status, runId, startedAt, ...(['completed', 'failed', 'unknown', 'cancelled'].includes(status.state) ? { finishedAt: new Date().toISOString() } : {}) }
+        if (status.state === 'completed') {
+          try { status = { ...status, structuredOutputs: await captureBrowserOutputs(entry.contents, entry.recording.workflowId, entry.recording.nodeId) } }
+          catch (error) { status = { ...status, state: 'failed', error: error instanceof Error ? error.message : 'Output capture failed.' } }
+        }
         await entry.recording.saveReplay(status, planHash)
         if (!entry.owner.isDestroyed()) entry.owner.webContents.send('replay:status', { sessionId: entry.token, status: { ...status, recordingId: entry.recording.id, workflowId: entry.recording.workflowId } })
 
@@ -319,11 +324,8 @@ export function registerTeachingBrowser() {
     try {
       await Promise.all([...pendingSaves])
       const restored = fresh === true ? null : await RecordingStore.restore(root, decodeURIComponent(workflowId), decodeURIComponent(nodeId))
-      if (restored?.state === 'stopped') {
-        const saved = JSON.parse(await restored.exportJSON())
-        const start = prepareReplay(saved.events).preview.startURL
-        if (start) url = initialBrowserURL(start)
-      }
+      // The node's configured URL controls opening the browser. Replay retains
+      // its own recorded start URL; restoring a recording must not override edits.
       if (cancelled || window.isDestroyed() || ownerContents.isDestroyed() || ownerContents.getURL() !== ownerURL) throw new Error('Teaching session closed.')
       recording = restored ?? new RecordingStore(root, decodeURIComponent(workflowId), decodeURIComponent(nodeId))
     } finally {

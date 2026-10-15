@@ -3,6 +3,28 @@ import type { RecordedEvent, RecordingStatus, ReplayStatus, ReplayPreview } from
 import type { BrowserBounds, BrowserAction, BrowserState } from '../shared/browser'
 contextBridge.exposeInMainWorld('ghost', {
   platform: process.platform,
+  automation: {
+    list: () => ipcRenderer.invoke('automation:list'),
+    save: (input: import('../shared/workflowSchedule').WorkflowSchedule) => ipcRenderer.invoke('automation:save', input),
+    remove: (id: string) => ipcRenderer.invoke('automation:remove', id),
+    run: (id: string) => ipcRenderer.invoke('automation:run', id),
+  },
+  runtimeLogic: {
+    inspect: (workflowId: string, nodeId: string) => ipcRenderer.invoke('logic:inspect', workflowId, nodeId),
+    generate: (id: string, samples: boolean, consent: boolean) => ipcRenderer.invoke('logic:generate', id, samples, consent),
+    test: (id: string, plan: import('../shared/processingPlan').ProcessingPlan) => ipcRenderer.invoke('logic:test', id, plan),
+    approve: (id: string, testId: string) => ipcRenderer.invoke('logic:approve', id, testId),
+    reveal: (id: string, fileId: string) => ipcRenderer.invoke('logic:reveal', id, fileId),
+  },
+  processing: {
+    onStatus: (listener: (event: import('../shared/dataProcessing').ProcessingEvent) => void) => {
+      const receive = (_event: Electron.IpcRendererEvent, status: import('../shared/dataProcessing').ProcessingEvent) => listener(status)
+      ipcRenderer.on('processing:status', receive)
+      return () => ipcRenderer.removeListener('processing:status', receive)
+    },
+    run: (input: import('../shared/dataProcessing').ProcessingRequest) => ipcRenderer.invoke('processing:run', input),
+    reveal: (workflowId: string, fileId: string) => ipcRenderer.invoke('processing:reveal', workflowId, fileId),
+  },
   mockDiscovery: (input: import('../shared/discovery').DiscoveryRequest) => ipcRenderer.invoke('discovery:mock', input),
   generateWorkflow: (input: import('../shared/discovery').GenerateWorkflowRequest) => ipcRenderer.invoke('discovery:generate', input),
   defineWorkflowContracts: (id: string) => ipcRenderer.invoke('workflows:contracts', id),

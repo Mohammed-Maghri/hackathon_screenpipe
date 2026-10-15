@@ -57,6 +57,14 @@ export class WorkflowService {
       return tx.workflow.findUniqueOrThrow({ where: { id }, include })
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable })
   }
+  async saveNodeLogic(workflowId: string, nodeId: string, patch: Record<string, unknown>, expectedUpdatedAt: Date) {
+    return this.db.$transaction(async tx => {
+      const changed = await tx.workflow.updateMany({ where: { id: workflowId, updatedAt: expectedUpdatedAt }, data: { updatedAt: new Date() } })
+      if (!changed.count) throw new ApiError(409, 'WORKFLOW_CHANGED', 'Workflow changed. Reinspect before generating or approving.')
+      const node = await tx.workflowNode.findFirstOrThrow({ where: { id: nodeId, workflowId } })
+      return tx.workflowNode.update({ where: { id: nodeId }, data: { config: { ...(node.config as Prisma.JsonObject), ...patch } as Prisma.InputJsonObject } })
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable })
+  }
   async delete(id: string) {
     await this.db.$transaction(async tx => {
       // Delete dependent history first; NodeRun restricts deleting referenced nodes.

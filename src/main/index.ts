@@ -1,4 +1,8 @@
-import { app, BrowserWindow, dialog, ipcMain, session } from 'electron'
+import { WorkflowScheduler } from './workflowScheduler'
+import { graphSchema } from '../shared/dataProcessing'
+import { RuntimeLogicService } from './dataProcessing/runtimeLogic'
+import { LocalProcessingService } from './dataProcessing/service'
+import { app, BrowserWindow, dialog, ipcMain, session, shell } from 'electron'
 import { deleteSavedWorkflow, prepareWorkflowDiscovery, listSavedWorkflows, getSavedWorkflow, mutateWorkflowBackend, mockWorkflowActivity } from './discoveryBackend'
 import { registerTeachingBrowser } from './teachingBrowser'
 import { appendFile, mkdir } from 'node:fs/promises'
@@ -70,6 +74,34 @@ app.whenReady().then(() => {
       throw new Error('Unauthorized backend request')
     }
   }
+  const processing = new LocalProcessingService(app.getPath('userData'))
+  const runtimeLogic = new RuntimeLogicService(app.getPath('userData'), processing)
+  const scheduler = new WorkflowScheduler(app.getPath('userData'), async id => {
+    const loaded = await getSavedWorkflow(id)
+    if (!loaded.ok) throw new Error(loaded.error)
+    if (loaded.workflow.status === 'ARCHIVED') throw new Error('Unarchive this workflow before running it.')
+    const graph = graphSchema.parse(loaded.workflow)
+    if (!graph.nodes.some(n => n.config.stepType === 'data_processing')) throw new Error('This workflow has no processing nodes. Open the canvas to run its browser recording.')
+    if (graph.nodes.some(n => !['browser', 'data_processing'].includes(n.config.stepType ?? ''))) throw new Error('This workflow contains nodes that the local processing runner cannot execute.')
+    const results = await processing.run({ workflowId: id, graph })
+    const failed = results.find(result => result.status !== 'VERIFIED')
+    if (failed) throw new Error(failed.error ?? 'Processing failed.')
+  })
+  const schedulerReady = scheduler.load()
+  void schedulerReady.catch(error => logFailure('scheduler', error.message))
+  let ticking = false
+  setInterval(() => { if (ticking) return; ticking = true; void schedulerReady.then(() => scheduler.tick()).catch(error => logFailure('scheduler', error.message)).finally(() => { ticking = false }) }, 15000).unref()
+  ipcMain.handle('automation:list', async event => { authorizeBackend(event); await schedulerReady; return scheduler.list() })
+  ipcMain.handle('automation:save', async (event, input) => { authorizeBackend(event); await schedulerReady; return scheduler.save(input) })
+  ipcMain.handle('automation:remove', async (event, id) => { authorizeBackend(event); await schedulerReady; return scheduler.remove(id) })
+  ipcMain.handle('automation:run', async (event, id) => { authorizeBackend(event); await schedulerReady; return scheduler.run(id) })
+  ipcMain.handle('logic:inspect', (event, workflowId, nodeId) => { authorizeBackend(event); return runtimeLogic.inspect(workflowId, nodeId) })
+  ipcMain.handle('logic:generate', (event, id, samples, consent) => { authorizeBackend(event); return runtimeLogic.generate(id, samples, consent) })
+  ipcMain.handle('logic:test', (event, id, plan) => { authorizeBackend(event); return runtimeLogic.test(id, plan) })
+  ipcMain.handle('logic:approve', (event, id, testId) => { authorizeBackend(event); return runtimeLogic.approve(id, testId) })
+  ipcMain.handle('logic:reveal', async (event, id, fileId) => { authorizeBackend(event); shell.showItemInFolder(await runtimeLogic.reveal(id, fileId)) })
+  ipcMain.handle('processing:run', (event, input) => { authorizeBackend(event); return processing.run(input, status => { if (!event.sender.isDestroyed()) event.sender.send('processing:status', status) }) })
+  ipcMain.handle('processing:reveal', async (event, workflowId, fileId) => { authorizeBackend(event); if (typeof workflowId !== 'string' || typeof fileId !== 'string') throw new Error('Invalid artifact reference'); shell.showItemInFolder(await processing.path(workflowId, fileId)) })
   ipcMain.handle('discovery:prepare', (event, input) => { authorizeBackend(event); return prepareWorkflowDiscovery(input) })
   ipcMain.handle('discovery:mock', (event, input) => { authorizeBackend(event); return mockWorkflowActivity(input) })
   ipcMain.handle('discovery:generate', (event, input) => { authorizeBackend(event); return mutateWorkflowBackend('/api/workflow-discovery/generate', input) })
@@ -81,7 +113,7 @@ app.whenReady().then(() => {
   })
   ipcMain.handle('workflows:list', (event, offset, options) => { authorizeBackend(event); return listSavedWorkflows(offset, options) })
   ipcMain.handle('workflows:create', (event, input) => { authorizeBackend(event); return mutateWorkflowBackend('/api/workflows', input) })
-  ipcMain.handle('workflows:delete', (event, id) => { authorizeBackend(event); return deleteSavedWorkflow(id) })
+  ipcMain.handle('workflows:delete', async (event, id) => { authorizeBackend(event); await schedulerReady; await scheduler.remove(id); return deleteSavedWorkflow(id) })
   ipcMain.handle('workflows:get', (event, id) => { authorizeBackend(event); return getSavedWorkflow(id) })
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false))
   session.defaultSession.setPermissionCheckHandler(() => false)

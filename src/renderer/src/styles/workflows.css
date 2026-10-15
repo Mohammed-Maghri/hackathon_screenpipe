@@ -37,3 +37,6 @@
 .workflows-page .workflow-table td:last-child { white-space: nowrap; }
 @media (max-width: 900px) { .workflows-page-content { padding: 28px 18px; } .workflows-page-title { flex-wrap: wrap; gap: 16px; } .workflows-page-title h1 { font-size: 38px; } }
 @media (max-width: 650px) { .workflows-page-filters { flex-direction: row; gap: 12px; } .workflows-page-filters .table-search, .workflows-page-filters .workflow-tabs { flex-basis: 100%; } .workflows-page-content { padding: 20px 12px; } .workflows-page-title h1 { font-size: 30px; } }
+.workflow-row-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.workflow-row-actions .dash-button { padding: 8px 12px; font-size: 13px; }
+.workflow-schedule-summary { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; color: #aaa; font-size: 12px; max-width: 380px; overflow-wrap: anywhere; }

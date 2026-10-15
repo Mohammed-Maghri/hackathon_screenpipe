@@ -1,3 +1,4 @@
+import { graphSchema, validateProcessing, captureSchema } from '../../contracts/dataProcessing.js'
 import { z } from 'zod'
 
 const name = z.string().regex(/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/)
@@ -56,13 +57,19 @@ export function buildNodeModelTask(description: string, contract: NodeContract) 
 }
 
 export function nodeExecutor(stepType: unknown) {
-  return stepType === 'logic' ? 'ai' : stepType === 'review' ? 'human' : stepType === 'browser' ? 'recording' : stepType === 'application' ? 'application' : 'manual'
+  return stepType === 'data_processing' ? 'local' : stepType === 'integration' ? 'integration' : stepType === 'logic' ? 'ai' : stepType === 'review' ? 'human' : stepType === 'browser' ? 'recording' : stepType === 'application' ? 'application' : 'manual'
 }
 
 export function configureNodeContracts<T extends { id: string; config: Record<string, any> }>(nodes: T[], edges: { sourceNodeId: string; targetNodeId: string }[]): T[] {
+  const graph = graphSchema.parse({ nodes, edges })
+  for (const node of nodes.filter(n => n.config.stepType === 'data_processing')) {
+    const errors = validateProcessing(graph, node.id, node.config.status !== 'ready')
+    if (errors.length) throw new Error(errors.join(' '))
+  }
+  for (const node of nodes) if (node.config.stepType === 'browser' && node.config.outputCapture) captureSchema.parse(node.config.outputCapture)
   const contracts = new Map<string, NodeContract>()
   for (const node of nodes) {
-    if (node.config.contract) {
+    if (node.config.contract && node.config.stepType !== 'data_processing') {
       const contract = nodeContractSchema.parse(node.config.contract)
       validateContract(contract)
       contracts.set(node.id, contract)

@@ -134,6 +134,68 @@ test('PostgreSQL migrations and workflow API integration', async t => {
       assert.equal(current.name, 'Updated'); assert.equal(current.edges.length, 1)
       await db.workflow.delete({ where: { id: other.id } })
     })
+    await t.test('local data processing contracts persist and invalid mappings are rejected', async () => {
+      const source = randomUUID(), processor = randomUUID(), edge = randomUUID()
+      const processing = { version: 1, operation: 'merge_files', inputs: { files: { nodeId: source, output: 'files', type: 'files' } }, rules: {} }
+      const nodes = [
+        { id: source, type: 'ACTION', label: 'Download reports', config: { stepType: 'browser', status: 'learned' } },
+        { id: processor, type: 'TRANSFORM', label: 'Merge reports', config: { stepType: 'data_processing', status: 'ready', dataProcessing: processing } },
+      ]
+      const edges = [{ id: edge, sourceNodeId: source, targetNodeId: processor }]
+      const created = await api.inject({ method: 'POST', url: '/api/workflows', payload: { name: 'Local report processing', nodes, edges } })
+      assert.equal(created.statusCode, 201, created.body)
+      const workflowId = created.json().id
+      try {
+        const restored = (await api.inject(`/api/workflows/${workflowId}`)).json()
+        const saved = restored.nodes.find((n: { id: string }) => n.id === processor)
+        assert.equal(saved.type, 'TRANSFORM')
+        assert.equal(saved.config.executor, 'local')
+        assert.equal(saved.config.modelTask, null)
+        assert.deepEqual(saved.config.dataProcessing, processing)
+        const changed = structuredClone(nodes)
+        changed[1]!.config.dataProcessing!.inputs.files.type = 'rows'
+        const invalid = await api.inject({ method: 'PATCH', url: `/api/workflows/${workflowId}`, payload: { nodes: changed, edges } })
+        assert.equal(invalid.statusCode, 400, invalid.body)
+        assert.deepEqual((await api.inject(`/api/workflows/${workflowId}`)).json().nodes.find((n: { id: string }) => n.id === processor).config.dataProcessing, processing)
+        const disconnected = await api.inject({ method: 'PATCH', url: `/api/workflows/${workflowId}`, payload: { nodes, edges: [] } })
+        assert.equal(disconnected.statusCode, 400)
+        const draft = structuredClone(nodes)
+        draft[1]!.config.status = 'needs_configuration'
+        draft[1]!.config.dataProcessing!.inputs = {} as typeof processing.inputs
+        assert.equal((await api.inject({ method: 'PATCH', url: `/api/workflows/${workflowId}`, payload: { nodes: draft, edges } })).statusCode, 200)
+      } finally { await api.inject({ method: 'DELETE', url: `/api/workflows/${workflowId}` }) }
+    })
+    await t.test('runtime draft and approved versions persist through Prisma without replacing run history', async () => {
+      const source=randomUUID(), processor=randomUUID()
+      const created=await api.inject({method:'POST',url:'/api/workflows',payload:{name:'Runtime approval persistence',nodes:[
+        {id:source,type:'ACTION',label:'Downloads',config:{stepType:'browser'}},
+        {id:processor,type:'TRANSFORM',label:'Filter',config:{stepType:'data_processing',description:'Keep status Failed.',status:'needs_configuration',dataProcessing:{version:1,mode:'generated',operation:'read_files',inputs:{files:{nodeId:source,output:'files',type:'files'}},rules:{},expectedOutput:{format:'rows',filename:null}}}}
+      ],edges:[{id:randomUUID(),sourceNodeId:source,targetNodeId:processor}]}})
+      assert.equal(created.statusCode,201,created.body)
+      const workflowId=created.json().id, original=globalThis.fetch
+      const plan={version:1,steps:[{id:'failed',type:'filter',source:'files_0',column:'status',operator:'eq',value:'Failed'}]}
+      globalThis.fetch=async()=>Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({status:'needs_review',reason:'',plan})}]}]})
+      try {
+        const run=await db.workflowRun.create({data:{workflowId}})
+        const nodeRun=await db.nodeRun.create({data:{workflowId,workflowRunId:run.id,nodeId:processor}})
+        const request={workflowId,nodeId:processor,inputSchema:{version:1,datasets:[{id:'files_0',input:'files',format:'xlsx',sheet:'Reports',fields:[{name:'status',types:['string'],nullCount:0}],rowCount:1,samples:[],structure:null}],warnings:[]},consent:{schema:true,samples:false}}
+        const generated=await api.inject({method:'POST',url:'/api/workflows/nodes/generate-logic',payload:request})
+        assert.equal(generated.statusCode,200,generated.body)
+        const draft=generated.json().draft
+        const stored=await db.workflowNode.findUniqueOrThrow({where:{id:processor}})
+        assert.equal((stored.config as any).logicDraft.fingerprint,draft.fingerprint)
+        const approved=await api.inject({method:'POST',url:'/api/workflows/nodes/approve-logic',payload:{workflowId,nodeId:processor,plan,testId:randomUUID(),fingerprint:draft.fingerprint,bindingHash:draft.bindingHash,objective:draft.objective,version:draft.version}})
+        assert.equal(approved.statusCode,200,approved.body)
+        const reopened=(await api.inject(`/api/workflows/${workflowId}`)).json().nodes.find((n:any)=>n.id===processor)
+        assert.deepEqual(reopened.config.dataProcessing.approvedPlan.plan,plan)
+        assert.equal(reopened.config.dataProcessing.approvedPlan.version,1)
+        assert.equal(reopened.config.logicDraft,null)
+        assert.ok(await db.nodeRun.findUnique({where:{id:nodeRun.id}}))
+        const next=await api.inject({method:'POST',url:'/api/workflows/nodes/generate-logic',payload:request})
+        assert.equal(next.json().draft.version,2)
+        assert.equal(((await db.workflowNode.findUniqueOrThrow({where:{id:processor}})).config as any).dataProcessing.approvedPlan.version,1)
+      } finally {globalThis.fetch=original;await api.inject({method:'DELETE',url:`/api/workflows/${workflowId}`})}
+    })
     await t.test('run relationships, history protection and cascading delete', async () => {
       const run = await db.workflowRun.create({ data: { workflowId: id } })
       await db.nodeRun.create({ data: { workflowId: id, workflowRunId: run.id, nodeId: nodeA } })

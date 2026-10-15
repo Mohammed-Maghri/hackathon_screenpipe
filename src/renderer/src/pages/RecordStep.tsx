@@ -1,3 +1,4 @@
+import { browserInstructions } from '../../../shared/browserInstructions'
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { ArrowLeft, ArrowRight, Check, ChevronRight, CircleHelp, CircleDot, Globe, Lightbulb, LoaderCircle, LockKeyhole, Maximize, Pause, Play, RotateCw, Square, X } from '../components/ImageIcon'
@@ -146,7 +147,7 @@ export function RecordStep() {
     return () => window.clearInterval(interval)
   }, [browser, ready, stopped])
   if (!workflow || !node) return <div className="editor-not-found"><h1>Step not found.</h1><Link className="dash-button" to={`/workflows/${id}`}>Back to workflow</Link></div>
-  const instructions = node.instructions.length ? node.instructions : [node.description || 'Record the complete process in the browser']
+  const instructions = browserInstructions(node.instructions, node.startUrl).length ? browserInstructions(node.instructions, node.startUrl) : [node.description || 'Record the complete process in the browser']
   const active = instructions.findIndex((_instruction, index) => !completed.includes(index))
   return <div className={`record-shell ${wide ? 'record-shell--wide' : ''}`}>
     <WorkflowSidebar />

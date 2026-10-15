@@ -1,6 +1,9 @@
 /// <reference types="vite/client" />
 interface Window {
   ghost?: {
+    runtimeLogic: import('../../shared/processingPlan').RuntimeLogicAPI
+    automation: import('../../shared/workflowSchedule').WorkflowAutomationAPI
+    processing: import('../../shared/dataProcessing').ProcessingAPI
     browser: import('../../shared/browser').TeachingBrowser
     prepareDiscovery: (input: import('../../shared/discovery').DiscoveryRequest) => Promise<import('../../shared/discovery').DiscoveryPreparation>
     createWorkflow: (input: import('../../shared/discovery').WorkflowCreate) => Promise<import('../../shared/discovery').WorkflowDetailResult>

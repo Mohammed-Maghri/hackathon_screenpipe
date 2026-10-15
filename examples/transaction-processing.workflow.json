@@ -1,0 +1,126 @@
+{
+  "name": "Download and process transaction reports",
+  "description": "Local Excel processing with typed outputs. Record and test the browser download node, then run the processing chain.",
+  "status": "DRAFT",
+  "nodes": [
+    {
+      "id": "60000000-0000-4000-8000-000000000001",
+      "type": "ACTION",
+      "label": "Download reports",
+      "positionX": 80,
+      "positionY": 100,
+      "config": {
+        "stepType": "browser",
+        "status": "needs_recording",
+        "description": "Record downloading the transaction reports as Excel files."
+      }
+    },
+    {
+      "id": "60000000-0000-4000-8000-000000000002",
+      "type": "TRANSFORM",
+      "label": "Read and merge reports",
+      "positionX": 360,
+      "positionY": 100,
+      "config": {
+        "stepType": "data_processing",
+        "executor": "local",
+        "status": "ready",
+        "dataProcessing": {
+          "version": 1,
+          "operation": "merge_files",
+          "inputs": {
+            "files": {
+              "nodeId": "60000000-0000-4000-8000-000000000001",
+              "output": "files",
+              "type": "files"
+            }
+          },
+          "rules": {}
+        }
+      }
+    },
+    {
+      "id": "60000000-0000-4000-8000-000000000003",
+      "type": "TRANSFORM",
+      "label": "Identify failed transactions",
+      "positionX": 640,
+      "positionY": 100,
+      "config": {
+        "stepType": "data_processing",
+        "executor": "local",
+        "status": "ready",
+        "dataProcessing": {
+          "version": 1,
+          "operation": "filter_rows",
+          "inputs": {
+            "rows": {
+              "nodeId": "60000000-0000-4000-8000-000000000002",
+              "output": "rows",
+              "type": "rows"
+            }
+          },
+          "rules": {
+            "mode": "all",
+            "predicates": [
+              {
+                "column": "status",
+                "operator": "eq",
+                "value": "failed"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "60000000-0000-4000-8000-000000000004",
+      "type": "OUTPUT",
+      "label": "Generate consolidated report",
+      "positionX": 920,
+      "positionY": 100,
+      "config": {
+        "stepType": "data_processing",
+        "executor": "local",
+        "status": "ready",
+        "dataProcessing": {
+          "version": 1,
+          "operation": "generate_report",
+          "inputs": {
+            "rows": {
+              "nodeId": "60000000-0000-4000-8000-000000000003",
+              "output": "rows",
+              "type": "rows"
+            }
+          },
+          "rules": {
+            "columns": [
+              "id",
+              "status",
+              "amount"
+            ]
+          },
+          "output": {
+            "filename": "consolidated_report.xlsx"
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "70000000-0000-4000-8000-000000000000",
+      "sourceNodeId": "60000000-0000-4000-8000-000000000001",
+      "targetNodeId": "60000000-0000-4000-8000-000000000002"
+    },
+    {
+      "id": "70000000-0000-4000-8000-000000000001",
+      "sourceNodeId": "60000000-0000-4000-8000-000000000002",
+      "targetNodeId": "60000000-0000-4000-8000-000000000003"
+    },
+    {
+      "id": "70000000-0000-4000-8000-000000000002",
+      "sourceNodeId": "60000000-0000-4000-8000-000000000003",
+      "targetNodeId": "60000000-0000-4000-8000-000000000004"
+    }
+  ]
+}
