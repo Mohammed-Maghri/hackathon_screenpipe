@@ -1,6 +1,6 @@
 # Ghost backend
 
-Independent Node.js/TypeScript API foundation. The Electron renderer is not connected to it yet. No authentication, AI, Screenpipe, browser execution or scheduling is implemented.
+Node.js/TypeScript API used by Ghost for workflow persistence, development AI discovery, node contracts and encrypted input backups. Browser execution and scheduling run in Electron, not this API. General user authentication and real Screenpipe discovery are not implemented. Start with the [team setup guide](../docs/TEAM_ONBOARDING.md); some foundation-era descriptions below are historical.
 
 ## Start
 

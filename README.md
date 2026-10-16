@@ -1,5 +1,7 @@
 # Ghost
 
+**New teammates:** start with the [Hackathon setup and app walkthrough](docs/TEAM_ONBOARDING.md). See [Current implemented features](docs/IMPLEMENTED_FEATURES.md) for the present scope; older preview descriptions below are historical.
+
 A desktop workspace for Ghost with a dashboard, interactive workflow canvas, and a native Electron teaching browser. Teaching sessions capture browser actions and semantic element information, save locally, and support reviewed replay with explicit approvals and observable outcome verification.
 
 See the [complete platform change log](CHANGELOG.md) for implemented features, validation evidence, and current limitations.
