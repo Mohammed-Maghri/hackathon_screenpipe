@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-12T08:37:27.411Z",
+  "checks": [
+    "empty recording blocked",
+    "pause/resume and stop flushes pending scroll",
+    "modal bounds/visibility and manual click delivery",
+    "password/OTP masked and actual IPC start blocked",
+    "main-page recording and verified replay with an unrelated iframe",
+    "dynamically inserted unused iframe does not block main-page capture",
+    "same-origin and cross-origin frame entry remain blocked through IPC"
+  ]
+}

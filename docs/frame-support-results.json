@@ -1,0 +1,11 @@
+{
+  "date": "2026-10-12T08:52:36.054Z",
+  "checks": [
+    "same frame recording, native input, approval, verified replay and isolation",
+    "cross frame recording, native input, approval, verified replay and isolation",
+    "nested frame recording, native input, approval, verified replay and isolation",
+    "subframe pause/resume and sensitive-field masking",
+    "ambiguous frame replay stops before dispatch",
+    "child-frame navigation verified"
+  ]
+}

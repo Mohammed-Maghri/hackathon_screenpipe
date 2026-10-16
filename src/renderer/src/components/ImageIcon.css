@@ -1,0 +1,2 @@
+.ui-image-icon { display: inline-block; position: relative; overflow: hidden; flex-shrink: 0; vertical-align: middle; line-height: 1; font-style: normal; pointer-events: none; }
+.ui-image-icon > img { position: absolute; display: block; width: 800%; height: 600%; max-width: none; object-fit: fill; pointer-events: none; user-select: none; }

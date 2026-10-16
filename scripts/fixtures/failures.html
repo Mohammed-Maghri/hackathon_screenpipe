@@ -1,0 +1,10 @@
+<!doctype html><html><head><title>Failure fixture</title></head><body>
+<h1>Failure fixture</h1><a id="next" href="/next">Next page</a><label>Name<input id="name"></label><label>Password<input id="password" type="password"></label><label>Code<input id="otp" autocomplete="one-time-code"></label>
+<button id="go">Save item</button><input id="input-button" type="button" value="Apply changes" onclick="window.saves++;document.querySelector('#status').textContent='Saved item'"><span id="status" role="status"></span>
+<div id="scroll" data-testid="scroll-area" style="height:100px;overflow:auto"><div style="height:900px">Scrollable panel</div></div>
+<button id="popup" onclick="window.open('/popup')">Open provider</button>
+<div id="drag" data-testid="drag" style="width:150px;height:50px;background:#999">Drag item</div>
+<script>
+window.saves=0;document.querySelector('#go').onclick=()=>{window.saves++;document.querySelector('#status').textContent='Saved item'};
+document.querySelector('#scroll').addEventListener('scroll',()=>window.scrollSeen=true);
+</script></body></html>

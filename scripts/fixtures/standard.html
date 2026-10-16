@@ -1,0 +1,10 @@
+<!doctype html><html><head><title>Dashboard A</title><style>body{font:16px sans-serif;padding:20px}label{display:block;margin:12px}button{margin:8px}textarea{height:35px}</style></head><body>
+<h1>Dashboard A</h1><div id="consent" role="dialog" aria-label="Cookie consent"><button id="cookie">Accept cookies</button></div>
+<section><h2>Orders</h2><form id="report"><label>Report name<input name="report-name"></label><label>Notes<textarea name="notes"></textarea></label><label>Include archived<input name="archived" type="checkbox"></label><label>Region<select name="region"><option value="all">All</option><option value="eu">Europe</option></select></label><div role="textbox" aria-label="Summary" contenteditable="true" style="border:1px solid;min-height:30px"></div><button type="button" id="filters" aria-expanded="false">Filters</button><div id="menu" role="dialog" aria-label="Filters" hidden><button type="button" id="apply">Apply filters</button></div><span id="filter-status" role="status"></span><button type="submit">Save report</button><span id="result" role="status"></span></form></section><a href="/next?kind=A">Next page</a>
+<script>
+if(localStorage.getItem('consent'))document.querySelector('#consent').remove();
+document.querySelector('#cookie')?.addEventListener('click',()=>{localStorage.setItem('consent','yes');document.querySelector('#consent').remove()});
+document.querySelector('#filters').onclick=()=>{document.querySelector('#menu').hidden=false;document.querySelector('#filters').setAttribute('aria-expanded','true')};
+document.querySelector('#apply').onclick=()=>{document.querySelector('#menu').hidden=true;document.querySelector('#filter-status').textContent='Filters applied'};
+document.querySelector('#report').onsubmit=e=>{e.preventDefault();window.saves=(window.saves||0)+1;document.querySelector('#result').textContent='Report saved'};
+</script></body></html>
