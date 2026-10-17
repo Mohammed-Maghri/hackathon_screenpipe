@@ -44,10 +44,17 @@ npm start
 
 This is a host setup step and may need repeating after Electron is reinstalled. Do not disable the Chromium sandbox to work around it.
 
+## Design system
+
+The app uses a **Screenpipe-aligned Ghost** theme: neutral light/dark surfaces, Inter content typography, JetBrains Mono controls, thin borders and compact corners. Lime highlights primary actions and live execution; navigation stays neutral. Fonts are bundled locally. Production uses Tailwind CSS v4: `src/renderer/src/styles/tokens.css` defines the semantic system, `globals.css` bridges shared utility recipes, and React components compose responsive layouts. The app fills the native window without a second inset border. Light, Dark and System are available in Settings and on Welcome; preferences persist and System follows OS changes. Home has a focused saved-workflow card grid and lower composer; full-page Settings has its own section sidebar, search and Back to app while preserving the screen behind it. Design notes and current `screenpipe-*` screenshots live in `.ui-craft/`; `design-preview/` preserves the earlier Air mockup.
+
+Home and the Workflows library present saved workflows as responsive cards. The whole library card opens its editor, while Run, Schedule, Open and Delete remain separate controls. Node counts appear at the top; editor descriptions start collapsed with Show/Hide controls. All existing workflow, recording, replay, processing, and scheduling behavior remains connected to its original handlers. Home-created session drafts open their local editor directly; saved library workflows continue to use the backend.
+
 ## Validation
 
 - Strict TypeScript and production build pass.
 - `git diff --check` passes.
+- After building, `node_modules/.bin/electron scripts/check-air-ui.cjs` checks appearance persistence, bundled typography, borderless framing, welcome dialogs, session draft navigation, templates, node inspector, responsive routes, recorder tabs, full-page Settings and Home/editor state retention without external actions.
 - Native Electron checks pass for teaching-page routing, embedded browsing, address entry, real link clicks, Back/Forward/Reload, loading state, viewport expansion, pause/stop, remote-page isolation, URL restrictions, and cleanup on exit.
 
 ## Structure
@@ -58,8 +65,8 @@ This is a host setup step and may need repeating after Electron is reinstalled. 
 - `src/renderer/src/pages/Welcome.tsx`: the welcome screen.
 - `src/renderer/src/pages/Dashboard.tsx`: the dashboard with local preview interactions.
 - `src/renderer/src/data/workflows.ts`: typed sample workflows and activity.
-- `src/renderer/src/styles/dashboard.css`: dashboard layout, panels, and responsive styling.
-- `src/renderer/src/styles/globals.css`: design tokens, layout, and responsive styling.
+- `src/renderer/src/styles/globals.css`: Tailwind theme bridge and shared controls; screen layouts use utilities in their React components.
+- `src/renderer/src/pages/Settings.tsx`: searchable app settings with section navigation and origin-state preservation.
 - `src/renderer/src/assets`: locally bundled artwork.
 
 Hash-based React Router navigation connects `/` to `/dashboard`. Get started and Skip intro open the dashboard; See how it works explains the intended product in a native HTML dialog with focus containment and Escape dismissal. Native traffic lights are used on macOS; Linux and Windows use working custom window controls. Double-click the title bar to maximize or restore.
@@ -68,7 +75,7 @@ All fonts and artwork are bundled. Node integration is disabled, context isolati
 
 Following the [electron-vite setup](https://electron-vite.org/guide/), Vite 7 is used because the stable electron-vite 5 release requires Vite 5–7. Dependencies are locked in `package-lock.json`.
 
-## Dashboard preview
+## Historical dashboard preview
 
 The dashboard follows the supplied reference with a fixed sidebar, editorial heading, discovery cards, workflow table, connection overview, and activity feed. Home fits the desktop window with a sans-serif heading and no page scrolling; compact panels contain overflow when needed. The welcome screen stays fixed to the window. At smaller widths, cards reflow and the overview moves below the workflow list.
 

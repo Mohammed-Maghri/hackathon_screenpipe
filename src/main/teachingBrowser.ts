@@ -18,6 +18,8 @@ import type { BrowserBounds, BrowserState } from '../shared/browser'
 
 import { browserURL, initialBrowserURL, resolveBrowserAddress } from './browserAddress'
 
+const isSettingsRoute = (url: string) => /#\/settings(?:\/|\?|$)/.test(url)
+
 export function registerTeachingBrowser() {
   type Entry = { closing?: Promise<void>; attached?: boolean; lastBounds?: BrowserBounds; authenticationPaused?: boolean; lastAction?: { id: string; at: number }; downloads?: Set<Electron.DownloadItem>; contents: Electron.WebContents; disposed?: boolean; frames: FrameBridge; interactedFrames: Map<number, FrameIdentity[]>; view: WebContentsView; owner: BrowserWindow; token: string; error: string | null; recording: RecordingStore; captureReady?: boolean; addressNavigation?: boolean; lastEventType?: string; approval?: { sequence: number; resolve: (approved: boolean) => void }; replay?: AbortController; popups?: Set<BrowserWindow> }
   const vault = new LoginVault(join(app.getPath('userData'), 'saved-logins'), { available: () => safeStorage.isEncryptionAvailable() && (process.platform !== 'linux' || safeStorage.getSelectedStorageBackend() !== 'basic_text'), encrypt: value => safeStorage.encryptString(value), decrypt: value => safeStorage.decryptString(value) })
@@ -110,7 +112,7 @@ export function registerTeachingBrowser() {
     const w = Math.max(0, Math.min(width - x, Math.round(bounds.width)))
     const h = Math.max(0, Math.min(height - y, Math.round(bounds.height)))
     entry.lastBounds = bounds
-    const visible = bounds.visible === true && w > 0 && h > 0 && !modalOwners.get(entry.owner.id)?.size
+    const visible = bounds.visible === true && w > 0 && h > 0 && !isSettingsRoute(entry.owner.webContents.getURL()) && !modalOwners.get(entry.owner.id)?.size
     entry.view.setVisible(visible)
     if (!visible && entry.attached) { entry.owner.contentView.removeChildView(entry.view); entry.attached = false }
     entry.view.setBounds({ x, y, width: w, height: h })
@@ -309,11 +311,14 @@ export function registerTeachingBrowser() {
     pendingOpens.get(window.id)?.cancel()
     const ownerContents = window.webContents
     const ownerURL = ownerContents.getURL()
+    // Settings is an occluding route over the mounted teaching page. Keep both
+    // a pending open and its native session alive while that page is covered.
+    const isSessionLocation = (nextURL: string) => nextURL === ownerURL || (nextURL.split('#')[0] === ownerURL.split('#')[0] && isSettingsRoute(nextURL))
     let cancelled = false
     const request = { token, cancel: () => { cancelled = true } }
     pendingOpens.set(window.id, request)
     const cancelNavigation = (_event: Electron.Event, nextURL: string, _inPlace: boolean, mainFrame: boolean) => {
-      if (mainFrame && nextURL !== ownerURL) request.cancel()
+      if (mainFrame && !isSessionLocation(nextURL)) request.cancel()
     }
     const cancelInPage = (_event: Electron.Event, nextURL: string, mainFrame: boolean) => cancelNavigation(_event, nextURL, true, mainFrame)
     ownerContents.on('did-start-navigation', cancelNavigation)
@@ -326,7 +331,7 @@ export function registerTeachingBrowser() {
       const restored = fresh === true ? null : await RecordingStore.restore(root, decodeURIComponent(workflowId), decodeURIComponent(nodeId))
       // The node's configured URL controls opening the browser. Replay retains
       // its own recorded start URL; restoring a recording must not override edits.
-      if (cancelled || window.isDestroyed() || ownerContents.isDestroyed() || ownerContents.getURL() !== ownerURL) throw new Error('Teaching session closed.')
+      if (cancelled || window.isDestroyed() || ownerContents.isDestroyed() || !isSessionLocation(ownerContents.getURL())) throw new Error('Teaching session closed.')
       recording = restored ?? new RecordingStore(root, decodeURIComponent(workflowId), decodeURIComponent(nodeId))
     } finally {
       if (pendingOpens.get(window.id) === request) pendingOpens.delete(window.id)
@@ -388,7 +393,11 @@ export function registerTeachingBrowser() {
     contents.on('page-title-updated', () => publish(entry))
     contents.on('did-fail-load', (_event, code, description, _url, mainFrame) => { if (mainFrame && code !== -3) { entry.error = `Page could not load: ${description}`; publish(entry) } })
     contents.on('render-process-gone', () => { entry.error = 'The browser page stopped responding. Reload to try again.'; publish(entry) })
-    const onNavigate = () => { if (!/#\/workflows\/[^/]+\/record\//.test(window.webContents.getURL()) && entries.get(window.id) === entry) dispose(entry) }
+    const onNavigate = () => {
+      if (entries.get(window.id) !== entry) return
+      if (!isSessionLocation(window.webContents.getURL())) void dispose(entry)
+      else if (entry.lastBounds) position(entry, entry.lastBounds)
+    }
     const onDestroy = () => { if (entries.get(window.id) === entry) dispose(entry) }
     window.webContents.on('did-navigate-in-page', onNavigate)
     window.webContents.on('did-start-navigation', onNavigate)
