@@ -16,6 +16,7 @@ interface Window {
     generateWorkflow: (input: import('../../shared/discovery').GenerateWorkflowRequest) => Promise<import('../../shared/discovery').WorkflowDetailResult>
     defineWorkflowContracts: (id: string) => Promise<import('../../shared/discovery').WorkflowDetailResult>
     updateWorkflow: (id: string, input: import('../../shared/discovery').WorkflowUpdate) => Promise<import('../../shared/discovery').WorkflowDetailResult>
+    setAppearance?: (theme: 'light' | 'dark') => Promise<void>
     platform: string
     controlWindow: (action: 'minimize' | 'maximize' | 'close') => void
   }

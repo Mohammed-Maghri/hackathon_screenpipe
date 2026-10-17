@@ -5,7 +5,7 @@ import { WorkflowScheduler } from './workflowScheduler'
 import { graphSchema } from '../shared/dataProcessing'
 import { RuntimeLogicService } from './dataProcessing/runtimeLogic'
 import { LocalProcessingService } from './dataProcessing/service'
-import { app, BrowserWindow, dialog, ipcMain, session, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, session, shell } from 'electron'
 import { deleteSavedWorkflow, prepareWorkflowDiscovery, listSavedWorkflows, getSavedWorkflow, mutateWorkflowBackend, mockWorkflowActivity } from './discoveryBackend'
 import { registerTeachingBrowser } from './teachingBrowser'
 import { appendFile, mkdir } from 'node:fs/promises'
@@ -31,7 +31,7 @@ const devURL = !app.isPackaged ? process.env.ELECTRON_RENDERER_URL : undefined
 function createWindow(): void {
   const window = new BrowserWindow({
     width: 1440, height: 960, minWidth: 760, minHeight: 620,
-    title: 'Ghost', backgroundColor: '#080808', show: false,
+    title: 'Ghost', backgroundColor: nativeTheme.shouldUseDarkColors ? '#0a0a0a' : '#f6f6f3', show: false,
     frame: false, titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
     trafficLightPosition: { x: 25, y: 22 },
     webPreferences: {
@@ -78,6 +78,11 @@ app.whenReady().then(() => {
       throw new Error('Unauthorized backend request')
     }
   }
+  ipcMain.handle('appearance:set', (event, theme: unknown) => {
+    authorizeBackend(event)
+    if (theme !== 'light' && theme !== 'dark') throw new Error('Invalid appearance')
+    BrowserWindow.fromWebContents(event.sender)!.setBackgroundColor(theme === 'dark' ? '#0a0a0a' : '#f6f6f3')
+  })
   const processing = new LocalProcessingService(app.getPath('userData'))
   const runtimeLogic = new RuntimeLogicService(app.getPath('userData'), processing)
   const scheduler = new WorkflowScheduler(app.getPath('userData'), async id => {
