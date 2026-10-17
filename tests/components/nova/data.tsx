@@ -1,7 +1,8 @@
+import type { RestockSettings, StockItem } from '../../lib/restocking'
 export type Product = { id:string; name:string; price:number; stock:number; image:number; sold:number }
 export type Order = { id:string; customer:string; email:string; country:string; productId:string; quantity:number; unitPrice:number; status:'Paid'|'Processing'|'Shipped'|'Cancelled'; date:string; channel:'Online Store'|'Point of Sale'; notes:string }
 export type Campaign = { id:string; name:string; audience:string; status:'Draft'|'Scheduled'; date:string }
-export type NovaData = { products:Product[]; orders:Order[]; campaigns:Campaign[]; discounts:{code:string; percent:number}[]; storeName:string; notices:string[] }
+export type NovaData = { restocking?: { settings: RestockSettings; suppliers: Record<string, Omit<StockItem, 'id' | 'name' | 'stock'>> }; products:Product[]; orders:Order[]; campaigns:Campaign[]; discounts:{code:string; percent:number}[]; storeName:string; notices:string[] }
 export const seedProducts:Product[] = [
  {id:'hoodie',name:'Oversized Hoodie – Black',price:89,stock:47,image:0,sold:342},
  {id:'tee',name:'Essential T-Shirt – White',price:24.99,stock:126,image:1,sold:281},
