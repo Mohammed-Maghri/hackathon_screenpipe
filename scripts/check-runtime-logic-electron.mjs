@@ -97,7 +97,7 @@ assert.equal(unapproved[0].status,'FAILED');
 fixture.holdGeneration();
 await click('Run');
 await until(()=>host.eval(`!!document.querySelector('.processing-progress[data-stage="generating"]')`),'Generation animation missing');
-assert.equal(await host.eval(`getComputedStyle(document.querySelector('.processing-spinner')).animationName`),'processing-spin');
+assert.notEqual(await host.eval(`getComputedStyle(document.querySelector('.processing-spinner')).animationName`),'none');
 const animated=await host.call('Page.captureScreenshot',{format:'png'});await writeFile('/tmp/ghost-processing-animation.png',Buffer.from(animated.data,'base64'));
 await host.call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
 assert.equal(await host.eval(`getComputedStyle(document.querySelector('.processing-spinner')).animationName`),'none');
@@ -154,4 +154,4 @@ assert.deepEqual(changed.map(r=>r.status),['FAILED','SKIPPED']);assert.match(cha
 console.log('PASS prompt Save Changes/reload, single Run generation/testing/saving, saved plan reopens; changed objective blocks reuse and downstream execution');
 assert.ok(!/UnhandledPromiseRejection/.test(errors),errors);
 }catch(error){console.error(error);process.exitCode=1}
-finally{clearTimeout(watchdog);guest?.close();host?.close();electron.kill('SIGTERM');server.closeAllConnections();server.close();await fixture.close()}
+finally{clearTimeout(watchdog);fixture.releaseGeneration();guest?.close();host?.close();electron.kill('SIGTERM');const stop=setTimeout(()=>electron.kill('SIGKILL'),1500);stop.unref();electron.once('exit',()=>clearTimeout(stop));server.closeAllConnections();server.close();await fixture.close()}

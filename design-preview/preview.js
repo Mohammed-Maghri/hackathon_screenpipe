@@ -47,7 +47,7 @@ const icon = (name, cls = "") =>
   `<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.workflow}</svg>`;
 const assetRoot = "../src/renderer/src/assets/app-imagery/";
 const app = (name) =>
-  `<span class="app-icon"><img src="${assetRoot + name.toLowerCase()}.png" width="22" height="22" alt="${name}"></span>`;
+  `<span class="app-icon"><img src="${assetRoot + name.toLowerCase()}.svg" width="22" height="22" alt="${name}"></span>`;
 const apps = (names) =>
   `<span class="app-stack">${names.map(app).join("")}</span>`;
 const button = (label, ic = "", primary = false, attr = "") =>
