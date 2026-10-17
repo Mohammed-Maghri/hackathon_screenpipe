@@ -27,6 +27,6 @@ export interface WorkflowUpdate {
 }
 
 export interface WorkflowListOptions { limit?: number; status?: SavedWorkflow['status']; search?: string }
-export interface WorkflowCreate { name: string; description: string }
+export interface WorkflowCreate { name: string; description: string; status?: SavedWorkflow['status']; nodes?: SavedWorkflowDetail['nodes']; edges?: SavedWorkflowDetail['edges'] }
 
 export interface DiscoveryProgress { requestId: string; phase: 'activity' | 'ai' | 'saving' }

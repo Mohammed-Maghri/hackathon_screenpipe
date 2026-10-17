@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router'
 import { Bug, ChevronDown, ChevronRight, ChevronUp, CircleDot, CircleHelp, Library, ListTree, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plug, Plus, Settings, TimerReset, UsersRound, Workflow } from 'lucide-react'
 import { AppMark } from './AppMark'
 import { DashboardDialog } from './DashboardDialog'
+import { WorkflowTemplates } from './WorkflowTemplates'
 import { WorkspaceChromeContext } from './WorkspaceFrame'
 import { useWorkflows } from '../data/workflowStore'
 import type { SavedWorkflow } from '../../../shared/discovery'
@@ -128,9 +129,9 @@ export function WorkflowSidebar({ active = 'workflows', onPanelChange }: { activ
         <Link className="dash-button justify-start" to="/workflows" onClick={() => setPanel(null)}><Workflow size={15} />All workflows</Link>
         <button className="dash-button justify-start" onClick={() => choosePanel('library')}><Library size={15} />Templates</button>
         <button className="dash-button justify-start" onClick={() => choosePanel('settings')}><Settings size={15} />Settings</button>
-      </div> : <>
-        <p className="modal-copy">{panel === 'record' ? 'Open a workflow and choose Needs teaching to demonstrate a step in the embedded browser.' : panel === 'integrations' ? 'Discovery uses your configured local Screenpipe and the Ghost discovery pipe. Saved workflows use your configured backend; other app integrations are not configured here.' : panel === 'library' ? 'Browse your workflows to explore routines and open their canvases.' : panel === 'activity' ? 'Open a workflow to inspect its captured actions and run results. Home shows illustrative activity in preview mode.' : panel === 'help' ? 'Describe a routine on Home, review its steps, then teach Ghost any browser actions it needs. You choose when to test and run it.' : panel === 'diagnostics' ? 'Ghost · Version 0.1.0. Open a workflow’s run log to inspect execution details. Recording and workflow tools run in the desktop app.' : 'Your local Ghost workspace. No account required.'}</p>
-        {(panel === 'library' || panel === 'record') && <Link className="dash-button modal-action" to="/workflows" onClick={() => setPanel(null)}>Browse workflows <ChevronRight size={15} /></Link>}
+      </div> : panel === 'library' ? <WorkflowTemplates /> : <>
+        <p className="modal-copy">{panel === 'record' ? 'Open a workflow and choose Needs teaching to demonstrate a step in the embedded browser.' : panel === 'integrations' ? 'Discovery uses your configured local Screenpipe and the Ghost discovery pipe. Saved workflows use your configured backend; other app integrations are not configured here.' : panel === 'activity' ? 'Open a workflow to inspect its captured actions and run results. Home shows illustrative activity in preview mode.' : panel === 'help' ? 'Describe a routine on Home, review its steps, then teach Ghost any browser actions it needs. You choose when to test and run it.' : panel === 'diagnostics' ? 'Ghost · Version 0.1.0. Open a workflow’s run log to inspect execution details. Recording and workflow tools run in the desktop app.' : 'Your local Ghost workspace. No account required.'}</p>
+        {panel === 'record' && <Link className="dash-button modal-action" to="/workflows" onClick={() => setPanel(null)}>Browse workflows <ChevronRight size={15} /></Link>}
       </>}
     </DashboardDialog>}
   </>

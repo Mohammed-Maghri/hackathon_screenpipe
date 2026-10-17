@@ -12,7 +12,11 @@ function assert(v,m){if(!v)throw Error(m)}
 try {
 await call('Page.reload',{ignoreCache:true});await pause(600);
 await evaluate(`location.hash='/workflows/orders'`);await until(`!!document.querySelector('.node-slack')`);
-const badge=await evaluate(`(() => {const r=document.querySelector('.node-slack .needs-attention').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2} })()`);await call('Input.dispatchMouseEvent',{type:'mousePressed',...badge,button:'left',clickCount:1});await call('Input.dispatchMouseEvent',{type:'mouseReleased',...badge,button:'left',clickCount:1});await until(`!!document.querySelector('.record-shell')`);
+const badge=await evaluate(`(() => {const r=document.querySelector('.node-slack .needs-attention').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2} })()`);await call('Input.dispatchMouseEvent',{type:'mousePressed',...badge,button:'left',clickCount:1});await call('Input.dispatchMouseEvent',{type:'mouseReleased',...badge,button:'left',clickCount:1});assert(await evaluate(`document.querySelector('.node-slack').getAttribute('aria-pressed')==='true' && !document.querySelector('dialog[open]') && !!document.querySelector('.workflow-canvas')`),'A badge click should only select its node');
+await call('Input.dispatchMouseEvent',{type:'mousePressed',...badge,button:'left',clickCount:2});await call('Input.dispatchMouseEvent',{type:'mouseReleased',...badge,button:'left',clickCount:2});
+await until(`!!document.querySelector('dialog[open] [aria-label="Node inspector"]')`);
+await evaluate(`[...document.querySelectorAll('dialog[open] button')].find(b=>b.textContent.includes('Start recording')).click()`);
+await until(`!!document.querySelector('.record-shell')`);
 await until(`!document.querySelector('[aria-label="Website address"]').disabled`);
 assert(await evaluate(`!!window.ghost.browser`),'No browser bridge');
 await evaluate(`window.__browserEvents=[];window.__off=window.ghost.browser.onState(s=>window.__browserEvents.push(s)); window.__addressInput=document.querySelector('[aria-label="Website address"]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(window.__addressInput,'http://127.0.0.1:9335/one');window.__addressInput.dispatchEvent(new Event('input',{bubbles:true}));`);
@@ -39,5 +43,5 @@ const count=await evaluate(`document.querySelectorAll('.record-event-scroll li')
 await evaluate(`document.querySelector('.stop-recording').click()`);await until(`document.querySelector('.record-events').textContent.includes('Export session')`);
 await evaluate(`Array.from(document.querySelectorAll('.record-header-actions button')).find(b=>b.textContent.includes('Exit')).click()`);await until(`!!document.querySelector('.editor-shell')`);await pause(300);
 const after=await(await fetch('http://127.0.0.1:9224/json')).json();assert(!after.some(t=>t.id===guest.id),'Native webContents leaked after exit');
-console.log('PASS: teaching badge routing; native WebContentsView; real links; URL entry; back/forward/reload; loading state; restricted remote renderer; blocked file URL; viewport resize; help dialog; pause/stop; exit cleanup.');gws.close();
+console.log('PASS: node selection, double-click inspector and explicit recording; native WebContentsView; real links; URL entry; back/forward/reload; loading state; restricted remote renderer; blocked file URL; viewport resize; help dialog; pause/stop; exit cleanup.');gws.close();
 } catch(error) { console.log(await evaluate(`document.body.innerText`)); throw error } finally { ws.close();server.close(); }

@@ -77,7 +77,7 @@ assert.deepEqual(result.structuredOutputs.table.value,[{count:'2'}]);assert.deep
 console.log('PASS verified browser downloads, extracted text, table and JSON outputs');
 await host.eval(`location.hash='/workflows/${workflowId}'`);
 await until(()=>host.eval(`!!document.querySelector('.node-${logicId}')`),'Board missing');
-await host.eval(`document.querySelector('.node-${logicId}').click()`);
+await host.eval(`document.querySelector('.node-${logicId}').dispatchEvent(new MouseEvent('dblclick', { bubbles: true, detail: 2 }))`);
 await until(()=>host.eval(`!!document.querySelector('.runtime-logic')`),'Runtime inspector missing');
 const click=label=>host.eval(`[...document.querySelectorAll('.runtime-logic button')].find(b=>b.textContent===${JSON.stringify(label)}).click()`);
 assert.equal(await host.eval(`[...document.querySelectorAll('.runtime-logic button')].some(b=>/Inspect actual|Generate Logic|Test Node|Approve/.test(b.textContent))`),false);
@@ -89,7 +89,7 @@ assert.equal(fixture.workflow.nodes[1].config.description,objective);
 assert.equal(fixture.calls,0);
 await host.eval('location.reload()');
 await until(()=>host.eval(`!!document.querySelector('.node-${logicId}')`),'Reload after save failed');
-await host.eval(`document.querySelector('.node-${logicId}').click()`);
+await host.eval(`document.querySelector('.node-${logicId}').dispatchEvent(new MouseEvent('dblclick', { bubbles: true, detail: 2 }))`);
 await until(()=>host.eval(`!!document.querySelector('.runtime-logic')`),'Saved inspector did not reopen');
 assert.equal(await host.eval(`document.querySelector('[aria-label="Processing objective"]').value`),objective);
 const unapproved=await host.eval(`window.ghost.processing.run(${JSON.stringify({workflowId,graph:fixture.workflow,nodeId:logicId})})`);
@@ -129,7 +129,7 @@ assert.equal(output.worksheets[0].rowCount,3);assert.deepEqual(output.worksheets
 console.log('PASS single Run → generation → local test → saved logic → reused plan → downstream total 51; actual exported contents verified');
 await host.eval('location.reload()');
 await until(()=>host.eval(`!!document.querySelector('.node-${logicId}')`),'Reload failed');
-await host.eval(`document.querySelector('.node-${logicId}').click()`);
+await host.eval(`document.querySelector('.node-${logicId}').dispatchEvent(new MouseEvent('dblclick', { bubbles: true, detail: 2 }))`);
 await until(()=>host.eval(`document.querySelector('.runtime-logic')?.textContent.includes('View script & runtime')`),'Approved plan not restored');
 await click('View script & runtime');
 assert.equal(await host.eval(`document.querySelector('#generated-script pre').textContent`),await readFile('src/main/dataProcessing/planExecutor.ts','utf8'));
