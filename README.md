@@ -1,10 +1,18 @@
 # Ghost
 
-**New teammates:** start with the [Hackathon setup and app walkthrough](docs/TEAM_ONBOARDING.md). See [Current implemented features](docs/IMPLEMENTED_FEATURES.md) for the present scope; older preview descriptions below are historical.
+**New teammates:** start with the [Hackathon setup and app walkthrough](docs/TEAM_ONBOARDING.md). See [Implementation and roadmap](docs/IMPLEMENTATION_AND_ROADMAP.md) for technical details and remaining work, and [Current implemented features](docs/IMPLEMENTED_FEATURES.md) for the present scope; older preview descriptions below are historical.
 
 A desktop workspace for Ghost with a dashboard, interactive workflow canvas, and a native Electron teaching browser. Teaching sessions capture browser actions and semantic element information, save locally, and support reviewed replay with explicit approvals and observable outcome verification.
 
 See the [complete platform change log](CHANGELOG.md) for implemented features, validation evidence, and current limitations.
+
+## Screenpipe discovery
+
+Home now uses real local Screenpipe activity and its configured AI preset. See [Screenpipe connection setup](docs/SCREENPIPE_DISCOVERY.md). The old simulation endpoints remain for development tests; they are not the Home submission path.
+
+## Docker services and frontend preview
+
+See [Docker setup](docs/DOCKER.md) for the root Compose stack: PostgreSQL, backend, frontend preview and Forma/NOVA. Run Electron locally for the full app, recording and replay. Container runtime verification is pending on a Docker-capable machine.
 
 ## Run
 

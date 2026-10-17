@@ -1,9 +1,17 @@
+> Current discovery flow: Ghost invokes the dedicated Screenpipe Pipe and imports only its final JSON answer. Setup and live-service limitations are documented in [Screenpipe discovery](SCREENPIPE_DISCOVERY.md). Earlier retrieval-flow descriptions below are historical.
+
 # Ghost — Implemented Features and Current Capabilities
 
 **Updated: October 16, 2026**
-**Scope:** The current repository, including the uncommitted NOVA test website. This is an implementation inventory, not a claim that every feature works on every website.
+**Scope:** The current repository, including the NOVA test website committed in `23e182c`. This is an implementation inventory, not a claim that every feature works on every website.
 
 Ghost is a desktop workflow application that combines a saved workflow graph, a browser teaching/replay engine, and local data processing. Workflow definitions live in the backend; browser sessions, recordings, execution artifacts and schedules are primarily device-local.
+
+For implementation internals and prioritized remaining work, see [Implementation and roadmap](IMPLEMENTATION_AND_ROADMAP.md).
+
+## Latest discovery update — October 17
+
+Home now uses real Screenpipe activity and its local AI endpoint instead of the development simulation. See [Screenpipe discovery](SCREENPIPE_DISCOVERY.md) for code, setup, validation and the live history-only-mode blocker. The simulation description below documents the retained legacy endpoints, not current Home behavior.
 
 ## 1. Platform architecture
 
@@ -250,7 +258,7 @@ Implemented foundation:
 - Fastify API with CORS, logging, centralized errors and a health endpoint.
 - Zod request/configuration validation.
 - Prisma generation, migrations and database scripts.
-- PostgreSQL local development through Docker Compose.
+- Root Docker Compose configuration for PostgreSQL, migrations, backend, renderer preview and test websites; container runtime verification remains pending. See [Docker setup](DOCKER.md).
 - UUID identities, timestamps, enums, indexes and relational constraints.
 - Models: `User`, `Workflow`, `WorkflowNode`, `WorkflowEdge`, `WorkflowRun`, `NodeRun`, `RecordingSecret`.
 - Swagger/OpenAPI documentation setup.

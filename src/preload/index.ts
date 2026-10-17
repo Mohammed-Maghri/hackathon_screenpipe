@@ -25,6 +25,12 @@ contextBridge.exposeInMainWorld('ghost', {
     run: (input: import('../shared/dataProcessing').ProcessingRequest) => ipcRenderer.invoke('processing:run', input),
     reveal: (workflowId: string, fileId: string) => ipcRenderer.invoke('processing:reveal', workflowId, fileId),
   },
+  discoverWorkflow: (input: import('../shared/discovery').GenerateWorkflowRequest) => ipcRenderer.invoke('discovery:screenpipe', input),
+  onDiscoveryProgress: (listener: (progress: import('../shared/discovery').DiscoveryProgress) => void) => {
+    const receive = (_event: Electron.IpcRendererEvent, progress: import('../shared/discovery').DiscoveryProgress) => listener(progress)
+    ipcRenderer.on('discovery:progress', receive)
+    return () => ipcRenderer.removeListener('discovery:progress', receive)
+  },
   mockDiscovery: (input: import('../shared/discovery').DiscoveryRequest) => ipcRenderer.invoke('discovery:mock', input),
   generateWorkflow: (input: import('../shared/discovery').GenerateWorkflowRequest) => ipcRenderer.invoke('discovery:generate', input),
   defineWorkflowContracts: (id: string) => ipcRenderer.invoke('workflows:contracts', id),

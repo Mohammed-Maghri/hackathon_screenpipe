@@ -1,3 +1,6 @@
+import { existsSync } from 'node:fs'
+import { loadEnvFile } from 'node:process'
+import { discoverScreenpipeAgentWorkflow } from './screenpipeAgentDiscovery'
 import { WorkflowScheduler } from './workflowScheduler'
 import { graphSchema } from '../shared/dataProcessing'
 import { RuntimeLogicService } from './dataProcessing/runtimeLogic'
@@ -21,6 +24,7 @@ function logFailure(kind: string, details: unknown) {
 app.on('child-process-gone', (_event, details) => logFailure('child-process-gone', details))
 app.on('render-process-gone', (_event, _contents, details) => logFailure('render-process-gone', details))
 
+if (existsSync('.env')) loadEnvFile('.env')
 const here = fileURLToPath(new URL('.', import.meta.url))
 const devURL = !app.isPackaged ? process.env.ELECTRON_RENDERER_URL : undefined
 
@@ -102,6 +106,7 @@ app.whenReady().then(() => {
   ipcMain.handle('logic:reveal', async (event, id, fileId) => { authorizeBackend(event); shell.showItemInFolder(await runtimeLogic.reveal(id, fileId)) })
   ipcMain.handle('processing:run', (event, input) => { authorizeBackend(event); return processing.run(input, status => { if (!event.sender.isDestroyed()) event.sender.send('processing:status', status) }) })
   ipcMain.handle('processing:reveal', async (event, workflowId, fileId) => { authorizeBackend(event); if (typeof workflowId !== 'string' || typeof fileId !== 'string') throw new Error('Invalid artifact reference'); shell.showItemInFolder(await processing.path(workflowId, fileId)) })
+  ipcMain.handle('discovery:screenpipe', (event, input) => { authorizeBackend(event); return discoverScreenpipeAgentWorkflow(input, { stateDir: join(app.getPath('userData'), 'screenpipe-discovery'), notify: progress => { if (!event.sender.isDestroyed()) event.sender.send('discovery:progress', progress) } }) })
   ipcMain.handle('discovery:prepare', (event, input) => { authorizeBackend(event); return prepareWorkflowDiscovery(input) })
   ipcMain.handle('discovery:mock', (event, input) => { authorizeBackend(event); return mockWorkflowActivity(input) })
   ipcMain.handle('discovery:generate', (event, input) => { authorizeBackend(event); return mutateWorkflowBackend('/api/workflow-discovery/generate', input) })
