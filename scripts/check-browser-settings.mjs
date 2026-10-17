@@ -63,6 +63,21 @@ for (let toggle = 0; toggle < 2; toggle++) {
  assert.equal((await host.eval(`window.ghost.browser.recordingStatus(${JSON.stringify(sessionId)})`)).id,beforeSettings.id,'Sidebar collapse must preserve recording');
 }
 
+// Closing nested modal holds must restore the same loaded guest, even when
+// renderer bounds are updated while a modal is open (as run results do).
+await guest.eval('window.__restoreMarker = "same-document"');
+for (let attempt = 0; attempt < 3; attempt++) {
+ await host.eval(`window.ghost.browser.modal('results-regression', true)`);
+ await host.eval(`window.ghost.browser.modal('nested-regression', true)`);
+ await host.eval(`(()=>{const r=document.querySelector('.browser-viewport').getBoundingClientRect();window.ghost.browser.bounds(${JSON.stringify(sessionId)},{x:r.x,y:r.y,width:r.width,height:r.height,visible:true})})()`);
+ assert.equal((await host.eval(`window.ghost.browser.diagnostics(${JSON.stringify(sessionId)})`)).visible,false);
+ await host.eval(`window.ghost.browser.modal('results-regression', false)`);
+ assert.equal((await host.eval(`window.ghost.browser.diagnostics(${JSON.stringify(sessionId)})`)).visible,false,'Nested dialog must keep the browser hidden');
+ await host.eval(`window.ghost.browser.modal('nested-regression', false)`);
+ await until(async()=>(await host.eval(`window.ghost.browser.diagnostics(${JSON.stringify(sessionId)})`)).visible,'Closing results must restore the browser');
+ assert.equal(await guest.eval('window.__restoreMarker'),'same-document','Restoration must not reload the website');
+}
+
 await host.eval(`window.__recordingElement=document.querySelector('.record-shell');document.querySelector('[aria-label="Settings"]').click()`);
 await until(()=>host.eval(`!!document.querySelector('.settings-shell:not(.invisible)')`),'Full-page Settings did not open');
 assert.equal((await host.eval(`window.ghost.browser.diagnostics(${JSON.stringify(sessionId)})`)).visible,false,'Settings must occlude the native guest');

@@ -57,9 +57,11 @@ export function RecordStep() {
   const pendingBrowserOpen = useRef<(() => void) | null>(null)
   const replayMode = useRef<'fast' | 'demo'>('fast')
   const lastURL = useRef('')
+  // Modal occlusion belongs to teaching:modal. Persist only viewport visibility
+  // here so closing a dialog cannot leave lastBounds stuck at visible:false.
   function bounds(): BrowserBounds {
     const rect = viewport.current?.getBoundingClientRect()
-    return { x: rect?.x ?? 0, y: rect?.y ?? 0, width: rect?.width ?? 0, height: rect?.height ?? 0, visible: !document.querySelector('dialog[open]') && !document.hidden }
+    return { x: rect?.x ?? 0, y: rect?.y ?? 0, width: rect?.width ?? 0, height: rect?.height ?? 0, visible: !document.hidden && !viewport.current?.closest('[inert]') }
   }
   useLayoutEffect(() => { if (ready && browser) browser.bounds(token.current, bounds()) }, [browser, ready, wide, help, inspectedEvent, preview, showResults, replay?.state, error, state.error])
   useEffect(() => {

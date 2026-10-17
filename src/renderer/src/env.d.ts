@@ -10,6 +10,7 @@ interface Window {
     listWorkflows: (offset?: number, options?: import('../../shared/discovery').WorkflowListOptions) => Promise<import('../../shared/discovery').WorkflowListResult>
     deleteWorkflow: (id: string) => Promise<import('../../shared/discovery').DiscoveryPreparation>
     getWorkflow: (id: string) => Promise<import('../../shared/discovery').WorkflowDetailResult>
+    activityTimeline: (range: import('../../shared/activityTimeline').ActivityRange) => Promise<import('../../shared/activityTimeline').ActivityTimelineResult>
     discoverWorkflow: (input: import('../../shared/discovery').GenerateWorkflowRequest) => Promise<import('../../shared/discovery').WorkflowDetailResult>
     onDiscoveryProgress: (listener: (progress: import('../../shared/discovery').DiscoveryProgress) => void) => () => void
     mockDiscovery: (input: import('../../shared/discovery').DiscoveryRequest) => Promise<import('../../shared/discovery').DiscoveryPreparation>

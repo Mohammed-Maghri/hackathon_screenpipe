@@ -1,3 +1,4 @@
+import { createActivityTimeline } from './activityTimeline'
 import { existsSync } from 'node:fs'
 import { loadEnvFile } from 'node:process'
 import { discoverScreenpipeAgentWorkflow } from './screenpipeAgentDiscovery'
@@ -111,6 +112,8 @@ app.whenReady().then(() => {
   ipcMain.handle('logic:reveal', async (event, id, fileId) => { authorizeBackend(event); shell.showItemInFolder(await runtimeLogic.reveal(id, fileId)) })
   ipcMain.handle('processing:run', (event, input) => { authorizeBackend(event); return processing.run(input, status => { if (!event.sender.isDestroyed()) event.sender.send('processing:status', status) }) })
   ipcMain.handle('processing:reveal', async (event, workflowId, fileId) => { authorizeBackend(event); if (typeof workflowId !== 'string' || typeof fileId !== 'string') throw new Error('Invalid artifact reference'); shell.showItemInFolder(await processing.path(workflowId, fileId)) })
+  const activityTimeline = createActivityTimeline()
+  ipcMain.handle('screenpipe:activity', (event, range) => { authorizeBackend(event); return activityTimeline(range) })
   ipcMain.handle('discovery:screenpipe', (event, input) => { authorizeBackend(event); return discoverScreenpipeAgentWorkflow(input, { stateDir: join(app.getPath('userData'), 'screenpipe-discovery'), notify: progress => { if (!event.sender.isDestroyed()) event.sender.send('discovery:progress', progress) } }) })
   ipcMain.handle('discovery:prepare', (event, input) => { authorizeBackend(event); return prepareWorkflowDiscovery(input) })
   ipcMain.handle('discovery:mock', (event, input) => { authorizeBackend(event); return mockWorkflowActivity(input) })

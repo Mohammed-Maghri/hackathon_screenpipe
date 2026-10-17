@@ -27,7 +27,7 @@ export function Welcome() {
     </div>
     <main className="welcome-main grid min-h-0 flex-1 grid-cols-[300px_minmax(0,1fr)] max-[1280px]:grid-cols-[260px_minmax(0,1fr)] max-[900px]:grid-cols-1">
       <aside className="welcome-guide flex min-h-0 flex-col overflow-y-auto border-r border-sidebar-line bg-sidebar px-8 py-9 text-sidebar-ink max-[1280px]:px-6 max-[900px]:hidden" aria-label="Introducing Ghost">
-        <div className="[&_.brand]:text-sidebar-ink [&_.brand-period]:text-sidebar-ink"><GhostLogo /></div>
+        <div className="[&_.brand]:text-action-fill [&_.brand-period]:text-action-fill"><GhostLogo /></div>
         <div className="mt-12 max-[1100px]:mt-9">
           <h2 className="text-[28px] leading-tight font-medium tracking-tight">Your work,<br />understood.</h2>
           <p className="mt-3 text-[13px] leading-6 text-sidebar-muted">A little less busywork.<br />A little more possibility.</p>
@@ -44,7 +44,7 @@ export function Welcome() {
       <div className="flex min-h-0 min-w-0 flex-col">
         <div className="welcome-scroll flex min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <section className="welcome-content m-auto w-full max-w-[760px] px-12 py-10 max-[1280px]:px-8 max-[600px]:px-5 max-[600px]:py-8 [@media(max-height:740px)]:py-6" aria-labelledby="welcome-title">
-            <div className="mb-7 hidden max-[900px]:block [&_.brand-period]:text-ink [@media(max-height:740px)]:hidden"><GhostLogo /></div>
+            <div className="mb-7 hidden max-[900px]:block [&_.brand-period]:text-action-fill [@media(max-height:740px)]:hidden"><GhostLogo /></div>
             <p className="mb-3 font-mono text-xs text-muted">Welcome to Ghost</p>
             <h1 id="welcome-title" className="max-w-[560px] text-[40px] leading-[1.15] font-medium tracking-tight max-[1280px]:text-4xl max-[600px]:text-[30px] [@media(max-height:740px)]:text-[32px]">Turn actions<br className="max-[600px]:hidden" /> into workflows.</h1>
             <p className="subtitle mt-4 max-w-[460px] text-sm leading-6 text-muted [@media(max-height:740px)]:mt-3">Ghost learns from your activity and helps you turn it into automations.</p>

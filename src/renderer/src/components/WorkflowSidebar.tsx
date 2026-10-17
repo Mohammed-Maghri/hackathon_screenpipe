@@ -1,7 +1,8 @@
 import { useContext, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { Bug, ChevronDown, ChevronRight, ChevronUp, CircleDot, CircleHelp, Library, ListTree, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plug, Plus, Settings, TimerReset, UsersRound, Workflow } from 'lucide-react'
+import { Bug, ChevronDown, ChevronRight, ChevronUp, CircleHelp, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plus, Settings, TimerReset, UsersRound, Workflow } from 'lucide-react'
+import { GhostLogo } from './GhostLogo'
 import { AppMark } from './AppMark'
 import { DashboardDialog } from './DashboardDialog'
 import { WorkspaceChromeContext } from './WorkspaceFrame'
@@ -11,12 +12,8 @@ import type { SavedWorkflow } from '../../../shared/discovery'
 const items = [
   { label: 'Home', icon: Plus, to: '/dashboard', key: 'home' },
   { label: 'Workflows', icon: TimerReset, to: '/workflows', key: 'workflows' },
-  { label: 'Record a routine', icon: CircleDot, to: null, key: 'record' },
-  { label: 'Templates', icon: Library, to: null, key: 'library' },
-  { label: 'Activity', icon: ListTree, to: null, key: 'activity' },
-  { label: 'Connections', icon: Plug, to: null, key: 'integrations' },
 ]
-const panelTitles: Record<string, string> = { record: 'Record a routine', library: 'Workflow templates', activity: 'Recent activity', integrations: 'Connections', profile: 'My workspace', help: 'A little help', menu: 'Workspace', switcher: 'Ghost workspace', diagnostics: 'Diagnostics' }
+const panelTitles: Record<string, string> = { profile: 'My workspace', help: 'A little help', menu: 'Workspace', switcher: 'Ghost workspace', diagnostics: 'Diagnostics' }
 const collapsedKey = 'ghost.sidebar.collapsed'
 const navItem = 'nav-item relative flex h-8 min-w-0 items-center gap-2 rounded-control border border-transparent px-2.5 text-left font-sans text-[13px] font-semibold leading-5 text-sidebar-muted transition-colors hover:bg-nav-active hover:text-sidebar-ink focus-visible:outline-2 focus-visible:outline-action aria-[current=page]:border-sidebar-selected-line aria-[current=page]:bg-nav-active aria-[current=page]:text-sidebar-ink aria-[current=page]:before:absolute aria-[current=page]:before:inset-y-1 aria-[current=page]:before:left-0 aria-[current=page]:before:w-0.5 aria-[current=page]:before:bg-sidebar-indicator'
 const utilityButton = 'app-no-drag relative inline-grid size-7 shrink-0 place-items-center rounded-sm text-sidebar-muted transition-colors hover:bg-nav-active hover:text-sidebar-ink'
@@ -86,8 +83,9 @@ export function WorkflowSidebar({ active = 'workflows', onPanelChange }: { activ
     <aside aria-label="Workflow sidebar" className={`dashboard-sidebar editor-sidebar relative flex min-h-0 shrink-0 flex-col overflow-hidden border-r border-sidebar-line bg-sidebar text-sidebar-ink ${compact} max-lg:w-14`}>
       {!desktopMac && toolbar}
 
-      <button type="button" className={`sidebar-context app-no-drag flex h-14 shrink-0 items-center gap-2 px-5 text-left font-sans text-lg font-semibold ${centerOnRail}`} aria-label="Ghost workspace" aria-haspopup="dialog" onClick={() => setPanel('switcher')} title="Ghost workspace">
-        <Workflow size={18} strokeWidth={1.8} /><span className={`min-w-0 flex-1 ${hideLabel}`}>Workflows</span><ChevronDown className={`mr-1 ${hideLabel}`} size={14} />
+      <button type="button" className={`sidebar-context app-no-drag flex shrink-0 items-center border-b border-sidebar-line text-left ${collapsed ? 'h-20 justify-center px-1' : 'h-20 gap-3 px-5 max-lg:justify-center max-lg:px-1'}`} aria-label="Ghost workspace" aria-haspopup="dialog" onClick={() => setPanel('switcher')} title="Ghost workspace">
+        <span className={`${collapsed ? '[&_.brand]:flex-col [&_.brand]:gap-1 [&_.brand>span]:text-[11px]' : 'max-lg:[&_.brand]:flex-col max-lg:[&_.brand]:gap-1 max-lg:[&_.brand>span]:text-[11px]'} [&_.brand]:text-action-fill [&_.brand>svg]:text-action-fill [&_.brand>svg]:h-8 [&_.brand>svg]:w-7`}><GhostLogo /></span>
+        <ChevronDown className={`ml-auto ${hideLabel}`} size={14} />
       </button>
 
       <div className="sidebar-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
@@ -126,11 +124,9 @@ export function WorkflowSidebar({ active = 'workflows', onPanelChange }: { activ
       {panel === 'menu' || panel === 'switcher' ? <div className="grid gap-2">
         <Link className="dash-button justify-start" to="/dashboard" onClick={() => setPanel(null)}><Plus size={15} />Home</Link>
         <Link className="dash-button justify-start" to="/workflows" onClick={() => setPanel(null)}><Workflow size={15} />All workflows</Link>
-        <button className="dash-button justify-start" onClick={() => choosePanel('library')}><Library size={15} />Templates</button>
         <button className="dash-button justify-start" onClick={() => choosePanel('settings')}><Settings size={15} />Settings</button>
       </div> : <>
-        <p className="modal-copy">{panel === 'record' ? 'Open a workflow and choose Needs teaching to demonstrate a step in the embedded browser.' : panel === 'integrations' ? 'Discovery uses your configured local Screenpipe and the Ghost discovery pipe. Saved workflows use your configured backend; other app integrations are not configured here.' : panel === 'library' ? 'Browse your workflows to explore routines and open their canvases.' : panel === 'activity' ? 'Open a workflow to inspect its captured actions and run results. Home shows illustrative activity in preview mode.' : panel === 'help' ? 'Describe a routine on Home, review its steps, then teach Ghost any browser actions it needs. You choose when to test and run it.' : panel === 'diagnostics' ? 'Ghost · Version 0.1.0. Open a workflow’s run log to inspect execution details. Recording and workflow tools run in the desktop app.' : 'Your local Ghost workspace. No account required.'}</p>
-        {(panel === 'library' || panel === 'record') && <Link className="dash-button modal-action" to="/workflows" onClick={() => setPanel(null)}>Browse workflows <ChevronRight size={15} /></Link>}
+        <p className="modal-copy">{panel === 'help' ? 'Describe a routine on Home, review its steps, then teach Ghost any browser actions it needs. You choose when to test and run it.' : panel === 'diagnostics' ? 'Ghost · Version 0.1.0. Open a workflow’s run log to inspect execution details. Recording and workflow tools run in the desktop app.' : 'Your local Ghost workspace. No account required.'}</p>
       </>}
     </DashboardDialog>}
   </>

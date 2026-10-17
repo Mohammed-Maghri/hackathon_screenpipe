@@ -11,8 +11,8 @@ const answer = (requestId: string) => ({ requestId, workflow: { name: 'Report', 
 test('Pipe discovery: final-file-only integration, recovery and failures', async t => {
  const original = globalThis.fetch, root = await mkdtemp(join(tmpdir(), 'ghost-pipe-test-'))
  try {
-  for (const mode of ['success','offline','auth','unavailable','failed','wrong-run','empty','wrong-answer','invalid','missing','lost-start','save-retry','slow','timeout']) await t.test(mode, async () => {
-   const input = { requestId: randomUUID(), prompt: '  Find my report\n', timeRange: 'Last 7 days' as const }
+  for (const mode of ['success','selected-range','offline','auth','unavailable','failed','wrong-run','empty','wrong-answer','invalid','missing','lost-start','save-retry','slow','timeout']) await t.test(mode, async () => {
+   const input = { requestId: randomUUID(), prompt: '  Find my report\n', timeRange: 'Last 7 days' as const, ...(mode === 'selected-range' ? { selectedRange: { startTime: '2026-10-10T08:15:00.000Z', endTime: '2026-10-10T09:45:00.000Z' } } : {}) }
    const outputDir = join(root, input.requestId), stateDir = join(outputDir, 'state'); await mkdir(outputDir)
    const final = answer(input.requestId)
    if (mode === 'empty') final.steps = []
@@ -33,16 +33,16 @@ test('Pipe discovery: final-file-only integration, recovery and failures', async
     if (mode==='offline') throw new Error('private response')
     if (mode==='auth') return new Response('{}',{status:401})
     if (mode==='unavailable') return new Response('{}',{status:409})
-    if (u.pathname.endsWith('/run')) { starts++; const body=JSON.parse(String(init?.body)); assert.equal(body.run_context.prompt,input.prompt); assert.equal(body.run_context.systemPrompt,'Ghost instructions'); assert.equal(Date.parse(body.run_context.endTime)-Date.parse(body.run_context.startTime),7*86400000); if(mode==='lost-start') throw new Error('lost'); return Response.json({success:true,execution_id:12}) }
+    if (u.pathname.endsWith('/run')) { starts++; const body=JSON.parse(String(init?.body)); assert.equal(body.run_context.prompt,input.prompt); assert.equal(body.run_context.systemPrompt,'Ghost instructions'); if (input.selectedRange) { assert.equal(body.run_context.startTime,input.selectedRange.startTime); assert.equal(body.run_context.endTime,input.selectedRange.endTime) } else assert.equal(Date.parse(body.run_context.endTime)-Date.parse(body.run_context.startTime),7*86400000); if(mode==='lost-start') throw new Error('lost'); return Response.json({success:true,execution_id:12}) }
     if (u.pathname.endsWith('/executions')) { assert.equal(u.searchParams.get('include_output'),'false'); return Response.json({data:[{id:mode==='wrong-run'?13:12,pipe_name:pipeId,status:mode==='failed'?'failed':mode==='timeout'||(mode==='slow'&&polls++===0)?'running':'completed'}]}) }
     return Response.json({config:{name:pipeId}})
    }
    const config={key:'test-token',url:'http://localhost:3030',backend:'http://localhost:3001',stateDir,outputDir,pollMs:1,timeoutMs:mode==='timeout'?50:1000}
    let result=await discoverScreenpipeAgentWorkflow(input,config)
    if (mode==='save-retry') result=await discoverScreenpipeAgentWorkflow(input,config)
-   assert.equal(result.ok,['success','save-retry','slow'].includes(mode))
+   assert.equal(result.ok,['success','selected-range','save-retry','slow'].includes(mode))
    if (mode==='lost-start') { await discoverScreenpipeAgentWorkflow(input,config); assert.equal(starts,1) }
-   if (result.ok) { assert.equal(starts,1); assert.equal(result.workflow.nodes[0]!.config.basis,'unverified'); assert.deepEqual(result.workflow.nodes[0]!.config.evidenceIds,[]) }
+   if (result.ok) { assert.equal(starts,1); if (input.selectedRange) assert.deepEqual((result.workflow.nodes[0]!.config.discovery as Record<string,unknown>).selectedRange,input.selectedRange); assert.equal(result.workflow.nodes[0]!.config.basis,'unverified'); assert.deepEqual(result.workflow.nodes[0]!.config.evidenceIds,[]) }
    if (['offline','auth','unavailable','failed','empty','wrong-run','wrong-answer','invalid','missing','lost-start'].includes(mode)) assert.equal(saves,0)
    assert.ok(paths.every(p=> !/search|frames|activity-summary|session|logs|chat\/completions/.test(p)))
   })

@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('ghost', {
     run: (input: import('../shared/dataProcessing').ProcessingRequest) => ipcRenderer.invoke('processing:run', input),
     reveal: (workflowId: string, fileId: string) => ipcRenderer.invoke('processing:reveal', workflowId, fileId),
   },
+  activityTimeline: (range: import('../shared/activityTimeline').ActivityRange) => ipcRenderer.invoke('screenpipe:activity', range),
   discoverWorkflow: (input: import('../shared/discovery').GenerateWorkflowRequest) => ipcRenderer.invoke('discovery:screenpipe', input),
   onDiscoveryProgress: (listener: (progress: import('../shared/discovery').DiscoveryProgress) => void) => {
     const receive = (_event: Electron.IpcRendererEvent, progress: import('../shared/discovery').DiscoveryProgress) => listener(progress)
