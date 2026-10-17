@@ -39,7 +39,7 @@ await host.eval(`location.hash='/workflows/${id}'`);
 await until(()=>host.eval("[...document.querySelectorAll('button')].some(b=>b.textContent==='Define inputs & outputs')"),'Definition button missing');
 await host.eval(`window.__browser=null;window.ghost.browser.onState(s=>window.__browser=s)`);
 await host.eval(`document.querySelector('.node-${browserId}').dispatchEvent(new MouseEvent('dblclick', { bubbles: true, detail: 2 }))`);
-await host.eval(`[...document.querySelectorAll('dialog button')].find(b=>b.textContent==='Start recording').click()`);
+await host.eval(`[...document.querySelectorAll('.node-settings-panel button')].find(b=>b.textContent==='Start recording').click()`);
 await until(()=>host.eval(`window.__browser?.url===${JSON.stringify(site+'/site/original')}&&!window.__browser.loading`),'Original URL not opened');
 const guest=await connect((await pages()).find(p=>p.url===site+'/site/original'));
 await pause(1000);
@@ -63,6 +63,24 @@ for (let toggle = 0; toggle < 2; toggle++) {
  assert.equal((await host.eval(`window.ghost.browser.recordingStatus(${JSON.stringify(sessionId)})`)).id,beforeSettings.id,'Sidebar collapse must preserve recording');
 }
 
+// Compact teaching layouts retain usable native bounds and expose captured actions.
+for (const [width, height] of [[1024,768],[760,620],[1440,960]]) {
+ await host.call('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
+ await until(async()=>{
+  const native=await host.eval(`window.ghost.browser.diagnostics(${JSON.stringify(sessionId)})`);
+  const viewport=await host.eval(`(()=>{const r=document.querySelector('.browser-viewport').getBoundingClientRect();return{x:Math.round(r.x),y:Math.round(r.y),width:Math.round(r.width),height:Math.round(r.height)}})()`);
+  return native.visible && viewport.height>=150 && viewport.width>=300 && ['x','y','width','height'].every(key=>native.bounds[key]===viewport[key]);
+ },'Compact guest bounds are unusable');
+ if(width<1100){
+  await host.eval(`[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Captured actions')).click()`);
+  await until(()=>host.eval(`!!document.querySelector('dialog[open] .record-events')`),'Compact actions missing');
+  assert.equal((await host.eval(`window.ghost.browser.diagnostics(${JSON.stringify(sessionId)})`)).visible,false);
+  await host.eval(`document.querySelector('dialog [aria-label="Close dialog"]').click()`);
+  await until(async()=>(await host.eval(`window.ghost.browser.diagnostics(${JSON.stringify(sessionId)})`)).visible,'Guest did not restore after captured actions');
+ }
+ const shot=await host.call('Page.captureScreenshot',{format:'png'});await writeFile(`/tmp/ghost-blue-teaching-${width}.png`,Buffer.from(shot.data,'base64'));
+}
+
 // Closing nested modal holds must restore the same loaded guest, even when
 // renderer bounds are updated while a modal is open (as run results do).
 await guest.eval('window.__restoreMarker = "same-document"');
@@ -83,6 +101,7 @@ await until(()=>host.eval(`!!document.querySelector('.settings-shell:not(.invisi
 assert.equal((await host.eval(`window.ghost.browser.diagnostics(${JSON.stringify(sessionId)})`)).visible,false,'Settings must occlude the native guest');
 assert.equal((await host.eval(`window.ghost.browser.recordingStatus(${JSON.stringify(sessionId)})`)).state,'recording','Settings must not stop recording');
 await host.eval(`document.querySelector('a[href="#/settings/appearance"]').click()`);
+await until(()=>host.eval(`!!document.querySelector('.settings-shell .appearance-selector button[value="dark"]')`),'Appearance controls not mounted');
 await host.eval(`document.querySelector('.settings-shell .appearance-selector button[value="dark"]').click()`);
 assert.equal((await host.eval(`window.ghost.browser.diagnostics(${JSON.stringify(sessionId)})`)).visible,false,'Appearance changes must keep the guest occluded');
 await host.eval(`document.querySelector('[aria-label="Back to app"]').click()`);
@@ -106,8 +125,8 @@ await edit('[aria-label="Starting dashboard URL"]',site+'/site/changed');
 await edit('[aria-label="Browser step name"]','Edited browser node');
 await edit('[aria-label="Node description"]','Edited description');
 assert.equal(await host.eval(`document.querySelector('[aria-label="Instruction 1"]').value`),'Open '+site+'/site/changed');
-await until(()=>host.eval(`[...document.querySelectorAll('dialog button')].some(b=>b.textContent==='View saved recording')`),'Saved recording status did not load');
-await host.eval(`window.__browser=null;[...document.querySelectorAll('dialog button')].find(b=>b.textContent==='View saved recording').click()`);
+await until(()=>host.eval(`[...document.querySelectorAll('.node-settings-panel button')].some(b=>b.textContent==='View saved recording')`),'Saved recording status did not load');
+await host.eval(`window.__browser=null;[...document.querySelectorAll('.node-settings-panel button')].find(b=>b.textContent==='View saved recording').click()`);
 await until(()=>host.eval(`window.__browser?.url===${JSON.stringify(site+'/site/changed')}&&!window.__browser.loading`),'Edited URL was overridden by saved recording');
 assert.equal(workflow.nodes[0].config.startUrl,site+'/site/changed');
 assert.equal(workflow.nodes[0].label,'Edited browser node');
@@ -123,7 +142,7 @@ await until(()=>host.eval(`!!document.querySelector('.node-${browserId}')`),'Rel
 await host.eval(`document.querySelector('.node-${browserId}').dispatchEvent(new MouseEvent('dblclick', { bubbles: true, detail: 2 }))`);
 assert.equal(await host.eval(`document.querySelector('[aria-label="Starting dashboard URL"]').value`),site+'/site/changed');
 await edit('[aria-label="Starting dashboard URL"]',site+'/site/saved');
-await host.eval(`[...document.querySelectorAll('dialog button')].find(b=>b.textContent==='Save Changes').click()`);
+await host.eval(`[...document.querySelectorAll('.node-settings-panel button')].find(b=>b.textContent==='Save Changes').click()`);
 await until(()=>host.eval(`document.body.textContent.includes('Workflow saved to the backend.')`),'Inspector save failed');
 assert.equal(workflow.nodes[0].config.startUrl,site+'/site/saved');
 // A slow backend can finish mounting the recorder while Settings covers it.

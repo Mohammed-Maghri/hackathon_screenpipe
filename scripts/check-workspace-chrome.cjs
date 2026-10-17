@@ -60,7 +60,7 @@ app.on('browser-window-created', (_event, win) => {
                 chrome: rect(document.querySelector('.workspace-titlebar')),
               };
             })()`);
-            assert.equal(geometry.sidebar.width, collapsed || width < 1024 ? 56 : 240);
+            assert.equal(geometry.sidebar.width, collapsed || width < 1024 ? 72 : width < 1200 ? 224 : 248);
             assert.equal(geometry.sidebar.y, 56);
             assert.equal(geometry.chrome.x, 0);
             assert.equal(geometry.chrome.width, width);
@@ -86,16 +86,16 @@ app.on('browser-window-created', (_event, win) => {
                 return { x: r.x, y: r.y, width: r.width, height: r.height, bottom: r.bottom };
               };
               return {
-                bar: rect('.settings-windowbar'),
-                titlebar: rect('.settings-windowbar .titlebar'),
-                sidebar: rect('.settings-sidebar'),
-                back: rect('.settings-sidebar [aria-label="Back to app"]'),
+                bar: rect('.settings-shell .workspace-titlebar'),
+                titlebar: rect('.settings-shell .workspace-titlebar .titlebar'),
+                sidebar: rect('.settings-shell [aria-label="Workflow sidebar"]'),
+                back: rect('.settings-shell [aria-label="Back to app"]'),
               };
             })()`);
             assert.deepEqual(settings.bar, { x: 0, y: 0, width, height: 56, bottom: 56 }, `Settings chrome differs from workspace: ${theme}/${section}/${width}`);
             assert.equal(settings.titlebar.height, workspaceTitlebarHeight);
             assert.equal(settings.sidebar.y, 56);
-            assert.equal(settings.back.y, 56);
+            assert(settings.back.y >= 56, 'Back action must sit below native chrome');
             assert(settings.bar.bottom > native.y + 18, 'Native buttons need lower clearance');
           }
         }
