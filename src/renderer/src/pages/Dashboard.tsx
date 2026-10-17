@@ -5,7 +5,8 @@ import { TitleBar } from '../components/TitleBar'
 import { AppMark } from '../components/AppMark'
 import { DashboardDialog } from '../components/DashboardDialog'
 import { WorkflowSidebar } from '../components/WorkflowSidebar'
-import { sampleActivity, sampleWorkflows } from '../data/workflows'
+import { sampleActivity } from '../data/workflows'
+import { WorkflowTemplates } from '../components/WorkflowTemplates'
 import { addWorkflowDraft } from '../data/workflowStore'
 import type { SavedWorkflow, DiscoveryRequest } from '../../../shared/discovery'
 
@@ -226,7 +227,7 @@ export function Dashboard() {
         <button className="text-button home-manage-connections mt-4" onClick={() => setPanel('integrations')}>Manage connections <ArrowRight size={13} /></button>
       </>}
       {panel === 'notifications' && <><div className="modal-callout"><Bell size={25} /><div><strong>A quiet workspace.</strong><p>No notifications in this preview.</p></div></div><p className="modal-copy">Updates about your workflows will appear here when automation is available.</p></>}
-      {panel === 'library' && <><p className="modal-copy">Choose an example to make it your own. Templates are saved as drafts for this session.</p><div className="template-list">{sampleWorkflows.slice(0, 3).map(workflow => <button key={workflow.id} onClick={() => addDraft(workflow.name, workflow.description, workflow.steps)}><span><strong>{workflow.name}</strong><small>{workflow.steps.length} steps</small></span><Plus size={18} /></button>)}</div></>}
+      {panel === 'library' && <WorkflowTemplates />}
       {panel === 'help' && <><p className="modal-copy">Describe a routine on Home to generate a workflow from your Screenpipe history. Open its board to review the steps, teach browser actions, and test the result.</p><p className="preview-disclosure">Screenpipe must be running with the Ghost discovery pipe installed. You can also demonstrate browser steps from an existing workflow.</p><button className="dash-button dash-button--primary modal-action" onClick={() => navigate('/workflows')}>Browse workflows <ArrowRight size={15} /></button></>}
       {panel === 'profile' && <><div className="modal-callout"><span className="avatar">G</span><div><strong>My workspace</strong><p>Local preview · No account required</p></div></div><p className="modal-copy">A little space to explore what Ghost can become. Your current drafts stay in this session.</p></>}
     </DashboardDialog>}

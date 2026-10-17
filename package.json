@@ -17,6 +17,7 @@
     "test:resilience": "npm run build && node scripts/check-resilience.mjs",
     "test:processing": "node scripts/check-processing.mjs",
     "test:processing:electron": "npm run build && node scripts/check-processing-electron.mjs && node scripts/check-processing-ui.mjs",
+    "test:template-drafts": "npm run build && npm --prefix backend run build && node scripts/check-template-drafts.mjs",
     "test:browser-settings": "npm run build && node scripts/check-browser-settings.mjs",
     "test:runtime-logic": "npm run build && node scripts/check-runtime-logic.mjs",
     "test:runtime-logic:electron": "npm run build && node scripts/check-runtime-logic-electron.mjs",

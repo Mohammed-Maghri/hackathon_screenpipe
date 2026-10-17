@@ -78,7 +78,7 @@ assert.deepEqual(failed.map(r=>r.status),['VERIFIED','FAILED','SKIPPED']);
 console.log('PASS invalid configuration fails and downstream report is skipped');
 await host.eval(`location.hash='/workflows/orders'`);
 await until(()=>host.eval(`!!document.querySelector('.canvas-node.node-dashboard')`),'Editor did not open');
-await host.eval(`document.querySelector('.canvas-node.node-dashboard').click()`);
+await host.eval(`document.querySelector('.canvas-node.node-dashboard').dispatchEvent(new MouseEvent('dblclick', { bubbles: true, detail: 2 }))`);
 await host.eval(`[...document.querySelectorAll('[aria-label="Node inspector"] button')].find(b=>b.textContent==='Details').click()`);
 await host.eval(`(()=>{const select=[...document.querySelectorAll('.editor-field')].find(e=>e.textContent.startsWith('Step type')).querySelector('select');select.value='Data Processing';select.dispatchEvent(new Event('change',{bubbles:true}))})()`);
 await until(()=>host.eval(`!!document.querySelector('.processing-inspector')`),'Processing inspector missing');
