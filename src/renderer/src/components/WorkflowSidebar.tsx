@@ -2,8 +2,6 @@ import { useContext, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router";
 import {
-  ArrowUpRight,
-  BookOpen,
   Bug,
   CircleHelp,
   House,
@@ -215,14 +213,6 @@ export function WorkflowSidebar({
               </p>
             )}
           </div>
-          <Link
-            to="/workflows?view=templates"
-            className="sidebar-template-link mt-5 flex items-center gap-2 px-3 py-2 text-xs text-muted hover:text-action"
-          >
-            <BookOpen size={15} />
-            Browse templates
-            <ArrowUpRight size={13} className="ml-auto" />
-          </Link>
         </section>
         <footer className="sidebar-footer mt-auto grid shrink-0 gap-1 pt-6">
           <button
