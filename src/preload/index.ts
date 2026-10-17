@@ -3,6 +3,7 @@ import type { RecordedEvent, RecordingStatus, ReplayStatus, ReplayPreview } from
 import type { BrowserBounds, BrowserAction, BrowserState } from '../shared/browser'
 contextBridge.exposeInMainWorld('ghost', {
   platform: process.platform,
+  setAppearance: (theme: 'light' | 'dark') => ipcRenderer.invoke('appearance:set', theme),
   automation: {
     list: () => ipcRenderer.invoke('automation:list'),
     save: (input: import('../shared/workflowSchedule').WorkflowSchedule) => ipcRenderer.invoke('automation:save', input),
