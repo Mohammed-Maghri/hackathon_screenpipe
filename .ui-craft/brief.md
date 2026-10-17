@@ -8,13 +8,13 @@ Proposed audience: a person doing repeated operations or reporting work on a des
 
 ## 3. Three to five principles
 
-**Current direction · 2026-10-17.** The user requested a Screenpipe-aligned reskin and supplied 39 desktop reference captures. This supersedes the earlier Ghost / Air palette and decorative treatment; preserve the existing app behavior and Ghost identity.
+**Current direction · 2026-10-17 — Ghost / Blue.** The user approved the standalone proposal in `design-proposals/ghost-blue/` and authorized whole-app implementation plus React Flow. This supersedes the Screenpipe/lime reskin and earlier Air direction.
 
-1. **A workflow starts with the routine.** Give describing work the strongest position on Home; keep statistics and setup secondary.
-2. **Show readiness before execution.** Keep Draft, Needs teaching, Recorded, Learned, and Ready visibly distinct; preserve the difference between local validation, browser replay, and processing execution.
-3. **Keep the work open.** Use desktop width for persistent navigation, readable workflow cards, and the workflow canvas. Reveal editing detail on demand rather than putting every setting on Home.
-4. **Use contrast to direct the next action.** Follow Screenpipe’s neutral palette, thin boundaries and compact typography. Use phosphor lime for the primary action and genuine execution feedback; preserve explicit status labels, with restrained red for errors.
-5. **Label what is demonstrated.** Synthetic discovery, illustrative activity, and sample metrics must be named as such. A preview must never imply a live connection or completed execution.
+1. **Start with the routine.** One focused Home composer, compact suggestions and recent workflows.
+2. **Keep the canvas clear.** Compact editor header, collapsed description and a node inspector revealed on demand. Use React Flow for graph interaction.
+3. **Reveal complexity when needed.** Keep advanced actions in menus and source details in disclosures; preserve every existing capability.
+4. **Use blue with restraint.** Reference blue #3478F7, accessible filled actions #2D6DE0, quiet neutral surfaces and a clear blue navigation state.
+5. **Make state truthful.** Distinguish Draft, Needs teaching, Recorded, Learned and Ready. Preserve the difference between validation, replay and processing execution; show actual backend records and real activity.
 
 ## 4. Success metric for the surface
 
@@ -29,6 +29,16 @@ Proposed acceptance target: a first-time user can identify how to describe a rou
 - Treating the preview's sample records as saved user data.
 
 ## 6. Learned constraints
+
+**Latest approval takes precedence over the historical decisions below.**
+
+- **2026-10-17 — Onboarding organization:** give Welcome a balanced split composition: the Ghost introduction and one primary action on the left, a clearly labeled example workflow on the right, and appearance/help grouped in a footer. Use a restrained blue heading for a stronger focal point. At compact widths, prioritize the introduction; keep the action visible without scrolling at760×620. Preserve Skip intro, the walkthrough and all appearance behavior. *Why:* the previous narrow floating guide felt unorganized and bland.
+
+- **2026-10-17 — App icon correction:** use crisp, flat, recognizable brand SVGs for application marks. Replace the old glossy 3D raster badges across the whole set, with consistent sizing in light/dark themes. Keep the existing Lucide control icons; they already provide a consistent vector system.
+
+- **2026-10-17 — Ghost / Blue approved:** rebuild layouts around the supplied Noera references and approved standalone preview. Use Inter throughout UI, a single blue accent, 8px controls, 12px cards and 16px dialogs. Retain Light/Dark/System, full-window native chrome and all existing functionality. The old lime, mono controls and Screenpipe sidebar composition are superseded.
+- **2026-10-17 — React Flow requested:** replace the custom canvas with `@xyflow/react`. Preserve existing graph IDs, positions, contracts, processing configs, edges and backend schema. One click selects, double-click/Enter opens settings; drag handles to connect with existing validation.
+- **2026-10-17 — Approved sidebar:** 248px expanded, 224px below1200px, 72px compact; brand, search, Home/Workflows, actual recents, templates and footer utilities. Native macOS chrome remains56px with112px traffic-light reserve.
 
 - **2026-10-17 — User request:** establish a design system and show the proposed appearance before implementing the frontend redesign.
 - **2026-10-17 — User reference:** borrow the mobile example's soft light surfaces, generous breathing room, rounded forms, subtle depth, and pastel creation cards; adapt its composition and control sizes for desktop.
@@ -72,8 +82,10 @@ Proposed acceptance target: a first-time user can identify how to describe a rou
 
 ## 7. Design direction
 
-Canvas toolbar icons show short, right-positioned tooltips on hover and keyboard focus. Explain why Duplicate/Delete are unavailable without a selected node, and hide the Add hint while its dropdown is open.
+Ghost / Blue is the current production system. Canonical tokens are `src/renderer/src/styles/tokens.css`, exposed as Tailwind utilities in `globals.css`. The approved composition and rationale are documented in `design-proposals/ghost-blue/DESIGN-SYSTEM.md`; sample records there are never injected into the app.
 
-Use Inter for body, navigation, titles and instruction content; JetBrains Mono for controls, inputs and operational metadata. Both fonts are bundled. The dark canvas is #0A0A0A with #141414 work surfaces, #333333 separators and an opaque #31332E sidebar derived from the reference captures. Light uses Screenpipe’s #F6F6F3 canvas, #EFEFEB sidebar and white work surfaces. Primary actions use phosphor lime #C7FF3E with near-black ink in both modes. Neutral navigation and status semantics remain distinct; light-mode execution text uses a darker olive for contrast. Controls use 6px corners, cards 8px and dialogs 10px. Keep surfaces flat, reserving shadow for dialogs and transient overlays. The slim active-navigation marker is the shared signature detail.
+Use locally bundled Inter Variable for UI and JetBrains Mono only for code/JSON. Light canvas #FFFFFF, sidebar #F8F9FC, primary text #111B30. Dark canvas #10151E, sidebar #131923, panels #171D29, text #EDF1F9. Brand blue #3478F7; filled primary controls #2D6DE0 with white labels. Blue selection tint, focus and action text follow semantic theme roles. Meaningful success/warning/error use icon plus text. Spacing follows4px increments; controls40px, cards12px corners, dialogs16px. No inset window frame.
 
-Canonical tokens remain in `src/renderer/src/styles/tokens.css`, bridged through Tailwind v4 in `globals.css`. Preserve all routes, state, native browser bounds and actions. `design-preview/` is a historical Air mockup; current reference captures live under `.ui-craft/screenshots/screenpipe-*`.
+Home has a readable composer and compact recent cards; activity remains available through disclosure. Workflows uses collection cards with prominent node counts and separate Run/Schedule/Delete controls. The editor uses React Flow, a compact header, collapsed description, plus dropdown, right-side inspector and existing run logs/results. Settings uses the shared workspace shell and three categories of actual settings. Teaching keeps the real native browser dominant, with recording controls below and actions beside it or available from a compact-screen dialog.
+
+Preserve native bounds observation and browser occlusion under dialogs/Settings. Saved workflows keep their existing schema and coordinates. New template drafts use a readable vertical graph and retain durable autosave/recovery.

@@ -113,11 +113,13 @@ try {
   await host(`document.querySelector('.node-${browserId}').dispatchEvent(new MouseEvent('dblclick',{bubbles:true,detail:2}))`)
   await until(() => host('!!document.querySelector(\'[aria-label="Browser step name"]\')'), 'Node settings missing')
   await field('[aria-label="Browser step name"]', 'My saved template step'); await field('[aria-label="Node description"]', 'My own description')
-  await click('[aria-label="Close dialog"]')
+  await click('[aria-label="Close node settings"]')
   await until(async () => (await read())[0].nodes.some(n => n.label === 'My saved template step' && n.config.description === 'My own description'), 'Node edits were not autosaved')
+  await pause(350)
   const point = await host(`(() => { const r=document.querySelector('.node-${browserId} .node-heading').getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2} })()`)
   const initialX = (await read())[0].nodes.find(n => n.id === browserId).positionX
   await cdp('Input.dispatchMouseEvent', { type: 'mousePressed', ...point, button: 'left', clickCount: 1 })
+  await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: point.x+10, y: point.y+5, buttons: 1 })
   await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: point.x+30, y: point.y+15, buttons: 1 })
   await cdp('Input.dispatchMouseEvent', { type: 'mouseReleased', x: point.x+30, y: point.y+15, button: 'left', clickCount: 1 })
   await until(async () => (await read())[0].nodes.find(n => n.id === browserId).positionX > initialX, 'Dragged position was not autosaved')
@@ -127,7 +129,7 @@ try {
     await until(() => host("!!document.querySelector('dialog[open]')"), 'Add dialog missing')
   }
   await add('Add node'); await host("[...document.querySelectorAll('dialog button')].find(b=>b.textContent==='Integration node').click()")
-  await until(() => host("!!document.querySelector('[aria-label=\"Node inspector\"]')"), 'New node settings missing'); await click('[aria-label="Close dialog"]')
+  await until(() => host("!!document.querySelector('[aria-label=\"Node inspector\"]')"), 'New node settings missing'); await click('[aria-label="Close node settings"]')
   await until(async () => (await read())[0].nodes.length === 5 && (await read())[0].edges.length === 4, 'Added node/edge not autosaved')
   const addedId = (await read())[0].nodes.find(n => n.label === 'New action').id
   await add('Add connection')

@@ -22,7 +22,8 @@
     "test:runtime-logic": "npm run build && node scripts/check-runtime-logic.mjs",
     "test:runtime-logic:electron": "npm run build && node scripts/check-runtime-logic-electron.mjs",
     "build:web": "vite build --config vite.web.config.ts --outDir ../../dist/web --emptyOutDir",
-    "screenpipe:install": "node scripts/install-screenpipe-discovery.mjs"
+    "screenpipe:install": "node scripts/install-screenpipe-discovery.mjs",
+    "test:blue-flow": "npm run build && node scripts/check-blue-flow.mjs"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
@@ -30,6 +31,7 @@
     "@fontsource-variable/inter": "^5.3.0",
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "@fontsource/instrument-serif": "^5.3.0",
+    "@xyflow/react": "^12.12.0",
     "csv-parse": "^7.0.3",
     "csv-stringify": "^6.9.0",
     "exceljs": "^4.4.0",
@@ -49,6 +51,7 @@
     "electron": "^44.7.0",
     "electron-vite": "^5.0.0",
     "esbuild": "^0.25.12",
+    "playwright-core": "^1.64.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
     "vite": "^7.3.7"
