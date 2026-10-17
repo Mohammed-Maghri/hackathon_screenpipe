@@ -31,5 +31,5 @@ export function SavedWorkflowPage({ recording = false }: { recording?: boolean }
   }, [id, recording, attempt])
   if (value && recording) return <RecordStep key={`${id}:${value.updatedAt}`} />
   if (value) return <WorkflowEditor key={id} backendWorkflow={value} />
-  return <div className="editor-shell"><WorkflowSidebar /><main className="editor-not-found"><p role={error ? 'alert' : 'status'}>{error || 'Loading saved workflow…'}</p>{error && <button className="dash-button" onClick={() => setAttempt(current => current + 1)}>Retry</button>}</main></div>
+  return <div className="editor-shell absolute inset-0 flex overflow-hidden bg-panel font-sans text-sm leading-6 text-ink"><WorkflowSidebar /><main className="editor-not-found grid h-full min-w-0 flex-1 place-content-center gap-6 bg-canvas p-8 text-center text-ink [&>h1]:text-2xl [&>h1]:font-medium [&>h1]:tracking-tight"><p role={error ? 'alert' : 'status'}>{error || 'Loading saved workflow…'}</p>{error && <button className="dash-button" onClick={() => setAttempt(current => current + 1)}>Retry</button>}</main></div>
 }

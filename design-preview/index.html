@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f5f7fa" />
+    <title>Ghost — Air design preview</title>
+    <link
+      rel="preload"
+      href="assets/geist-latin-variable.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="review-bar">
+      <span class="review-brand"
+        ><span class="review-dot"></span>Ghost
+        <span class="review-divider">/</span>
+        <span>Air · direction 01</span></span
+      >
+      <nav class="review-nav" aria-label="Preview screens">
+        <button data-view="home" aria-current="page">Home</button>
+        <button data-view="workflows">Workflows</button>
+        <button data-view="editor">Editor</button>
+        <button data-view="system">Design system</button>
+      </nav>
+      <span class="concept-label"
+        >Interactive concept <span>·</span> Sample data</span
+      >
+    </div>
+    <div class="app-window">
+      <aside class="sidebar">
+        <a class="brand" href="#home" aria-label="Ghost home"
+          ><span class="brand-logo" data-icon="ghost"></span
+          ><span>ghost<span class="brand-period">.</span></span></a
+        >
+        <button class="workspace-switch" data-dialog="workspace">
+          <span class="workspace-avatar">A</span
+          ><span>Personal workspace<small>Your space to do less.</small></span
+          ><span data-icon="chevrons"></span>
+        </button>
+        <nav class="main-nav" aria-label="Main navigation">
+          <button data-view="home" data-nav="home" aria-current="page">
+            <span data-icon="home"></span><span>Home</span
+            ><span class="active-ghost" data-icon="ghost"></span>
+          </button>
+          <button data-view="workflows" data-nav="workflows">
+            <span data-icon="workflow"></span><span>Workflows</span
+            ><span class="nav-count">5</span>
+          </button>
+          <button data-view="recording" data-nav="recording">
+            <span data-icon="record"></span><span>Record a routine</span>
+          </button>
+          <button data-dialog="templates">
+            <span data-icon="grid"></span><span>Templates</span>
+          </button>
+        </nav>
+        <div class="nav-section-label">Workspace</div>
+        <nav class="main-nav secondary-nav" aria-label="Workspace navigation">
+          <button data-dialog="activity">
+            <span data-icon="activity"></span><span>Activity</span>
+          </button>
+          <button data-dialog="integrations">
+            <span data-icon="plug"></span><span>Connections</span>
+          </button>
+          <button data-dialog="settings">
+            <span data-icon="settings"></span><span>Settings</span>
+          </button>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="connection-mini">
+            <span class="connection-symbol" data-icon="screenpipe"></span>
+            <div>
+              Screenpipe<small
+                ><span class="status-dot muted"></span>Preview mode</small
+              >
+            </div>
+            <button
+              class="icon-btn"
+              data-dialog="integrations"
+              aria-label="Manage Screenpipe connection"
+            >
+              <span data-icon="arrow-up-right"></span>
+            </button>
+          </div>
+          <button class="help-link" data-dialog="help">
+            <span data-icon="help"></span> A little help?<span
+              data-icon="arrow-up-right"
+            ></span>
+          </button>
+          <button class="profile" data-dialog="workspace">
+            <span class="profile-avatar">AB</span
+            ><span>Ayoub<small>Personal account</small></span
+            ><span data-icon="chevrons"></span>
+          </button>
+        </div>
+      </aside>
+      <div class="workspace-main">
+        <header class="topbar">
+          <div class="breadcrumbs">
+            <span data-icon="panel"></span><span id="breadcrumb">Home</span>
+          </div>
+          <div class="topbar-actions">
+            <button class="search-button" id="search-trigger">
+              <span data-icon="search"></span><span>Search anything…</span
+              ><kbd>⌘ K</kbd></button
+            ><span class="topbar-rule"></span
+            ><button
+              class="icon-btn"
+              data-dialog="activity"
+              aria-label="Notifications"
+            >
+              <span data-icon="bell"></span
+              ><i class="notification-dot"></i></button
+            ><span class="topbar-avatar">A</span>
+          </div>
+        </header>
+        <main id="view" tabindex="-1"></main>
+      </div>
+    </div>
+    <dialog id="preview-dialog">
+      <div class="dialog-header">
+        <span id="dialog-kicker">Ghost preview</span
+        ><button class="icon-btn" id="close-dialog" aria-label="Close dialog">
+          <span data-icon="x"></span>
+        </button>
+      </div>
+      <div id="dialog-content"></div>
+    </dialog>
+    <div id="toast" role="status" aria-live="polite" hidden></div>
+    <script src="preview.js"></script>
+  </body>
+</html>
