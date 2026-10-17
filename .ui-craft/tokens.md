@@ -65,3 +65,5 @@ Workflow browsing uses neutral 8px cards with16px padding, a12–16px grid gap, 
 Workflow cards use a native stretched editor link with separately positioned action controls, retaining keyboard focus and modifier-link behavior. The actual node count sits in a high-contrast neutral top badge; lime remains reserved for primary actions and live execution. Long editor descriptions default to a compact disclosure so the canvas stays prominent.
 
 macOS workspace routes share one full-width56px native title bar. Traffic lights retain their native25px/22px position; the collapse/menu controls occupy a slot after112px of clearance. The sidebar starts at56px in both expanded and compact modes. Home has a plain text context label. Other platforms retain their existing window controls and toolbar composition. Fixed workspace pages use an explicitly positioned route container, preserving native guest viewport measurements without transforms.
+
+Settings matches the workspace’s56px macOS title bar, including its lower divider and full-height drag region. Its sidebar and Back to app row begin below that bar. Windows/Linux retain their40px Settings strip.

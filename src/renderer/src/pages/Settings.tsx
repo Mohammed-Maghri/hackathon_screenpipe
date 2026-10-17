@@ -82,7 +82,7 @@ export function Settings() {
   if (!section) return <Navigate replace to="/settings" state={navigationState} />
   const groups = normalized ? sections.filter(item => matches.some(row => row.section === item.id)) : [section]
   return <div className={`settings-shell fixed inset-0 z-40 flex flex-col overflow-hidden bg-canvas font-sans text-ink ${visible ? '' : 'invisible pointer-events-none'}`}>
-    <div className="settings-windowbar h-10 shrink-0 bg-canvas [&>.titlebar]:h-10"><TitleBar /></div>
+    <div className={`settings-windowbar shrink-0 bg-canvas [&>.titlebar]:h-full ${window.ghost?.platform === 'darwin' ? 'h-14 border-b border-line' : 'h-10'}`}><TitleBar /></div>
     <div className="flex min-h-0 flex-1">
       <aside className="settings-sidebar flex w-60 shrink-0 flex-col border-r border-sidebar-line bg-sidebar text-sidebar-ink" aria-label="Settings sidebar">
         <Link to={returnTo} aria-label="Back to app" className="app-no-drag flex h-16 shrink-0 items-center gap-2.5 border-b border-sidebar-line px-6 font-sans text-sm font-semibold text-sidebar-muted hover:text-sidebar-ink"><ArrowLeft size={16} />Back to app</Link>
