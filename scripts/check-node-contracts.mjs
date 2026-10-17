@@ -39,7 +39,7 @@ await until(()=>host.eval("[...document.querySelectorAll('button')].some(b=>b.te
 await host.eval("[...document.querySelectorAll('button')].find(b=>b.textContent==='Define inputs & outputs').click()");
 await until(()=>host.eval("document.body.textContent.includes('Inputs, outputs and validation saved')"),'Definitions not saved');
 assert.equal(definitions,1);
-await host.eval(`document.querySelector('.node-${logicId}').click()`);
+await host.eval(`document.querySelector('.node-${logicId}').dispatchEvent(new MouseEvent('dblclick', { bubbles: true, detail: 2 }))`);
 await until(()=>host.eval("!!document.querySelector('.node-data-contract')"),'Contract inspector missing');
 assert.equal(await host.eval("document.querySelector('dialog').textContent.includes('Export requests → rows')"),true);
 assert.equal(await host.eval("document.querySelector('dialog').textContent.includes('filteredRows')"),true);
@@ -48,7 +48,7 @@ assert.equal(await host.eval("document.querySelector('dialog').textContent.inclu
 assert.equal(await host.eval("document.querySelector('dialog .recording-button')===null"),true);
 await host.eval('location.reload()');
 await until(()=>host.eval(`!!document.querySelector('.node-${logicId}')`),'Reload failed');
-await host.eval(`document.querySelector('.node-${logicId}').click()`);
+await host.eval(`document.querySelector('.node-${logicId}').dispatchEvent(new MouseEvent('dblclick', { bubbles: true, detail: 2 }))`);
 await until(()=>host.eval("document.querySelector('dialog')?.textContent.includes('filteredRows')"),'Definitions lost after reload');
 console.log('PASS editor: define contracts, inspect source bindings/output fields/validation/review, no recording button on logic nodes, reload persisted definitions');
 } catch(error){console.error(error);process.exitCode=1}

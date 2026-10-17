@@ -138,3 +138,43 @@ Validation after rebasing: desktop build/typecheck; backend build and79 tests wi
 The user identified that Settings used a40px strip while the main Mac workspace used56px. Settings now matches the56px workspace bar and bottom divider on macOS; other platforms retain40px. The native control coordinates and Settings lifecycle are unchanged.
 
 The native geometry regression first reproduced the40px mismatch, then passed with Settings matching the workspace in Light/Dark, all three sections, and1440/1024/760 widths. Build/typecheck, cross-platform layout checks and native browser/recording preservation through Settings pass. Reviewed previews: `screenpipe-settings-titlebar-{dark,light}.png`; renderer captures exclude native button pixels, whose placement is checked through Electron.
+
+## Canvas Add menu and connection creation
+
+The left canvas toolbar now uses a plus button with a native non-modal popover for Add node/Add connection. Selecting an item closes the popover and opens the corresponding dialog. The separate View connections toolbar button is removed. Existing browser/integration/processing node creation is retained. The connection form adds an edge through the existing graph state/save path, rejects self-links, duplicate directions and loops using the shared graph helper, and explains when fewer than two nodes exist.
+
+The popover uses native outside dismissal, anchored positioning, arrow/Home/End navigation, Escape/Tab dismissal, and focus return to the trigger. Build/typecheck and native Electron UI smoke pass, including new menu/node/connection assertions. Pointer/keyboard tests in both themes at1440/1024/760 verify placement, dismissal, separate dialogs, node/edge creation and invalid-edge rejection. A saved-workflow bridge fixture verifies dirty state, save payloads with unique edge IDs, reload retention and duplicate rejection after reload. Scoped token lint and whitespace checks are clean. Current previews: `screenpipe-canvas-add-menu-{dark,light}-{width}.png`.
+
+## Canvas toolbar tooltips
+
+All seven left canvas controls now have right-positioned, theme-aware tooltips on pointer hover and keyboard focus. Each hint is linked through aria-describedby, stays visible while hovering its content, and dismisses with Escape or activation. Disabled Duplicate/Delete controls explain the required selection without dimming the hint. The Add hint is suppressed while its dropdown is open. Existing button refs, handlers, sizes and disabled states are retained; native title hints are removed to avoid duplicates.
+
+Production build/typecheck, native UI smoke, existing Add menu/dialog behavior and scoped token lint pass. Focused pointer/keyboard checks cover all seven controls in both themes at1440/1024/760, including placement, hover persistence, dismissal, activation and disabled hints, with no page errors. Reviewed previews: `screenpipe-canvas-tooltips-dark-760.png` and `screenpipe-canvas-tooltips-light-1440.png`.
+
+## Separate node selection from editing
+
+Single-click selects a canvas node without opening a dialog, including its status badge. Double-click opens the existing node inspector. Space selects and Enter opens settings for keyboard users; shared accessible instructions and canvas help describe the behavior. Recording remains available from the inspector. Drag suppression and Pan mode retain their existing behavior, and newly created nodes still open directly for configuration.
+
+Production build/typecheck and native UI smoke pass. Pointer/keyboard checks in both themes at1440/1024/760 verify selection, badge clicks, double-click settings, actual dragging, Pan mode, focus return and selection-based duplicate/delete. Existing Add menu and toolbar tooltip checks pass. Backend processing UI and native browser/Settings fixtures pass, including node configuration/save/reload and preserved recording/capture. Existing inspector test entry points now use double-click.
+
+## Clear run results
+
+The user confirmed Clear should reset run logs/test results. The old handler only emptied log rows, leaving node result indicators visible; a pending pipeline completion could also restore cleared results. Clear logs now resets rows and node indicators, expands the log with an explicit cleared state and confirms the action. A display revision discards status updates and late success/error feedback from a cleared pipeline while allowing subsequent runs to show fresh results. A running pipeline remains labeled as active; clearing its display does not cancel execution. Workflow nodes, connections, configuration and files are preserved.
+
+Focused checks reproduce the stale-indicator failure before the patch and pass afterward, including delayed success/failure, repeated clearing, subsequent runs, both tabs, collapsed-panel feedback and unchanged graph/save payloads. Production build/typecheck and native UI smoke pass. Light/Dark layout checks at1440/760 confirm the button and empty state remain visible; reviewed preview: `screenpipe-clear-logs-dark-760.png`.
+
+## Persistent template drafts and autosave
+
+Home and the sidebar share a template picker that creates a backend DRAFT and its complete graph atomically. Each copy has new workflow/node/edge IDs; source templates remain unchanged. Creation shows pending/error feedback and blocks duplicate clicks. The create IPC contract now accepts the graph already supported by the existing backend API; no database migration is needed.
+
+Backend drafts autosave after a short pause, retaining explicit Save changes/Retry save controls and saving/saved/error feedback. Writes are serialized so an older response cannot overwrite a newer edit. Node editing stays available during background saves. A local pending-edit copy covers navigation/reload/restart or failed saves, while leaving the editor flushes the latest draft. Recovery is applied only after the saved workflow loads successfully, preventing deleted workflows from being recreated. Active/archived workflows retain explicit saves. Imported/local preview drafts retain their existing session behavior.
+
+The existing graph serializer is shared by explicit saves and autosaves, with stable edge IDs across writes. Restored graphs retain saved connections and step order; template triggers preserve their compact representation. Save activity is tracked separately from processing execution so completion of an autosave cannot clear a running pipeline's busy state.
+
+Validation: `npm run test:template-drafts` builds desktop/backend and exercises the real desktop create/update IPC against a durable HTTP fixture with the backend graph schemas. It verifies creation errors/retry, duplicate prevention, autosaved name/node details/drag/add/connect/delete, stable edge IDs, serialized overlapping writes, immediate navigation, Drafts listing, full app restarts, failed-save recovery and independent template copies. Native UI, node-contract, processing UI and browser/Settings regressions pass. Additional pointer checks verify editing during delayed saves, explicit saves for Active workflows, creation/save recovery, both themes and1440/760 layouts. Scoped token lint and whitespace checks are clean. Reviewed previews: `screenpipe-template-drafts-dark-760.png` and `screenpipe-template-draft-save-error-760.png`.
+
+## Integration with the current Ghost workspace — October 17, 2026
+
+Merged editor changes alongside the real activity timeline, square Home cards, neutral background, lime Ghost branding and redesigned evidence. Retained the user's removal of Templates/Record/Activity/Connections navigation; template payload helpers remain available internally, while the draft regression enters through real create IPC rather than restoring removed navigation. Settings combines the macOS height fix with the centered Ghost logo. Corrected failed-save button wording to Retry save and updated evidence tests for double-click inspection.
+
+Current Linux validation passed: desktop typecheck/build, backend build, core tests, processing and runtime-logic suites, isolated Electron draft autosave/serialized writes/restart recovery, browser/Settings recording preservation, and Home/timeline/evidence checks at six viewport sizes. Native macOS traffic-light placement was not rerun here. Vercel PR checks reported team-access failures rather than build diagnostics.

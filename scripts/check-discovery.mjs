@@ -122,7 +122,7 @@ try {
   const browserNode = saved[0].nodes.find(node => node.config.stepType === 'browser')
   const teachingURL = address + '/health'
   await evaluate(`window.__teachingState=null;window.ghost.browser.onState(value=>window.__teachingState=value)`)
-  await evaluate(`document.querySelector('.node-${browserNode.id}').click()`)
+  await evaluate(`document.querySelector('.node-${browserNode.id}').dispatchEvent(new MouseEvent('dblclick', { bubbles: true, detail: 2 }))`)
   await until(()=>evaluate(`!!document.querySelector('[aria-label="Starting dashboard URL"]')`))
   assert.equal(await evaluate(`document.querySelector('.evidence-heading').textContent.includes('Evidence (0)')`), true)
   await evaluate(`(()=>{const input=document.querySelector('[aria-label="Starting dashboard URL"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(teachingURL)});input.dispatchEvent(new Event('input',{bubbles:true}))})()`)

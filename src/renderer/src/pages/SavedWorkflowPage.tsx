@@ -5,6 +5,7 @@ import { WorkflowEditor } from './WorkflowEditor'
 import { WorkflowSidebar } from '../components/WorkflowSidebar'
 import { cacheBackendWorkflow } from '../data/workflowStore'
 import { savedEditorNodes } from '../data/savedEditorNodes'
+import { recoverDraft } from '../data/workflowDrafts'
 import { editorSnapshots } from '../data/editorState'
 import type { SavedWorkflowDetail } from '../../../shared/discovery'
 
@@ -23,8 +24,9 @@ export function SavedWorkflowPage({ recording = false }: { recording?: boolean }
       if (!result.ok) { setError(result.error); return }
       const workflow = result.workflow
       cacheBackendWorkflow(workflow)
-      const nodes = savedEditorNodes(workflow)
-      editorSnapshots.set(id, { nodes, title: workflow.name })
+      const recovered = recoverDraft(workflow)
+      const nodes = savedEditorNodes(recovered)
+      editorSnapshots.set(id, { nodes, title: recovered.name, connections: recovered.edges.map(edge => [edge.sourceNodeId, edge.targetNodeId]) })
       setValue(workflow)
     }).catch(() => { if (active) setError('Unable to load workflow. Please retry.') })
     return () => { active = false }
