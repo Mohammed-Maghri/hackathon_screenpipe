@@ -1,10 +1,8 @@
 import type { WorkflowSchedule } from "../../../shared/workflowSchedule";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { useSearchParams } from "react-router";
 import { LayoutGrid, Plus, RefreshCw, Search } from "../components/ImageIcon";
 import { WorkflowSidebar } from "../components/WorkflowSidebar";
 import { SavedWorkflowCard } from "../components/SavedWorkflowCard";
-import { WorkflowTemplates } from "../components/WorkflowTemplates";
 import { DashboardDialog } from "../components/DashboardDialog";
 import { TitleBar } from "../components/TitleBar";
 import type { SavedWorkflow } from "../../../shared/discovery";
@@ -13,21 +11,13 @@ const tabs = {
   All: undefined,
   Active: "ACTIVE",
   Drafts: "DRAFT",
-  Archived: "ARCHIVED",
-  Templates: undefined,
 } as const;
 type Tab = keyof typeof tabs;
 const pageSize = 20;
 export function Workflows() {
-  const [params] = useSearchParams();
   const [workflows, setWorkflows] = useState<SavedWorkflow[]>([]);
   const [query, setQuery] = useState("");
-  const [tab, setTab] = useState<Tab>(
-    params.get("view") === "templates" ? "Templates" : "All",
-  );
-  useEffect(() => {
-    if (params.get("view") === "templates") setTab("Templates");
-  }, [params]);
+  const [tab, setTab] = useState<Tab>("All");
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
   const [refresh, setRefresh] = useState(0);
@@ -236,12 +226,6 @@ export function Workflows() {
               </button>
             ))}
           </nav>
-          {tab === "Templates" ? (
-            <section className="mt-8">
-              <WorkflowTemplates />
-            </section>
-          ) : (
-            <>
               <div className="workflows-page-filters my-6 flex items-center justify-between gap-4">
                 <label className="table-search w-full max-w-[340px] !min-h-10 !border-strong !py-2.5 [&_input]:!text-sm">
                   <Search size={16} />
@@ -390,8 +374,6 @@ export function Workflows() {
                   </div>
                 </div>
               )}
-            </>
-          )}
         </main>
       </div>
       {actionTarget && (
