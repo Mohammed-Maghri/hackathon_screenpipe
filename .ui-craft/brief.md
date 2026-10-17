@@ -64,7 +64,15 @@ Proposed acceptance target: a first-time user can identify how to describe a rou
 
 - **2026-10-17 — Settings native-controls correction:** Settings must use the same56px macOS title bar and lower divider as the main workspace. *Why:* its previous40px strip left the native traffic lights visibly too close to the sidebar. Preserve the native button position and other platforms’ spacing.
 
+- **2026-10-17 — Canvas creation controls:** use one plus button in the left canvas toolbar. It opens a compact dropdown with Add node and Add connection; only selecting an action opens its corresponding dialog. Remove the separate connections toolbar button. *Why:* creation choices should stay beside the canvas until the user chooses what to add.
+
+- **2026-10-17 — Node selection:** in Select mode, one click anywhere on a node selects it; double-click opens its settings. Status badges follow the same rule. Preserve dragging and provide Space to select / Enter to open for keyboard users. *Why:* selecting a node for canvas actions should not interrupt the workflow with a dialog or recording route.
+
+- **2026-10-17 — Template drafts:** opening a template creates an independent saved Draft with its own graph IDs. Draft edits save automatically and remain available under Workflows → Drafts after app restarts. Keep the source template reusable and unchanged. *Why:* exploring and editing a template must produce a recoverable workflow rather than a temporary session copy.
+
 ## 7. Design direction
+
+Canvas toolbar icons show short, right-positioned tooltips on hover and keyboard focus. Explain why Duplicate/Delete are unavailable without a selected node, and hide the Add hint while its dropdown is open.
 
 Use Inter for body, navigation, titles and instruction content; JetBrains Mono for controls, inputs and operational metadata. Both fonts are bundled. The dark canvas is #0A0A0A with #141414 work surfaces, #333333 separators and an opaque #31332E sidebar derived from the reference captures. Light uses Screenpipe’s #F6F6F3 canvas, #EFEFEB sidebar and white work surfaces. Primary actions use phosphor lime #C7FF3E with near-black ink in both modes. Neutral navigation and status semantics remain distinct; light-mode execution text uses a darker olive for contrast. Controls use 6px corners, cards 8px and dialogs 10px. Keep surfaces flat, reserving shadow for dialogs and transient overlays. The slim active-navigation marker is the shared signature detail.
 

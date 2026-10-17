@@ -38,7 +38,7 @@ await until(()=>host.eval('!!window.ghost?.processing'),'Contract preload missin
 await host.eval(`location.hash='/workflows/${id}'`);
 await until(()=>host.eval("[...document.querySelectorAll('button')].some(b=>b.textContent==='Define inputs & outputs')"),'Definition button missing');
 await host.eval(`window.__browser=null;window.ghost.browser.onState(s=>window.__browser=s)`);
-await host.eval(`document.querySelector('.node-${browserId}').click()`);
+await host.eval(`document.querySelector('.node-${browserId}').dispatchEvent(new MouseEvent('dblclick', { bubbles: true, detail: 2 }))`);
 await host.eval(`[...document.querySelectorAll('dialog button')].find(b=>b.textContent==='Start recording').click()`);
 await until(()=>host.eval(`window.__browser?.url===${JSON.stringify(site+'/site/original')}&&!window.__browser.loading`),'Original URL not opened');
 const guest=await connect((await pages()).find(p=>p.url===site+'/site/original'));
@@ -100,7 +100,7 @@ await host.eval(`window.ghost.browser.recordingControl(window.__browser.sessionI
 guest.close();
 await host.eval(`location.hash='/workflows/${id}'`);
 await until(()=>host.eval(`!!document.querySelector('.node-${browserId}')`),'Board missing');
-await host.eval(`document.querySelector('.node-${browserId}').click()`);
+await host.eval(`document.querySelector('.node-${browserId}').dispatchEvent(new MouseEvent('dblclick', { bubbles: true, detail: 2 }))`);
 async function edit(selector,value){await host.eval(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});const proto=e.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value').set.call(e,${JSON.stringify(value)});e.dispatchEvent(new Event('input',{bubbles:true}))})()`)}
 await edit('[aria-label="Starting dashboard URL"]',site+'/site/changed');
 await edit('[aria-label="Browser step name"]','Edited browser node');
@@ -120,7 +120,7 @@ await host.eval(`location.hash='/workflows/${id}'`);
 await until(()=>host.eval(`!!document.querySelector('.node-${browserId}')`),'Board missing after reopen');
 await host.eval('location.reload()');
 await until(()=>host.eval(`!!document.querySelector('.node-${browserId}')`),'Reload missing');
-await host.eval(`document.querySelector('.node-${browserId}').click()`);
+await host.eval(`document.querySelector('.node-${browserId}').dispatchEvent(new MouseEvent('dblclick', { bubbles: true, detail: 2 }))`);
 assert.equal(await host.eval(`document.querySelector('[aria-label="Starting dashboard URL"]').value`),site+'/site/changed');
 await edit('[aria-label="Starting dashboard URL"]',site+'/site/saved');
 await host.eval(`[...document.querySelectorAll('dialog button')].find(b=>b.textContent==='Save Changes').click()`);

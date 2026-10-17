@@ -75,10 +75,47 @@ app.whenReady().then(async () => {
   await until(`!!document.querySelector('.home-start-cards')`);
   await click('.home-card-lilac');
   await click('dialog[open] .template-list button');
+  await until(`document.querySelector('dialog[open] [role="alert"]')?.textContent.includes('Open Ghost desktop')`);
+  await click('dialog[open] .dialog-close');
+  await evaluate(`location.hash = '/workflows/orders'`);
   await until(`!!document.querySelector('.workflow-canvas') && document.querySelectorAll('.canvas-node').length > 1`);
   await click('.canvas-node:not(.trigger-node)');
+  assert.equal(await evaluate(`document.querySelector('.canvas-node:not(.trigger-node)').getAttribute('aria-pressed')`), 'true');
+  assert.equal(await evaluate(`!!document.querySelector('dialog[open]')`), false, 'A single node click only selects it');
+  await evaluate(`document.querySelector('.canvas-node:not(.trigger-node)').dispatchEvent(new MouseEvent('dblclick', { bubbles: true, detail: 2 }))`);
   await until(`!!document.querySelector('dialog[open] [aria-label="Node inspector"]')`);
   await click('dialog[open] .dialog-close');
+  await evaluate(`location.hash = '/workflows/orders'`);
+  await until(`!!document.querySelector('.canvas-toolbar [aria-label="Add to workflow"]')`);
+  const nodeCountBeforeAdd = await evaluate(`document.querySelectorAll('.canvas-node').length`);
+  const edgeCountBeforeAdd = await evaluate(`document.querySelectorAll('.canvas-edges path').length`);
+  await click('.canvas-toolbar [aria-label="Add to workflow"]');
+  await until(`!!document.querySelector('.canvas-add-menu:popover-open')`);
+  assert.equal(await evaluate(`!!document.querySelector('dialog[open]')`), false, 'Add chooser must be a popover, not a modal');
+  assert.equal(await evaluate(`!!document.querySelector('.canvas-toolbar [aria-label="View connections"]')`), false);
+  await evaluate(`[...document.querySelectorAll('.canvas-add-menu button')].find(button => button.textContent === 'Add connection').click()`);
+  await until(`!!document.querySelector('dialog[open] form')`);
+  await evaluate(`(() => {
+    const [from, to] = document.querySelectorAll('dialog[open] select');
+    from.value = 'trigger'; from.dispatchEvent(new Event('change', { bubbles: true }));
+    to.value = 'email'; to.dispatchEvent(new Event('change', { bubbles: true }));
+  })()`);
+  await evaluate(`document.querySelector('dialog[open] form').requestSubmit()`);
+  await until(`!document.querySelector('dialog[open]') && document.querySelectorAll('.canvas-edges path').length === ${edgeCountBeforeAdd + 1}`);
+  await click('.canvas-toolbar [aria-label="Add to workflow"]');
+  await evaluate(`[...document.querySelectorAll('.canvas-add-menu button')].find(button => button.textContent === 'Add node').click()`);
+  await until(`!!document.querySelector('dialog[open]')`);
+  await evaluate(`document.querySelector('dialog[open] .dash-button--primary').click()`);
+  await until(`document.querySelectorAll('.canvas-node').length === ${nodeCountBeforeAdd + 1} && !!document.querySelector('dialog[open] [aria-label="Node inspector"]')`);
+  await click('dialog[open] .dialog-close');
+  await evaluate(`[...document.querySelectorAll('.editor-actions button')].find(button => button.textContent === 'Test run').click()`);
+  await until(`document.querySelectorAll('.log-row').length > 0`);
+  const graphBeforeClear = await evaluate(`({ nodes: document.querySelectorAll('.canvas-node').length, edges: document.querySelectorAll('.canvas-edges path').length })`);
+  await click('[aria-label="Clear run logs and test results"]');
+  assert.equal(await evaluate(`document.querySelectorAll('.log-row').length`), 0);
+  assert.equal(await evaluate(`document.querySelectorAll('.node-run-status').length`), 0);
+  assert.ok(await evaluate(`document.querySelector('.log-empty').textContent.includes('Run logs and test results cleared.')`));
+  assert.deepEqual(await evaluate(`({ nodes: document.querySelectorAll('.canvas-node').length, edges: document.querySelectorAll('.canvas-edges path').length })`), graphBeforeClear, 'Clearing results must preserve the workflow graph');
   for (const [width, height] of [[1440, 960], [1280, 800], [1024, 768]]) {
     win.setContentSize(width, height);
     for (const route of ['/dashboard', '/workflows', '/workflows/orders', '/workflows/orders/record/slack', '/settings', '/settings/appearance', '/settings/workspace']) {
@@ -119,7 +156,7 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate(`document.querySelector('.editor-title-row h1').textContent`), editorTitle);
   assert.equal(await evaluate(`document.querySelectorAll('.canvas-node').length`), nodeCount);
   assert.deepEqual(errors, []);
-  console.log('PASS UI: welcome/dialogs, local draft editor and retention, templates, node inspector, Light/Dark/System persistence and live system changes, full-page Settings and origin state retention, bundled Inter typography, frameless full-bleed routes, light theme, responsive routes and accessible recorder tabs');
+  console.log('PASS UI: welcome/dialogs, local draft editor and retention, template desktop guidance, single-click node selection and double-click inspector, Add popover and node/connection creation, Clear logs preserves graph, Light/Dark/System persistence and live system changes, full-page Settings and origin state retention, bundled Inter typography, frameless full-bleed routes, light theme, responsive routes and accessible recorder tabs');
   clearTimeout(watchdog);
   win.destroy();
   app.exit(0);
