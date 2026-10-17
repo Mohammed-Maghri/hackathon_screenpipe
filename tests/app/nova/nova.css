@@ -5,3 +5,35 @@
 @media(max-width:680px){.nova-shell{padding-left:0}.nova-topbar{padding:0 14px;gap:13px}.nova .nova-mobile-menu{display:flex}.nova .nova-wordmark{min-width:0;font-size:15px;gap:7px}.nova-wordmark>span{width:23px;height:28px;font-size:21px}.nova-wordmark small{display:none}.nova-global-search{width:auto;flex:1;padding:0 8px;min-width:0}.nova-user{display:none}.nova-sidebar{transform:translateX(-100%);width:220px;box-shadow:15px 0 30px #0002;transition:transform .18s}.nova-sidebar.is-open{transform:translateX(0)}.nova-content{padding:18px 12px;border-radius:0}.nova-page-heading{flex-wrap:wrap;gap:12px}.nova-page-heading h1{font-size:24px}.nova-page-heading p{font-size:12px}.nova-metrics{gap:9px}.nova-metric>strong{font-size:21px}.nova-metric>small{display:block;font-size:10px}.nova-metric>div>span:first-child{font-size:11px}.nova-right-column{grid-template-columns:1fr}.nova-lower-grid{grid-template-columns:1fr}.nova-chart{height:165px;padding-right:12px;gap:9px}.nova-bars{gap:12px;padding:0 8px}.nova-axis{min-width:38px;font-size:8px}.nova-bar-column>span{font-size:8px}.nova-catalog{gap:10px;padding:10px}.nova-catalog article{padding:9px}.nova-catalog h3{font-size:12px}.nova-catalog article>div{font-size:10px;flex-wrap:wrap}.nova-card>header{padding:14px}.nova-toolbar{padding:10px 14px}.nova-campaigns{grid-template-columns:1fr}.nova-login{grid-template-columns:1fr}.nova-login-art{display:none}.nova-login>main{min-height:100vh;padding:28px}.nova .nova-toolbar label:not(.nova-sr){margin:0}.nova-table-scroll table{min-width:600px}}
 /* Contain responsive tables and let chart columns shrink on narrow viewports. */
 .nova-shell{overflow-x:clip}.nova-bars{min-width:0}.nova-bar-column{min-width:0;flex:1;max-width:42px}.nova-lower-grid,.nova-right-column{min-width:0}.nova th{text-transform:none;letter-spacing:0}.nova thead{border:0}
+
+/* Restocking review: compact native controls and stable, labeled recorder targets. */
+.nova-restock{display:grid;gap:20px;min-width:0}
+.nova-restock form{display:grid;gap:20px;min-width:0}
+.nova-restock-intro,.nova-restock-exports{padding:24px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.nova-restock-intro p,.nova-restock-exports p{max-width:680px;line-height:1.6;color:var(--nova-muted,#64748b);margin:10px 0}
+.nova-restock h2{margin:0;font-size:18px}
+.nova-restock-intro small{color:var(--nova-muted,#64748b)}
+.nova-restock-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;padding:0 24px 24px}
+.nova-restock-fields label{display:grid;gap:8px;font-size:12px}
+.nova-restock input{font:inherit;border:1px solid #cbd5e1;border-radius:6px;padding:9px;width:100%;min-width:0;background:transparent;color:inherit}
+.nova-restock input:focus{outline:2px solid #3b82f6;outline-offset:2px}
+.nova-restock-table{min-width:1050px}
+.nova-restock-table input[type=number]{width:85px}
+.nova-restock-table input[type=text]{min-width:130px}
+.nova-restock-product{display:flex;align-items:center;gap:10px;min-width:210px}
+.nova-restock-product .nova-product-image{width:42px;height:48px;flex-shrink:0}
+.nova-restock-product small,.nova-restock-sub{display:block;font-size:11px;color:#64748b;margin-top:4px}
+.nova-restock-actions{display:flex;flex-wrap:wrap;gap:10px;padding:18px 24px}
+.nova-restock-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.nova-restock-summary article{background:var(--nova-card,#fff);border:1px solid #dce2e8;border-radius:10px;padding:22px;display:grid;gap:8px}
+.nova-restock-summary strong{font-size:30px;letter-spacing:-1px}
+.nova-restock-summary small,.nova-restock-summary span{font-size:12px;color:#64748b}
+.nova-restock-warning{padding:16px;border:1px solid #e5bd63;border-radius:8px;background:#fff8e7;color:#80520b;line-height:1.6}
+.nova-restock details{max-width:380px;margin-top:7px;font-size:12px;white-space:normal;line-height:1.6}
+.nova-restock summary{cursor:pointer;color:#2563eb}
+.nova-restock header{gap:16px;flex-wrap:wrap}
+@media(max-width:800px){.nova-restock-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.nova-restock-summary{grid-template-columns:1fr}.nova-restock-intro,.nova-restock-exports{align-items:flex-start;flex-direction:column}.nova-restock-exports .nova-restock-actions{padding:0}}
+@media(max-width:480px){.nova-restock-fields{grid-template-columns:1fr}}
+/* Keep wide tables and their absolute accessible labels inside the scroll area. */
+.nova-table-scroll{position:relative;max-width:100%}
+.nova-lower-grid>.nova-card{min-width:0}

@@ -1,4 +1,5 @@
 import electronPath from 'electron';
+import ExcelJS from 'exceljs';
 import assert from 'node:assert/strict';
 import { mkdtemp, writeFile, readFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -38,8 +39,25 @@ try {
  await navigate('/nova/products');await click('[data-testid=edit-product-hoodie]');await type('#nova-product-stock','72');await click('[data-testid=nova-save-product]');await wait("document.querySelector('[role=status]')?.textContent.includes('Product saved')");await navigate('/nova/products');assert.ok(await evaluate("document.querySelector('.nova-catalog').textContent.includes('72 in stock')"));
  await navigate('/nova/marketing');await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent==='Create campaign').click()");await type('#nova-campaign-name','Autumn launch');await evaluate("document.querySelector('dialog form').requestSubmit()");await wait("document.querySelector('.nova-campaigns').textContent.includes('Autumn launch')");
  await navigate('/nova/customers');assert.equal(await evaluate('document.querySelectorAll("tbody tr").length'),12);
+ await navigate('/nova/restocking');await click('[data-testid=restock-demo-stock]');
+ await wait("document.querySelector('#restock-hoodie-stock')?.value==='1'");
+ assert.equal(await evaluate("document.querySelectorAll('[data-testid^=restock-result-]').length"),5);
+ const firstBuy=Number(await evaluate("document.querySelector('[data-testid=restock-buy-hoodie]').textContent"));assert.ok(firstBuy>0);
+ await click('[data-testid=restock-sales-export]');await until(async()=>(await readdir(root)).includes('nova-restock-sales.csv'),'Sales export');
+ const sales=await readFile(join(root,'nova-restock-sales.csv'),'utf8');assert.ok(sales.includes('Product ID'));assert.ok(sales.includes('Quantity'));assert.ok(sales.includes('hoodie'));
+ await click('[data-testid=restock-inventory-export]');await until(async()=>(await readdir(root)).includes('nova-restock-inventory.csv'),'Inventory export');
+ assert.ok((await readFile(join(root,'nova-restock-inventory.csv'),'utf8')).includes('Incoming ETA'));
+ await click('[data-testid=restock-excel]');await until(async()=>{try{const w=new ExcelJS.Workbook();await w.xlsx.readFile(join(root,'nova-shopping-list.xlsx'));return w.getWorksheet('Shopping list')?.getCell('J2').value===firstBuy}catch{return false}},'Explained workbook');
+ await type('#restock-hoodie-stock','100');await click('[data-testid=restock-save]');await wait("document.querySelector('[data-testid=restock-buy-hoodie]').textContent==='0'");
+ await navigate('/nova/restocking');await wait("document.querySelector('#restock-hoodie-stock')?.value==='100'");
+ await click('[data-testid=restock-excel]');await until(async()=>{try{const w=new ExcelJS.Workbook();await w.xlsx.readFile(join(root,'nova-shopping-list.xlsx'));assert.equal(w.getWorksheet('Shopping list').rowCount,6);assert.ok(String(w.getWorksheet('Shopping list').getCell('O2').value).includes('100 stock'));return w.getWorksheet('Shopping list').getCell('J2').value===0}catch{return false}},'Updated workbook');
+ await writeFile(join(root,'nova-restocking.png'),Buffer.from((await call('Page.captureScreenshot',{format:'png'})).data,'base64'));
+ await call('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:false});await sleep(200);
+ assert.equal(await evaluate('document.documentElement.scrollWidth<=innerWidth'),true,'Restocking phone overflow');
+ await call('Emulation.setDeviceMetricsOverride',{width:1536,height:1080,deviceScaleFactor:1,mobile:false});
  await navigate('/nova');await call('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:false});await sleep(200);
+ if(!await evaluate('document.documentElement.scrollWidth<=innerWidth'))console.log(await evaluate(`[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>innerWidth+1).map(e=>({tag:e.tagName,cls:e.className,right:e.getBoundingClientRect().right})).slice(0,12)`));
  assert.equal(await evaluate('document.documentElement.scrollWidth<=innerWidth'),true,'Phone page overflows');await click('[aria-label="Toggle navigation"]');await wait("document.querySelector('.nova-sidebar').classList.contains('is-open')");await click('[aria-label="Toggle navigation"]');
  const mobile=await call('Page.captureScreenshot',{format:'png'});await writeFile(join(root,'nova-mobile.png'),Buffer.from(mobile.data,'base64'));
- console.log('PASS NOVA: login validation, dashboard, filtered CSV, order status/notes persistence, inventory persistence, campaign draft, customers, responsive layout.');console.log('Screenshots:',root);
+ console.log('PASS NOVA: login validation, dashboard, filtered CSV, order status/notes persistence, inventory persistence, campaign draft, customers, restocking source CSVs, real Excel values, changed-stock recalculation/persistence and responsive layout.');console.log('Screenshots:',root);
 }catch(error){console.error(errors.slice(-2500));throw error}finally{ws?.close();child.kill('SIGTERM');}

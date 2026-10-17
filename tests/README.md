@@ -60,3 +60,39 @@ Recorder scenario:
 Forms use stable IDs, accessible labels, native selects, semantic dialogs, and visible success messages. No iframes or external authentication are required. **Settings → Reset demo data** restores fixtures. The date range is deliberately fixed to the sample dataset in October 2026. The map and sparklines are illustrative; order totals and sales bars use the sample records, while lifetime product sales are labeled as seeded totals.
 
 Build with `npm run build`. With a server running on port 3102, run `node tests/scripts/check-nova.mjs` from the repository root for isolated Electron interaction and responsive-layout checks; set `NOVA_URL` to use another local port. Product image generation details are in `public/nova/ASSETS.md`.
+
+## NOVA Monday restocking demo
+
+Open `/nova/restocking` (local server: `http://127.0.0.1:3100/nova/restocking`).
+Use the existing NOVA demo login: `alex@nova.test` / `nova-demo`.
+This route will appear on the hosted website only after deployment; local edits do not update Vercel.
+
+1. Click **Load five-product demo stock**. This explicitly changes stock for hoodie, tee, cargo, cap and shoes, resets their supplier/planning defaults, and preserves order history and the sixth product.
+2. Review the fixed demo sales window (October 5–18, 2026) and Monday planning date (October 19). These are sample dates, not a claim about the current week.
+3. Download **sales CSV** and **inventory CSV**. Each uses stable product IDs; sales include quantities, dates, status and observation bounds. Inventory includes supplier, purchase cost, lead time, incoming quantity/ETA and planning assumptions.
+4. Download **Excel for approval**. The real XLSX includes five products, explanations and a separate assumptions sheet. No purchase is sent.
+5. Set the hoodie's stock to 100 and click **Save inventory & recalculate**. Its buying quantity becomes zero; download again to inspect the changed workbook. Reloading preserves edits, also visible under Products.
+
+Calculation: daily rate = Paid + Shipped units / inclusive calendar days in the sales window (including zero-sale days). Target = ceil(rate × (supplier lead days + review cycle + safety buffer)). Buy = max(0, target − stock − eligible incoming). Incoming is counted only when its ETA is from the planning date through the target horizon. Missing, overdue and late ETAs are excluded with a warning. Urgency checks shortages before new stock arrives, including the interval before an incoming delivery. No-sales/over-60-day-stock warnings are heuristic review flags, not a profitability model. Budget overflow is flagged; quantities are not automatically allocated or reduced.
+
+### Honest Ghost demo boundary
+
+NOVA provides the calculation/reference workbook. Ghost can record the two CSV downloads and the Excel download in one browser task, using its existing verified download execution. Start recording **after** loading the demo stock and completing login, so replay does not reset inventory on each run. Stop, inspect the plan, then Test recording. Change stock outside capture and replay again to obtain fresh downloads.
+
+This does **not** implement Ghost-side restocking arithmetic, a unified scheduled graph runner, fresh browser downloads every Monday, purchase execution, or a stored business approval workflow. Ghost's constrained processing plan currently supports joins/aggregation but lacks the complete row arithmetic needed here. Do not describe a NOVA-calculated workbook as calculated by Ghost. A subsequent implementation should add a tested typed restocking operation, bind same-run sales/inventory artifacts, and run it after fresh scheduled downloads.
+
+### Checks
+
+From repository root:
+```sh
+node tests/scripts/check-restocking.mjs
+npm --prefix tests run typecheck
+npm --prefix tests run build
+# Start the fixture server separately, then use a graphical Electron session:
+NOVA_URL=http://127.0.0.1:3100 node tests/scripts/check-nova.mjs
+NOVA_URL=http://127.0.0.1:3100 node tests/scripts/check-restocking-replay.mjs
+```
+
+The first browser suite checks the actual CSV/XLSX bytes and inventory persistence. The replay suite uses an isolated Ghost profile, authenticates before capture, records three downloads, checks blockers, and verifies replay artifacts before and after changing stock. It requires an up-to-date root desktop build (`npm run build`). These scripts never place real supplier orders.
+
+Verified locally on October 17, 2026: calculation assertions, fixture TypeScript and production build, NOVA browser suite (desktop/mobile, edits, CSV and XLSX contents), and two successful actual Ghost replays with three completed downloads each. The hoodie recommendation changed from 2 to 0 after stock changed to 100. This is a two-run acceptance check, not a 20-run campaign or proof of Monday scheduling.

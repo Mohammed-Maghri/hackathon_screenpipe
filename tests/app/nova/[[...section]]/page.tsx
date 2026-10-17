@@ -5,6 +5,6 @@ export const metadata = { title: 'NOVA — Store operations', description: 'Loca
 export default async function Page({ params }: { params: Promise<{ section?: string[] }> }) {
  const { section } = await params
  const page = section?.join('/') || 'home'
- if (!['home','login','orders','products','customers','analytics','marketing','discounts','content','settings','store','pos','reviews','subscriptions'].includes(page)) notFound()
+ if (!['restocking','home','login','orders','products','customers','analytics','marketing','discounts','content','settings','store','pos','reviews','subscriptions'].includes(page)) notFound()
  return <NovaStore page={page} />
 }
