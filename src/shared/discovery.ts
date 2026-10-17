@@ -1,4 +1,5 @@
 export interface DiscoveryRequest {
+  selectedRange?: { startTime: string; endTime: string }
   prompt: string
   timeRange: 'Last 24 hours' | 'Last 7 days' | 'Last 30 days'
 }

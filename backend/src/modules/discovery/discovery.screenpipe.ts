@@ -5,8 +5,8 @@ import { buildGeneratedGraph } from './discovery.generate.js'
 import { ApiError } from '../../errors/handler.js'
 import type { WorkflowService } from '../workflows/workflow.service.js'
 
-export function discoveryRequestHash(prompt: string, timeRange: string) {
-  return createHash('sha256').update(JSON.stringify({ prompt, timeRange })).digest('hex')
+export function discoveryRequestHash(prompt: string, timeRange: string, selectedRange?: { startTime: string; endTime: string }) {
+  return createHash('sha256').update(JSON.stringify({ prompt, timeRange, ...(selectedRange ? { selectedRange } : {}) })).digest('hex')
 }
 export function buildScreenpipeGraph(raw: unknown) {
   const input = screenpipeSaveSchema.parse(raw)

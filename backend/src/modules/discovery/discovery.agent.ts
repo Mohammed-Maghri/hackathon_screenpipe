@@ -20,8 +20,8 @@ export function buildAgentGraph(raw: unknown) {
       sourceReferences: [...new Set(steps.flatMap(s => s.references))], referencesVerified: false,
       missingInformation: [...new Set([...(node.config.missingInformation as string[]), ...result.missingInformation,
         'Screenpipe agent response; Ghost has not independently verified its observations or references. Confirm the workflow before recording.'])],
-      discoveryRequestHash: discoveryRequestHash(input.prompt, input.timeRange),
-      discovery: { pipeId: input.pipeId, executionId: input.executionId, timeRange: input.timeRange },
+      discoveryRequestHash: discoveryRequestHash(input.prompt, input.timeRange, input.selectedRange),
+      discovery: { pipeId: input.pipeId, executionId: input.executionId, timeRange: input.timeRange, ...(input.selectedRange ? { selectedRange: input.selectedRange } : {}) },
     }
   }
   return graph
@@ -30,7 +30,7 @@ export async function saveAgentWorkflow(service: WorkflowService, raw: unknown) 
   const input = agentSaveSchema.parse(raw)
   const existing = await service.find(input.requestId)
   if (existing) {
-    if (!existing.nodes.length || existing.nodes.some(n => (n.config as Record<string, unknown>).discoveryRequestHash !== discoveryRequestHash(input.prompt, input.timeRange))) throw new ApiError(409, 'REQUEST_CONFLICT', 'Request ID belongs to another workflow.')
+    if (!existing.nodes.length || existing.nodes.some(n => (n.config as Record<string, unknown>).discoveryRequestHash !== discoveryRequestHash(input.prompt, input.timeRange, input.selectedRange))) throw new ApiError(409, 'REQUEST_CONFLICT', 'Request ID belongs to another workflow.')
     return existing
   }
   return service.create(buildAgentGraph(input), input.requestId)

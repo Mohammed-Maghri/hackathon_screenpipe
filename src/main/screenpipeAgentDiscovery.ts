@@ -62,7 +62,7 @@ export async function discoverScreenpipeAgentWorkflow(raw: GenerateWorkflowReque
       }
       return json(response)
     }
-    const hash = createHash('sha256').update(JSON.stringify({ prompt: input.prompt, timeRange: input.timeRange })).digest('hex')
+    const hash = createHash('sha256').update(JSON.stringify({ prompt: input.prompt, timeRange: input.timeRange, ...(input.selectedRange ? { selectedRange: input.selectedRange } : {}) })).digest('hex')
     const existing = await request(`/api/workflows/${input.requestId}`, undefined, false)
     if (existing) {
       if (!Array.isArray(existing.nodes) || !existing.nodes.length || existing.nodes.some(n => obj(obj(n).config).discoveryRequestHash !== hash)) throw new Error('Request ID belongs to another workflow.')
@@ -81,7 +81,7 @@ export async function discoverScreenpipeAgentWorkflow(raw: GenerateWorkflowReque
       if (run.status) throw new Error('The previous run-start outcome is unknown. Check Screenpipe before submitting a new request; Ghost will not repeat it automatically.')
       const pipe = await request(`/pipes/${PIPE}`)
       if (pipe?.error) throw new Error('Ghost discovery Pipe is not installed. Run npm run screenpipe:install.')
-      const endTime = new Date().toISOString(), startTime = new Date(Date.parse(endTime) - { 'Last 24 hours': 1, 'Last 7 days': 7, 'Last 30 days': 30 }[input.timeRange] * 86400000).toISOString()
+      const endTime = input.selectedRange?.endTime ?? new Date().toISOString(), startTime = input.selectedRange?.startTime ?? new Date(Date.parse(endTime) - { 'Last 24 hours': 1, 'Last 7 days': 7, 'Last 30 days': 30 }[input.timeRange] * 86400000).toISOString()
       await writeFile(receipt, JSON.stringify({ hash, status: 'starting' }), { flag: 'wx', mode: 0o600 })
       config.notify?.({ requestId: input.requestId, phase: 'activity' })
       const started = await request(`/pipes/${PIPE}/run`, { run_context: { requestId: input.requestId, prompt: input.prompt, timeRange: input.timeRange, startTime, endTime, systemPrompt: obj(messages[0]).content } })

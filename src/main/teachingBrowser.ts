@@ -113,10 +113,12 @@ export function registerTeachingBrowser() {
     const h = Math.max(0, Math.min(height - y, Math.round(bounds.height)))
     entry.lastBounds = bounds
     const visible = bounds.visible === true && w > 0 && h > 0 && !isSettingsRoute(entry.owner.webContents.getURL()) && !modalOwners.get(entry.owner.id)?.size
-    entry.view.setVisible(visible)
+    if (!visible) entry.view.setVisible(false)
     if (!visible && entry.attached) { entry.owner.contentView.removeChildView(entry.view); entry.attached = false }
     entry.view.setBounds({ x, y, width: w, height: h })
     if (visible && !entry.attached) { entry.owner.contentView.addChildView(entry.view); entry.attached = true }
+    // Reattach before showing: a detached native view may retain hidden state.
+    if (visible) entry.view.setVisible(true)
 
   }
   function load(entry: Entry, url: string) {

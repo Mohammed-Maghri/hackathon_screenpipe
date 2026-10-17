@@ -4,6 +4,7 @@ export const discoveryInputSchema = z.object({
   prompt: z.string().max(10000).refine(value => value.trim().length > 0),
   timeRange: z.enum(['Last 24 hours', 'Last 7 days', 'Last 30 days']),
   requestId: z.string().uuid(),
+  selectedRange: z.object({ startTime: z.string().datetime(), endTime: z.string().datetime() }).strict().refine(r => { const duration = Date.parse(r.endTime) - Date.parse(r.startTime); return duration > 0 && duration <= 7 * 86400000 }, 'Invalid selected interval').optional(),
 }).strict()
 export const evidenceSchema = z.object({
   id: z.string().regex(/^screenpipe:(frame|audio):[0-9]+$/),
