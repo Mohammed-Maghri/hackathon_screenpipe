@@ -93,4 +93,4 @@ await until(()=>host.eval(`document.querySelector('.processing-inspector').textC
 console.log('PASS processing inspector: conversion, typed input mapping, validation, local Test Node results, Save Changes, no recording controls');
 assert.ok(!/UnhandledPromiseRejection/.test(errors),errors);
 }catch(error){console.error(error);process.exitCode=1}
-finally{clearTimeout(watchdog);guest?.close();host?.close();electron.kill('SIGTERM');server.closeAllConnections();server.close()}
+finally{clearTimeout(watchdog);guest?.close();host?.close();electron.kill('SIGTERM');const stop=setTimeout(()=>electron.kill('SIGKILL'),1500);stop.unref();electron.once('exit',()=>clearTimeout(stop));server.closeAllConnections();server.close()}

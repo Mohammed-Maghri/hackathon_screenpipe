@@ -32,7 +32,7 @@ const devURL = !app.isPackaged ? process.env.ELECTRON_RENDERER_URL : undefined
 function createWindow(): void {
   const window = new BrowserWindow({
     width: 1440, height: 960, minWidth: 760, minHeight: 620,
-    title: 'Ghost', backgroundColor: nativeTheme.shouldUseDarkColors ? '#0a0a0a' : '#f6f6f3', show: false,
+    title: 'Ghost', backgroundColor: nativeTheme.shouldUseDarkColors ? '#10151e' : '#ffffff', show: false,
     frame: false, titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
     trafficLightPosition: { x: 25, y: 22 },
     webPreferences: {
@@ -82,7 +82,7 @@ app.whenReady().then(() => {
   ipcMain.handle('appearance:set', (event, theme: unknown) => {
     authorizeBackend(event)
     if (theme !== 'light' && theme !== 'dark') throw new Error('Invalid appearance')
-    BrowserWindow.fromWebContents(event.sender)!.setBackgroundColor(theme === 'dark' ? '#0a0a0a' : '#f6f6f3')
+    BrowserWindow.fromWebContents(event.sender)!.setBackgroundColor(theme === 'dark' ? '#10151e' : '#ffffff')
   })
   const processing = new LocalProcessingService(app.getPath('userData'))
   const runtimeLogic = new RuntimeLogicService(app.getPath('userData'), processing)

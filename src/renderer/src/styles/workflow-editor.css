@@ -1,7 +1,35 @@
-/* Canvas paint and indeterminate progress are the only custom editor styles. */
-.workflow-canvas {
-  background-image: radial-gradient(var(--canvas-dot) .75px, transparent .75px);
-  background-size: 16px 16px;
+/* React Flow owns the canvas geometry. These variables bridge its paint layer
+   to the same semantic tokens used by the rest of Ghost. */
+.ghost-flow {
+  --xy-background-color: var(--surface-canvas);
+  --xy-edge-stroke: var(--canvas-edge);
+  --xy-edge-stroke-selected: var(--accent-brand);
+  --xy-edge-stroke-width: 1.5;
+  --xy-connectionline-stroke: var(--accent-brand);
+  --xy-connectionline-stroke-width: 2;
+  --xy-node-color: var(--text-primary);
+  --xy-node-background-color: transparent;
+  --xy-node-boxshadow-hover: none;
+  --xy-node-boxshadow-selected: none;
+  --xy-selection-background-color: var(--accent-subtle);
+  --xy-selection-border: 1px solid var(--accent-brand);
+  --xy-handle-background-color: var(--canvas-edge);
+  --xy-handle-border-color: var(--surface-panel);
+  --xy-minimap-background-color: var(--surface-panel);
+  --xy-attribution-background-color: var(--surface-canvas);
+}
+.ghost-flow .react-flow__node:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 4px;
+  border-radius: var(--card-radius);
+}
+.ghost-flow .react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--accent-brand);
+}
+.ghost-flow .react-flow__attribution {
+  color: var(--text-secondary);
+  font-size: 10px;
+  margin: 2px 8px;
 }
 @keyframes processing-sweep {
   from { transform: translateX(-100%); }

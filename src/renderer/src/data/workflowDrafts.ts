@@ -8,8 +8,8 @@ export function templateDraft(template: Workflow): WorkflowCreate {
     name: template.name, description: template.description, status: 'DRAFT',
     nodes: steps.map((step, index) => ({
       id: ids[index], label: step, type: index === 0 ? 'TRIGGER' : 'ACTION',
-      positionX: index === 0 ? 75 : 310 + ((index - 1) % 2) * 300,
-      positionY: index === 0 ? 100 : 90 + Math.floor((index - 1) / 2) * 190,
+      positionX: index === 0 ? 240 : 200,
+      positionY: 50 + index * 230,
       config: { stepType: index === 0 ? 'trigger' : 'browser', order: index, description: index === 0 ? 'Start this workflow manually.' : step, status: index === 0 ? 'ready' : 'needs_recording', instructions: index === 0 ? [] : [step], ...(index > 0 && template.apps.length ? { application: template.apps[(index - 1) % template.apps.length] } : {}) },
     })),
     edges: ids.slice(1).map((id, index) => ({ id: crypto.randomUUID(), sourceNodeId: ids[index], targetNodeId: id })),
