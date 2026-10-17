@@ -2,10 +2,24 @@
 // No database or AI provider is accessed.
 import electronPath from 'electron'
 import assert from 'node:assert/strict'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
+import { createServer } from 'node:http'
+import { GHOST_SYSTEM_PROMPT } from '../backend/dist/modules/discovery/discovery.prompt.js'
 import { buildApp } from '../backend/dist/app.js'
+const originalFetch = globalThis.fetch
+let formatCalls = 0
+// Only the provider is doubled; the actual formatter route and validation run.
+globalThis.fetch = async (url, init) => {
+  if (String(url) !== 'https://api.openai.com/v1/responses') return originalFetch(url, init)
+  formatCalls++
+  const request = JSON.parse(String(init.body))
+  assert.equal(request.text.format.type, 'json_schema')
+  const data = JSON.parse(request.input[0].content)
+  const result = JSON.parse(data.screenpipeAnswer)
+  return Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify(result)}]}]})
+}
 let saved = []
 const env = { NODE_ENV: 'test', LOG_LEVEL: 'silent', CORS_ORIGINS: [], DATABASE_URL: 'postgresql://unused:unused@localhost/unused', OPENAI_API_KEY: 'test-only' }
 const database = {
@@ -16,7 +30,7 @@ const database = {
     count: async () => saved.length,
     delete: async ({ where }) => { saved = saved.filter(item => item.id !== where.id) },
     findUnique: async ({ where }) => saved.find(item => item.id === where.id) ?? null,
-    findUniqueOrThrow: async ({ where }) => { const item = saved.find(item => item.id === where.id); if (!item) throw Error('Missing workflow'); return structuredClone(item) },
+    findUniqueOrThrow: async ({ where }) => { const item = saved.find(item => item.id === where.id); if (!item) throw Object.assign(Error('Missing workflow'), { statusCode: 404 }); return structuredClone(item) },
     create: async ({ data }) => { const item = { ...data, ownerId: null, updatedAt: new Date().toISOString(), nodes: [], edges: [] }; saved.push(item); return item },
     update: async ({ where, data }) => Object.assign(saved.find(item => item.id === where.id), data),
   },
@@ -30,27 +44,39 @@ const database = {
   },
   workflowRun: { count: async () => 0, deleteMany: async () => {} },
 }
-let aiCalls = 0
-const realFetch = globalThis.fetch
-let releaseAI
-const aiGate = new Promise(resolve => { releaseAI = resolve })
-globalThis.fetch = async (url, init) => {
-  if (String(url) !== 'https://api.openai.com/v1/responses') return realFetch(url, init)
-  aiCalls++
-  assert.equal(JSON.parse(init.body).input[0].content, '  Find my reporting routine\nKeep original whitespace 🚀  ')
-  await aiGate
-  return Response.json({ status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify({ name: 'Generated reporting board', description: 'Development example', steps: [
-    { name: 'Review Slack reports', description: 'Review updates', evidenceId: 'sim_obs_1', application: 'Slack', type: 'browser', startUrl: null, missingInformation: [] },
-    { name: 'Review metrics', description: 'Review metrics', evidenceId: 'sim_obs_2', application: 'Company Dashboard', type: 'browser', startUrl: null, missingInformation: [] },
-    { name: 'Prepare spreadsheet', description: 'Prepare report', evidenceId: 'sim_obs_3', application: 'Excel', type: 'application', startUrl: null, missingInformation: [] },
-  ] }) }] }] })
-}
+const finalDir = await mkdtemp('/tmp/ghost-pipe-final-')
+let aiCalls = 0, ready = false, requested
+const releaseAI = () => { ready = true }
+const screenpipe = createServer(async (request, response) => {
+  try {
+    assert.equal(request.headers.authorization, 'Bearer test-screenpipe-token')
+    const url = new URL(request.url, 'http://localhost')
+    response.setHeader('Content-Type', 'application/json')
+    if (url.pathname === '/pipes/ghost-workflow-discovery') return response.end(JSON.stringify({ config: { name: 'ghost-workflow-discovery' } }))
+    if (url.pathname.endsWith('/run')) {
+      const chunks=[]; for await (const chunk of request) chunks.push(chunk)
+      requested = JSON.parse(Buffer.concat(chunks).toString()).run_context
+      assert.equal(requested.systemPrompt, GHOST_SYSTEM_PROMPT)
+      assert.equal(requested.prompt, '  Find my reporting routine\nKeep original whitespace 🚀  ')
+      aiCalls++
+      return response.end(JSON.stringify({success:true,execution_id:42}))
+    }
+    assert.equal(url.pathname, '/pipes/ghost-workflow-discovery/executions')
+    assert.equal(url.searchParams.get('include_output'), 'false')
+    if (ready) await writeFile(`${finalDir}/${requested.requestId}.json`,JSON.stringify({requestId:requested.requestId,workflow:{name:'Generated reporting board',description:'Agent reporting routine'},missingInformation:[],steps:[
+      {id:'step_1',name:'Review dashboard',description:'Review metrics',application:'Chrome',type:'browser',startUrl:'https://example.com/dashboard',basis:'observed',references:['screenpipe://frame/10'],missingInformation:[]},
+      {id:'step_2',name:'Prepare spreadsheet',description:'Prepare report',application:'Excel',type:'application',startUrl:null,basis:'inferred',references:[],missingInformation:['Confirm spreadsheet columns']},
+    ]}))
+    response.end(JSON.stringify({data:[{id:42,pipe_name:'ghost-workflow-discovery',status:ready?'completed':'running'}]}))
+  } catch (error) { response.statusCode=500; response.end(JSON.stringify({error:String(error)})) }
+})
+screenpipe.listen(0, '127.0.0.1'); await once(screenpipe, 'listening')
 const backend = await buildApp(env, database)
 const requests = []
-backend.addHook('preHandler', async request => { if (request.url === '/api/workflow-discovery/generate') requests.push(request.body) })
+backend.addHook('preHandler', async request => { if (request.url === '/api/workflow-discovery/format') requests.push(request.body) })
 const address = await backend.listen({ port: 0, host: '127.0.0.1' })
 const profile = await mkdtemp('/tmp/ghost-discovery-test-')
-const child = spawn(electronPath, ['.', '--ozone-platform=x11', '--remote-debugging-port=0', `--user-data-dir=${profile}`], { env: { ...process.env, GHOST_BACKEND_URL: address }, stdio: ['ignore', 'ignore', 'pipe'] })
+const child = spawn(electronPath, ['.', '--ozone-platform=x11', '--remote-debugging-port=0', `--user-data-dir=${profile}`], { env: { ...process.env, GHOST_BACKEND_URL: address, SCREENPIPE_LOCAL_API_URL: `http://127.0.0.1:${screenpipe.address().port}`, SCREENPIPE_LOCAL_API_KEY: 'test-screenpipe-token', SCREENPIPE_DISCOVERY_OUTPUT_DIR: finalDir }, stdio: ['ignore', 'ignore', 'pipe'] })
 let logs = '', socket
 child.stderr.on('data', data => { logs += data })
 async function until(fn) { for (let i = 0; i < 200; i++) { const value = await fn(); if (value) return value; await new Promise(r => setTimeout(r, 50)) } throw new Error('Timed out') }
@@ -77,33 +103,30 @@ try {
   const original = '  Find my reporting routine\nKeep original whitespace 🚀  '
   await evaluate(`(() => { const field = document.querySelector('textarea'); Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(field, ${JSON.stringify(original)}); field.dispatchEvent(new Event('input', { bubbles: true })); })()`)
   await evaluate(`document.querySelector('.find-workflow').click()`)
-  const started = Date.now()
   await until(() => evaluate(`document.querySelector('.find-workflow').textContent.includes('Generating') && document.querySelector('.find-workflow').disabled`))
   await evaluate(`document.querySelector('.find-workflow').click()`)
   await until(() => aiCalls === 1)
-  assert.ok(Date.now() - started >= 4800, 'mock waits five seconds before AI')
+  assert.equal(saved.length, 0, 'No board saved before the AI finishes')
   assert.equal(await evaluate(`!!document.querySelector('.generation-card[aria-busy="true"]')`), true)
   assert.equal(await evaluate(`document.querySelector('.generation-card').textContent.includes('Generating')`), true)
   releaseAI()
-  await until(() => evaluate(`!!document.querySelector('.saved-workflow-card--new')`))
-  assert.equal(await evaluate(`location.hash`), '#/dashboard')
-  assert.equal(await evaluate(`!!document.querySelector('.generation-card')`), false)
-  await until(() => evaluate(`Array.from(document.querySelectorAll('.saved-workflow-apps img')).every(img => img.complete && img.naturalWidth > 0)`))
-  await evaluate(`document.querySelector('.saved-workflow-card--new .dash-button').click()`)
   await until(() => evaluate(`!!document.querySelector('[data-page="workflow-editor"]')`))
-  assert.equal(requests.length, 1); assert.equal(requests[0].prompt, original)
+  assert.equal(formatCalls, 1); assert.equal(requests.length, 1); assert.equal(requests[0].prompt, original)
   assert.equal(saved.length, 1); assert.equal(saved[0].nodes.length, 2); assert.equal(saved[0].edges.length, 1)
   assert.equal(await evaluate(`document.querySelectorAll('.canvas-node').length`), 2)
-  assert.ok(await evaluate(`document.body.textContent.includes('Development mock')`))
+  assert.equal(saved[0].nodes[0].config.source, 'screenpipe_pipe')
+  assert.deepEqual(saved[0].nodes[0].config.evidenceIds, [])
+  assert.equal(await evaluate(`document.body.textContent.includes('Development mock')`), false)
   const browserNode = saved[0].nodes.find(node => node.config.stepType === 'browser')
   const teachingURL = address + '/health'
   await evaluate(`window.__teachingState=null;window.ghost.browser.onState(value=>window.__teachingState=value)`)
   await evaluate(`document.querySelector('.node-${browserNode.id}').click()`)
   await until(()=>evaluate(`!!document.querySelector('[aria-label="Starting dashboard URL"]')`))
+  assert.equal(await evaluate(`document.querySelector('.evidence-heading').textContent.includes('Evidence (0)')`), true)
   await evaluate(`(()=>{const input=document.querySelector('[aria-label="Starting dashboard URL"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(teachingURL)});input.dispatchEvent(new Event('input',{bubbles:true}))})()`)
-  await evaluate(`document.querySelector('.recording-button').click()`)
+  await evaluate(`document.querySelector('.recording-button.dash-button--primary').click()`)
   await until(()=>saved[0].nodes.find(node=>node.id===browserNode.id)?.config.startUrl===teachingURL)
-  await until(()=>evaluate(`window.__teachingState?.url===${JSON.stringify(teachingURL)} && !window.__teachingState.loading`))
+  await until(()=>evaluate(`window.__teachingState?.url===${JSON.stringify(teachingURL)} && !window.__teachingState.loading`)).catch(async error => { console.error('Teaching diagnostic', await evaluate(`({ state: window.__teachingState, text: document.body.innerText.slice(-1200) })`)); throw error })
   await evaluate('location.reload()')
   await until(()=>evaluate(`document.querySelector('[aria-label="Website address"]')?.value===${JSON.stringify(teachingURL)} && !document.querySelector('[aria-label="Website address"]').disabled`))
   await evaluate(`location.hash='/workflows/${saved[0].id}'`)
@@ -116,8 +139,9 @@ try {
   await evaluate(`document.querySelector('[aria-label="Workflow name"]').blur()`)
   await evaluate(`Array.from(document.querySelectorAll('.editor-actions button')).find(button => button.textContent === 'Save changes').click()`)
   await until(() => saved[0].name === 'Edited saved board')
+  await until(() => evaluate(`document.querySelector('.editor-save-state')?.textContent==='Saved to backend' && !!document.querySelector('.editor-actions button[disabled]')`))
   await evaluate(`location.reload()`)
-  await until(() => evaluate(`document.querySelector('h1')?.textContent.includes('Edited saved board')`))
+  await until(() => evaluate(`(document.querySelector('.editor-title-row h1')?.textContent.includes('Edited saved board') || document.querySelector('[aria-label="Workflow name"]')?.value === 'Edited saved board')`)).catch(async error => { console.error('Reload diagnostic', await evaluate(`({hash: location.hash, headings: [...document.querySelectorAll('h1')].map(e=>e.textContent), text: document.body.innerText.slice(0,800)})`), saved.map(w=>({name:w.name,nodes:w.nodes.length}))); throw error })
   await evaluate(`location.hash='/dashboard'`)
   await until(() => evaluate(`document.querySelector('.discovery-panel')?.textContent.includes('Edited saved board')`))
   await evaluate(`location.hash='/workflows'`)
@@ -148,12 +172,14 @@ try {
   await evaluate(`document.querySelector('.find-workflow').click()`)
   await until(() => evaluate(`document.querySelector('.generation-card--failed')?.textContent.includes('Retry generation')`))
   assert.equal(await evaluate(`document.querySelector('.find-workflow').disabled`), false)
-  console.log('PASS: five-second mock, generating card, in-place completion, app images, AI contract, no duplicate submit, saved board, starting URL autosave/teaching/reload, edit/save/reload, Home cards, delete cancellation/confirmation/reload and backend failures (AI/database doubles)')
+  console.log('PASS: Screenpipe Pipe discovery (HTTP/final-file fixture), generating card, automatic board opening, app images, AI contract, no duplicate submit, saved board, starting URL autosave/teaching/reload, edit/save/reload, Home cards, delete cancellation/confirmation/reload and backend failures (AI/database doubles)')
 } finally {
+  globalThis.fetch = originalFetch
   releaseAI()
-  globalThis.fetch = realFetch
+  await new Promise(resolve => screenpipe.close(resolve))
   socket?.close()
   if (child.exitCode === null) { const exited = once(child, 'exit'); child.kill(); await exited }
   await backend.close()
+  await rm(finalDir, { recursive: true, force: true })
   await rm(profile, { recursive: true, force: true })
 }

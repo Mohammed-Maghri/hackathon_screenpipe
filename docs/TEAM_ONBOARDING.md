@@ -1,3 +1,5 @@
+> Current discovery flow: Ghost invokes the dedicated Screenpipe Pipe and imports only its final JSON answer. Setup and live-service limitations are documented in [Screenpipe discovery](SCREENPIPE_DISCOVERY.md). Earlier retrieval-flow descriptions below are historical.
+
 # Ghost — Hackathon teammate guide
 
 Updated October 16, 2026. Start here to run the project, understand its folders, and rehearse the demo. For a detailed inventory, see [Implemented features](IMPLEMENTED_FEATURES.md).
@@ -6,10 +8,10 @@ Updated October 16, 2026. Start here to run the project, understand its folders,
 
 Ghost turns a workflow description into an editable board. You teach browser steps by performing them in Ghost's embedded browser, then replay the recording with observable checks. Browser downloads can feed local data-processing nodes that produce reports.
 
-Current discovery uses a five-second mock preparation stage followed by OpenAI-generated **simulated activity**. It does not read Screenpipe history. A generated board is a plan, not a completed automation.
+Current Home discovery reads actual Screenpipe activity and sends it with Ghost instructions to Screenpipe’s configured AI. Follow [Screenpipe setup](SCREENPIPE_DISCOVERY.md) on the Electron host. Legacy simulation endpoints remain development-only. A generated board is a plan, not a completed automation.
 
 ```text
-Home request → Electron IPC → Fastify → OpenAI simulation → PostgreSQL workflow
+Home request → Electron → Screenpipe activity + local AI → Fastify → PostgreSQL workflow
                                       ↓
                            Open saved workflow board
                                       ↓
@@ -31,6 +33,10 @@ Home request → Electron IPC → Fastify → OpenAI simulation → PostgreSQL w
 - Obtain your development OpenAI API key separately. Keep it in `backend/.env`, never in source, screenshots, prompts, or renderer variables.
 
 There are **three separate npm projects**: root, `backend/`, and `tests/`. Installing at the root does not install the other two.
+
+## Docker alternative
+
+The [Docker setup guide](DOCKER.md) starts PostgreSQL, the API, the demo websites and a labeled frontend preview from the root Compose file. Electron still runs on the host. This is an alternative to starting backend/database/fixtures manually below; do not start both copies on the same ports. Container runtime checks remain pending.
 
 ## 3. First-time installation
 
@@ -121,7 +127,7 @@ The desktop defaults to the local API. To use a different approved endpoint on L
 GHOST_BACKEND_URL=https://your-development-api.example npm run dev
 ```
 
-PowerShell: set `$env:GHOST_BACKEND_URL = 'https://your-development-api.example'`, then run `npm run dev`. Remote encrypted-input backup requires HTTPS; local loopback development permits HTTP. Changing backend environment variables requires restarting the API. Screenpipe does not need to run for this demo.
+PowerShell: set `$env:GHOST_BACKEND_URL = 'https://your-development-api.example'`, then run `npm run dev`. Remote encrypted-input backup requires HTTPS; local loopback development permits HTTP. Changing backend environment variables requires restarting the API. Screenpipe must be open with captured activity and a configured local AI preset for Home discovery. Existing saved workflows and recordings can still be opened separately.
 
 Stop development servers with Ctrl+C in their terminals. `docker compose stop` from `backend/` stops the local database while retaining its volume. Do not remove the volume if you want to retain saved workflows.
 
@@ -168,12 +174,12 @@ Stop development servers with Ctrl+C in their terminals. `docker compose stop` f
 1. Start all three services and verify API health.
 2. Open Ghost, enter Home, and describe your task. For example:
    > On http://127.0.0.1:3100/finance, filter invoices by Paid and export the filtered CSV. Keep this browser task in one browser node.
-3. Select **Find my workflow**. A generating card appears under **Your workflows**. The mock stage takes about five seconds; AI generation and saving take additional time.
-4. Open the completed card with **Open board**. Review the generated description and nodes; simulation can still require corrections.
+3. Select **Find my workflow**. A generating card appears under **Your workflows**. Ghost reads the selected activity range, asks Screenpipe AI to identify the workflow, and validates/saves the result. Timing depends on retrieval and your AI provider.
+4. Open the completed card with **Open board**. Review the generated description and nodes; AI interpretations can still require corrections.
 5. Click a browser node to open its centered details dialog. Check its starting URL. Keep the full sequence on that website in one browser node.
 6. Arrange nodes or edit details, then select **Save changes**. Reopen from Home to confirm backend persistence.
 
-If you do not have an OpenAI key, use **Workflows → New workflow**, then add/configure a browser node and save it. Existing saved workflows and local recording do not need a new AI generation request.
+If Screenpipe discovery is unavailable, use **Workflows → New workflow**, then add/configure a browser node and save it. Existing saved workflows and local recording do not need a new AI generation request.
 
 Deleting a saved workflow uses the backend delete operation. Use a disposable demo workflow when testing deletion.
 
@@ -273,7 +279,7 @@ For compiled startup, build each project first, then use `npm start` in the root
 | Symptom | First check |
 | --- | --- |
 | Home cannot load workflows | API process, `/health`, database URL and deployed migrations |
-| Discovery fails | Backend `.env` API key, provider availability and `NODE_ENV=development`; inspect redacted backend errors |
+| Discovery fails | Root `.env` Screenpipe token, open Screenpipe app, captures in range and its AI preset; see the connection guide |
 | Nothing records in web preview | Use root `npm run dev` to launch Electron, not `dev:web` |
 | Practice site is blank/unreachable | Start `tests/`, check port 3100 and use a complete HTTP URL |
 | Login replay starts on the wrong page | Confirm saved start URL and sign-out state in Ghost's own browser profile |
@@ -291,7 +297,7 @@ For compiled startup, build each project first, then use `npm start` in the root
 - Use public fixture accounts and disposable data.
 - Rehearse generation, opening the board, teaching, slow replay and checking the CSV.
 - Keep a saved working workflow for the recording demonstration if live generation is unavailable.
-- Clearly describe discovery as simulated activity and browser actions as recorded/replayed actions.
+- Clearly describe discovery as evidence-based interpretation and browser actions as recorded/replayed actions; disclose any remaining gaps.
 - Do not claim Slack/email integrations, external OAuth, unattended browser scheduling, or every website is supported.
 - Share changes through the team's normal Git process; do not commit `.env`, credentials, local profiles or recordings.
 

@@ -19,7 +19,9 @@
     "test:processing:electron": "npm run build && node scripts/check-processing-electron.mjs && node scripts/check-processing-ui.mjs",
     "test:browser-settings": "npm run build && node scripts/check-browser-settings.mjs",
     "test:runtime-logic": "npm run build && node scripts/check-runtime-logic.mjs",
-    "test:runtime-logic:electron": "npm run build && node scripts/check-runtime-logic-electron.mjs"
+    "test:runtime-logic:electron": "npm run build && node scripts/check-runtime-logic-electron.mjs",
+    "build:web": "vite build --config vite.web.config.ts --outDir ../../dist/web --emptyOutDir",
+    "screenpipe:install": "node scripts/install-screenpipe-discovery.mjs"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",

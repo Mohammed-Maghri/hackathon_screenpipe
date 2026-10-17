@@ -88,7 +88,11 @@ Verified against the supplied PostgreSQL development server: migration deploymen
 
 Future integrations should enter through new modules/services. Keep remote integration configuration separate from credentials, version workflow definitions before introducing execution, and let the local Electron engine report run/node-run outcomes through a future authenticated API. These are boundaries for later implementation, not implemented features.
 
-## Development mock discovery and board generation
+## Real Home discovery
+
+Home now calls Screenpipe from the Electron host and saves validated results through `POST /api/workflow-discovery/screenpipe`. Screenpipe credentials remain host-local; raw capture text is not uploaded here. See [connection setup and limitations](../docs/SCREENPIPE_DISCOVERY.md). The following simulation endpoints are retained for development tests, not called by Home.
+
+## Legacy development mock discovery and board generation
 
 Start the backend with `npm run dev` from `backend/`, and the desktop with `npm run dev`
 from the repository root. Swagger UI is at `http://127.0.0.1:3001/docs/`, JSON at `/docs/json`.

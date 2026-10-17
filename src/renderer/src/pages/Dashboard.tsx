@@ -26,7 +26,7 @@ export function Dashboard() {
   const [range, setRange] = useState<import('../../../shared/discovery').DiscoveryRequest['timeRange']>('Last 7 days')
   const [preparing, setPreparing] = useState(false)
   const [generationStage, setGenerationStage] = useState('')
-  const [generation, setGeneration] = useState<{ request: DiscoveryRequest; phase: 'mock' | 'ai' | 'failed'; error?: string } | null>(null)
+  const [generation, setGeneration] = useState<{ request: DiscoveryRequest; phase: 'activity' | 'ai' | 'saving' | 'failed'; error?: string } | null>(null)
   const [newWorkflowId, setNewWorkflowId] = useState('')
   const generationRequest = useRef<{ signature: string; id: string } | null>(null)
   const preparingRef = useRef(false)
@@ -71,6 +71,11 @@ export function Dashboard() {
     return () => window.removeEventListener('keydown', handleKey)
   }, [])
   useEffect(() => { if (!notice) return; const timer = window.setTimeout(() => setNotice(''), 4500); return () => window.clearTimeout(timer) }, [notice])
+  useEffect(() => window.ghost?.onDiscoveryProgress(progress => {
+    if (progress.requestId !== generationRequest.current?.id) return
+    setGeneration(current => current && current.phase !== 'failed' ? { ...current, phase: progress.phase } : current)
+    setGenerationStage({ activity: 'Checking Screenpipe discovery…', ai: 'Screenpipe AI is identifying your workflow…', saving: 'Formatting with Ghost AI and saving your board…' }[progress.phase])
+  }), [])
   async function generateWorkflow(request: DiscoveryRequest) {
     if (!request.prompt.trim() || preparingRef.current) return
     if (!window.ghost) { setGenerationMessage('Open Ghost in the desktop app to connect to the backend.'); return }
@@ -79,17 +84,13 @@ export function Dashboard() {
     setGenerationMessage('')
     setWorkflowPage(0)
     setQuery('')
-    setGeneration({ request, phase: 'mock' })
-    setGenerationStage('Preparing simulated discovery…')
+    setGeneration({ request, phase: 'activity' })
+    setGenerationStage('Checking Screenpipe discovery…')
     const fail = (error: string) => { setGeneration({ request, phase: 'failed', error }); setGenerationMessage('') }
     try {
       const signature = JSON.stringify(request)
       if (generationRequest.current?.signature !== signature) generationRequest.current = { signature, id: crypto.randomUUID() }
-      const mock = await window.ghost.mockDiscovery(request)
-      if (!mock.ok) { fail(mock.error); return }
-      setGeneration({ request, phase: 'ai' })
-      setGenerationStage('Simulating Screenpipe with AI and saving your board…')
-      const result = await window.ghost.generateWorkflow({ ...request, requestId: generationRequest.current.id })
+      const result = await window.ghost.discoverWorkflow({ ...request, requestId: generationRequest.current.id })
       if (!result.ok) { fail(result.error); return }
       const workflow = result.workflow
       listRequest.current++
@@ -101,7 +102,7 @@ export function Dashboard() {
       setRefresh(value => value + 1)
       setGeneration(null)
       generationRequest.current = null
-      setNotice('Workflow saved. Open your board whenever you’re ready.')
+      navigate(`/workflows/${workflow.id}`)
     } catch { fail('Unable to generate this workflow. Retry to recover any saved result.') }
     finally { preparingRef.current = false; setPreparing(false) }
   }
@@ -151,7 +152,7 @@ export function Dashboard() {
       <div className="dashboard-topbar"><TitleBar /><label className="global-search"><Search size={16} /><input ref={searchRef} value={query} onChange={event => setQuery(event.target.value)} placeholder="Search workflows, activity, or anything..." aria-label="Search workflows and apps" /><kbd>{window.ghost?.platform === 'darwin' ? '⌘' : 'Ctrl'} K</kbd></label><button className="notification-button" aria-label="Notifications" onClick={() => setPanel('notifications')}><Bell size={21} /></button></div>
       <div className="dashboard-scroll">
         <motion.main className="dashboard-content" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-          <header className="dashboard-hero"><img src={landscape} alt="" aria-hidden="true" /><div><p className="workspace-label">POWERED BY SCREENPIPE</p><h1>What would you like<br />to <span>automate</span> today?</h1><p>Describe the process you do, and Ghost will search your Screenpipe activity,<br className="desktop-break" /> find the relevant steps, and turn it into a workflow.</p></div><blockquote>“ Your computer<br />&nbsp; remembers.<br />&nbsp; Let’s make it work<br />&nbsp; for you.”<i /></blockquote></header>
+          <header className="dashboard-hero"><img src={landscape} alt="" aria-hidden="true" /><div><p className="workspace-label">POWERED BY SCREENPIPE</p><h1>What would you like<br />to <span>automate</span> today?</h1><p>Describe the process you do, and Screenpipe will search your recorded activity,<br className="desktop-break" /> find the relevant steps, and turn it into a workflow.</p></div><blockquote>“ Your computer<br />&nbsp; remembers.<br />&nbsp; Let’s make it work<br />&nbsp; for you.”<i /></blockquote></header>
           <div className="dashboard-grid"><div className="dashboard-primary">
             <section className="discovery-composer" aria-label="Find a workflow">
               <form onSubmit={event => { event.preventDefault(); void generateWorkflow({ prompt, timeRange: range }) }}>
@@ -168,9 +169,9 @@ export function Dashboard() {
                   <div className="generation-card-top"><img src={workflowEmptyImage} alt="" /><span className="generation-badge">{generation.phase === 'failed' ? <CircleDot size={12} /> : <LoaderCircle className="discovery-spinner" size={12} />}{generation.phase === 'failed' ? 'Needs attention' : 'Generating'}</span></div>
                   <h3>{generation.phase === 'failed' ? 'Let’s try that again' : 'Your workflow is taking shape'}</h3>
                   <p className="generation-request" title={generation.request.prompt}>{generation.request.prompt}</p>
-                  <div className="generation-stages" role="status" aria-live="polite">{generation.phase === 'failed' ? <p>{generation.error}</p> : <><span className={generation.phase === 'mock' ? 'is-current' : 'is-complete'}>{generation.phase === 'ai' ? <Check size={12} /> : <span className="generation-stage-dot" />}Prepare simulation</span><span className={generation.phase === 'ai' ? 'is-current' : ''}><span className="generation-stage-dot" />Simulate & save board</span></>}</div>
+                  <div className="generation-stages" role="status" aria-live="polite">{generation.phase === 'failed' ? <p>{generation.error}</p> : <><span className={generation.phase === 'activity' ? 'is-current' : 'is-complete'}>{generation.phase !== 'activity' ? <Check size={12} /> : <span className="generation-stage-dot" />}Connect to Screenpipe</span><span className={generation.phase !== 'activity' ? 'is-current' : ''}><span className="generation-stage-dot" />Analyze & save board</span></>}</div>
                   {generation.phase === 'failed' ? <button className="dash-button" onClick={() => void generateWorkflow(generation.request)}><RefreshCw size={13} />Retry generation</button> : <div className="generation-track" aria-hidden="true"><span /></div>}
-                  <small className="generation-source">Development mock · no Screenpipe recording</small>
+                  <small className="generation-source">Screenpipe searches your history · Ghost AI formats the final answer</small>
                 </article>}
                 {!workflowsError && discovered.map(workflow => <article className={`workflow-card saved-workflow-card ${workflow.id === newWorkflowId ? 'saved-workflow-card--new' : ''}`} key={workflow.id}><div className="card-apps"><div className="saved-workflow-apps">{(workflow.applicationIcons ?? workflow.applications)?.length ? (workflow.applicationIcons ?? workflow.applications)!.slice(0, 3).map(app => <AppMark key={app} app={app} />) : <img className="saved-workflow-image" src={workflowsImage} alt="" />}</div><span className="workflow-status-badge">{workflow.id === newWorkflowId ? 'Just created' : workflow.status === 'DRAFT' ? 'Draft' : workflow.status === 'ACTIVE' ? 'Active' : 'Archived'}</span></div><h3>{workflow.name}</h3><p>{workflow.description || 'No description yet.'}</p><span className="seen-count">{workflow._count.nodes} nodes · {workflow._count.edges} connections</span><button className="dash-button dash-button--primary" onClick={() => review(workflow)}>Open board <ArrowRight size={14} /></button></article>)}
               </div>

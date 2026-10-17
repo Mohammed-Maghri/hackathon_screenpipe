@@ -1,0 +1,17 @@
+.git
+.agents
+.codex
+**/node_modules
+**/.env
+**/.env.*
+**/*.log
+out
+dist
+backend/*
+!backend/src
+backend/src/*
+!backend/src/contracts
+tests
+docs
+examples
+scripts

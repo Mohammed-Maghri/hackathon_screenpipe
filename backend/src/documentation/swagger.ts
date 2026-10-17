@@ -1,3 +1,5 @@
+import { agentSaveSchema, agentFormatSchema } from '../contracts/screenpipeAgent.js'
+import { screenpipeSaveSchema } from '../contracts/screenpipeDiscovery.js'
 import swagger from '@fastify/swagger'
 import swaggerUI from '@fastify/swagger-ui'
 import type { FastifyInstance, FastifySchema } from 'fastify'
@@ -21,6 +23,9 @@ const workflow = { type: 'object', properties: { ...workflowProperties,
 } }
 const health = { type: 'object', properties: { status: { type: 'string', enum: ['ok', 'unavailable'] }, database: { type: 'string', enum: ['up', 'down'] } } }
 const contracts: Record<string, FastifySchema> = {
+  'POST /api/workflow-discovery/format': { tags: ['Discovery'], summary: 'Format the final Screenpipe answer with backend AI and save nodes', body: json(agentFormatSchema), response: { 200: workflow, ...errors, 409: error, 422: error, 502: error, 503: error } },
+  'POST /api/workflow-discovery/screenpipe-agent': { tags: ['Discovery'], summary: 'Save a final Screenpipe Pipe workflow answer', description: 'Validates final JSON only. Agent-reported references are not independently verified. No OCR, recordings or tool logs are accepted. requestId makes saves idempotent.', body: json(agentSaveSchema), response: { 200: workflow, ...errors, 409: error, 422: error } },
+  'POST /api/workflow-discovery/screenpipe': { tags: ['Discovery'], summary: 'Validate and save a workflow discovered from real Screenpipe evidence', description: 'Electron reads local Screenpipe activity and submits Ghost system instructions plus the unchanged request to Screenpipe local AI. This endpoint validates metadata, references, URLs and contracts and saves the graph. Raw captured text and API tokens are not uploaded. requestId makes successful saves recoverable.', body: json(screenpipeSaveSchema), response: { 200: workflow, ...errors, 409: error, 422: error } },
   'POST /api/workflow-discovery/mock': { tags: ['Discovery'], summary: 'Development mock activity (5-second delay)', description: 'Five-second preparation delay for AI-simulated Screenpipe discovery. No fixed workflow fixture or Screenpipe calls. Disabled in production.', body: json(prepareDiscoverySchema), response: { 200: { type: 'object', additionalProperties: true }, ...errors, 403: error } },
   'POST /api/workflow-discovery/generate': { tags: ['Discovery'], summary: 'Generate and save a draft board from mock activity', description: 'Asks OpenAI to simulate a high-level Screenpipe discovery response tailored to the original user prompt, then saves the graph using server credentials. requestId is a UUID used as the saved workflow ID; retry with the same ID after uncertain outcomes. Disabled in production.', body: json(prepareDiscoverySchema.extend({ requestId: z.string().uuid() })), response: { 200: workflow, ...errors, 403: error, 409: error, 502: error, 503: error } },
   'POST /api/workflows/:id/contracts': { tags: ['Workflows'], summary: 'Define node inputs, outputs and validation from descriptions', description: 'Uses OpenAI to define data contracts on the existing graph. Browser nodes keep their recording flow. Invalid bindings or concurrent edits are rejected without saving.', params: json(workflowParamsSchema), response: { 200: workflow, ...errors, 404: error, 409: error, 502: error, 503: error } },
@@ -34,7 +39,7 @@ const contracts: Record<string, FastifySchema> = {
 }
 export async function registerDocumentation(app: FastifyInstance) {
   await app.register(swagger, {
-    openapi: { info: { title: 'Ghost API', version: '0.1.0', description: 'Development backend foundation. Authentication and live AI discovery are not implemented.' } },
+    openapi: { info: { title: 'Ghost API', version: '0.1.0', description: 'Development backend foundation. General authentication is not implemented. Real discovery uses the local Screenpipe connection in Electron; legacy simulation endpoints are development-only.' } },
     // Documentation only: preserve existing Zod validation and response serialization.
     transform: ({ schema, url, route }) => ({ schema: { ...schema, ...contracts[`${route.method} ${url}`] }, url }),
   })

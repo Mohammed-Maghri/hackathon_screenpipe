@@ -254,6 +254,41 @@ test('PostgreSQL migrations and workflow API integration', async t => {
         assert.equal((await api.inject({ method: 'PATCH', url: `/api/workflows/${created.id}`, payload })).statusCode, 400)
       } finally { globalThis.fetch = original }
     })
+    await t.test('real Screenpipe graph persists references and retries without duplicate writes', async () => {
+      const requestId = randomUUID()
+      const payload = { requestId, prompt: 'Find invoice review', timeRange: 'Last 24 hours', startTime: '2026-10-16T00:00:00.000Z', endTime: '2026-10-17T00:00:00.000Z', truncated: true,
+        evidence: [{ id: 'screenpipe:frame:7', type: 'frame', sourceId: 7, timestamp: '2026-10-16T12:00:00.000Z', application: 'Chrome', windowName: 'Invoices', url: 'https://example.com/invoices' }],
+        output: { workflow: { name: 'Recorded invoice review', description: 'Review invoices' }, missingInformation: [], steps: [{ id: 'step_1', name: 'Review invoices', description: 'Review invoice totals', application: 'Chrome', type: 'browser', status: 'needs_recording', startUrl: 'https://example.com/invoices', websiteUrl: null, domain: null, pageNames: ['Invoices'], basis: 'observed', expectedOutcome: null, contract: null, evidenceIds: ['screenpipe:frame:7'], missingInformation: [] }] },
+      }
+      const result = await api.inject({ method: 'POST', url: '/api/workflow-discovery/screenpipe', payload })
+      assert.equal(result.statusCode, 200, result.body)
+      const fetched = (await api.inject('/api/workflows/' + requestId)).json()
+      assert.equal(fetched.nodes[0].config.source, 'screenpipe')
+      assert.equal(fetched.nodes[0].config.evidence[0].sourceId, 7)
+      assert.equal(fetched.nodes[0].config.status, 'needs_recording')
+      const retried = await api.inject({ method: 'POST', url: '/api/workflow-discovery/screenpipe', payload })
+      assert.equal(retried.statusCode, 200); assert.equal(retried.json().nodes[0].id, fetched.nodes[0].id)
+      assert.equal((await api.inject({ method: 'POST', url: '/api/workflow-discovery/screenpipe', payload: { ...payload, prompt: 'Different request' } })).statusCode, 409)
+      await api.inject({ method: 'DELETE', url: '/api/workflows/' + requestId })
+    })
+    await t.test('Pipe final answer persists unverified references and retries idempotently', async () => {
+      const requestId = randomUUID()
+      const payload = { requestId, prompt: 'Find my report', timeRange: 'Last 7 days', pipeId: 'ghost-workflow-discovery', executionId: 42,
+        result: { requestId, workflow: { name: 'Pipe report', description: 'Reported workflow' }, missingInformation: [], steps: [
+          { id: 'step_1', name: 'Review', description: 'Review metrics', application: 'Chrome', type: 'browser', startUrl: null, basis: 'observed', references: ['screenpipe://frame/42'], missingInformation: [] },
+        ] },
+      }
+      const created = await api.inject({ method: 'POST', url: '/api/workflow-discovery/screenpipe-agent', payload })
+      assert.equal(created.statusCode, 200, created.body)
+      const retrieved = (await api.inject({ url: `/api/workflows/${requestId}` })).json()
+      assert.equal(retrieved.nodes[0].config.referencesVerified, false)
+      assert.deepEqual(retrieved.nodes[0].config.evidenceIds, [])
+      assert.deepEqual(retrieved.nodes[0].config.sourceReferences, ['screenpipe://frame/42'])
+      const retry = await api.inject({ method: 'POST', url: '/api/workflow-discovery/screenpipe-agent', payload })
+      assert.equal(retry.json().nodes[0].id, retrieved.nodes[0].id)
+      assert.equal((await api.inject({ method: 'POST', url: '/api/workflow-discovery/screenpipe-agent', payload: { ...payload, prompt: 'Another request' } })).statusCode, 409)
+      await api.inject({ method: 'DELETE', url: `/api/workflows/${requestId}` })
+    })
     await t.test('workflow library searches persisted drafts and filters with pagination', async () => {
       const response = await api.inject({ method: 'POST', url: '/api/workflows', payload: { name: 'Library unique draft', description: 'Quarterly invoice review' } })
       assert.equal(response.statusCode, 201)

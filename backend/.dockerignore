@@ -1,0 +1,8 @@
+node_modules
+src/generated
+dist
+.env
+.env.*
+.git
+*.log
+tests
