@@ -72,8 +72,35 @@ app.on('browser-window-created', (_event, win) => {
             }
           }
         }
+        const workspaceTitlebarHeight = await evaluate(`document.querySelector('.workspace-titlebar .titlebar').getBoundingClientRect().height`);
+        for (const theme of ['light', 'dark']) {
+          await evaluate(`location.hash = '/settings/appearance'`);
+          await until(`!!document.querySelector('.settings-shell:not(.invisible) .appearance-selector')`);
+          await evaluate(`document.querySelector('.settings-shell .appearance-selector button[value="${theme}"]').click()`);
+          for (const section of ['general', 'appearance', 'workspace']) {
+            await evaluate(`location.hash = '/settings/${section}'`);
+            await pause(50);
+            const settings = await evaluate(`(() => {
+              const rect = selector => {
+                const r = document.querySelector(selector).getBoundingClientRect();
+                return { x: r.x, y: r.y, width: r.width, height: r.height, bottom: r.bottom };
+              };
+              return {
+                bar: rect('.settings-windowbar'),
+                titlebar: rect('.settings-windowbar .titlebar'),
+                sidebar: rect('.settings-sidebar'),
+                back: rect('.settings-sidebar [aria-label="Back to app"]'),
+              };
+            })()`);
+            assert.deepEqual(settings.bar, { x: 0, y: 0, width, height: 56, bottom: 56 }, `Settings chrome differs from workspace: ${theme}/${section}/${width}`);
+            assert.equal(settings.titlebar.height, workspaceTitlebarHeight);
+            assert.equal(settings.sidebar.y, 56);
+            assert.equal(settings.back.y, 56);
+            assert(settings.bar.bottom > native.y + 18, 'Native buttons need lower clearance');
+          }
+        }
       }
-      console.log('PASS native chrome: uninterrupted title bar, safe native controls and toggle, aligned expanded/compact rails, Home/library/editor/loading routes at1440/1024/760');
+      console.log('PASS native chrome: safe native controls, aligned expanded/compact rails and matching Settings titlebar in both themes across all sections at1440/1024/760');
       clearTimeout(timeout);
       app.exit(0);
     } catch (error) {
