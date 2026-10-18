@@ -11,7 +11,7 @@ function origin(name, fallback) {
 }
 const api = origin('BACKEND_PORT', 3001);
 const front = origin('FRONTEND_PORT', 8080);
-const fixtures = origin('FIXTURES_PORT', 3100);
+const fixtures = origin('DEMO_WEBSITES_PORT', process.env.FIXTURES_PORT || 3100);
 async function request(base, path, options = {}) {
   const response = await fetch(base + path, { ...options, signal: AbortSignal.timeout(15000) });
   assert(response.ok, `${options.method || 'GET'} ${path}: HTTP ${response.status}`);

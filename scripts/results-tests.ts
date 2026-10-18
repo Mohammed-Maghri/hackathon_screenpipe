@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import {mkdtemp,mkdir,writeFile,symlink} from 'node:fs/promises'
+import {mkdtemp,mkdir,writeFile,symlink,realpath} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {randomUUID} from 'node:crypto'
@@ -22,7 +22,7 @@ const latest=await fixture(3,13)
 const compared=await store.compare(latest.recordingId,latest.runId)
 assert.equal(compared.baseline?.id,first.runId);assert.equal(compared.rows[0].delta,-9)
 assert.ok(!JSON.stringify(await store.list()).includes('SECRET_SHOULD_NOT_LEAK'))
-assert.equal(await store.artifact(latest.recordingId,latest.runId,latest.fileId),latest.path)
+assert.equal(await store.artifact(latest.recordingId,latest.runId,latest.fileId),await realpath(latest.path))
 await assert.rejects(()=>store.artifact('../escape',latest.runId,latest.fileId))
 await assert.rejects(()=>store.artifact(latest.recordingId,latest.runId,first.fileId))
 await writeFile(latest.path,'Product ID,Product,Stock\nx,X,3\nx,X,4\n')

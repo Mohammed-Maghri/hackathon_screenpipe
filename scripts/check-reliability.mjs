@@ -1,7 +1,7 @@
 import electronPath from 'electron';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { readFile, mkdtemp, writeFile } from 'node:fs/promises';
+import { readFile, mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
@@ -65,6 +65,7 @@ assert.equal(await guest.eval(`document.querySelector('input:not([type=checkbox]
 counts[kind]++;console.log(`PASS dashboard ${kind} ${counts[kind]}/${runs}: capture, preview, input override/export, approval, verified replay`);
 }
 console.log(JSON.stringify({counts,profile}));
-await writeFile(runs>=20?'docs/reliability-test-results.json':'docs/reliability-smoke-results.json',JSON.stringify({date:new Date().toISOString(),counts,profile,platform:process.platform},null,2));
+await mkdir('out/test-results', { recursive: true });
+await writeFile(runs>=20?'out/test-results/reliability-test-results.json':'out/test-results/reliability-smoke-results.json',JSON.stringify({date:new Date().toISOString(),counts,profile,platform:process.platform},null,2));
 } catch(error){console.error('FAIL',error);if(host){console.error('Diagnostics',await host.eval(`window.__state && window.ghost.browser.diagnostics(window.__state.sessionId)`).catch(String));console.error('Replay',await host.eval('window.__replay').catch(String));}console.error('Profile',profile,'Electron log',errors.slice(-3000));process.exitCode=1}
 finally{guest?.close();host?.close();electron.kill('SIGTERM');server.closeAllConnections();server.close();}

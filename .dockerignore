@@ -11,7 +11,8 @@ backend/*
 !backend/src
 backend/src/*
 !backend/src/contracts
-tests
-docs
+demo-websites
 examples
 scripts
+
+.ui-craft

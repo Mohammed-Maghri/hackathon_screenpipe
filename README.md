@@ -1,117 +1,247 @@
 # Ghost
 
-**New teammates:** start with the [Hackathon setup and app walkthrough](docs/TEAM_ONBOARDING.md). See [Implementation and roadmap](docs/IMPLEMENTATION_AND_ROADMAP.md) for technical details and remaining work, and [Current implemented features](docs/IMPLEMENTED_FEATURES.md) for the present scope; older preview descriptions below are historical.
+Turn a routine into a workflow you can inspect, teach, replay, and review.
 
-A desktop workspace for Ghost with a dashboard, interactive workflow canvas, and a native Electron teaching browser. Teaching sessions capture browser actions and semantic element information, save locally, and support reviewed replay with explicit approvals and observable outcome verification.
+Ghost is an Electron desktop app built for the Screenpipe hackathon. It combines recorded activity discovery, a React Flow editor, a native teaching browser, verified downloads, and local CSV/Excel processing. NOVA and Forma are included demo websites for trying the browser workflows.
 
-See the [complete platform change log](CHANGELOG.md) for implemented features, validation evidence, and current limitations.
+## Start here
 
-## Screenpipe discovery
+| What you want to review | What you need |
+| --- | --- |
+| Open Ghost, create prepared NOVA/Forma workflows, edit nodes, replay their browser exports | Node.js and a desktop session; internet for the hosted demo websites |
+| Run the demo websites on your machine | Node.js; see [demo-websites](demo-websites/README.md) |
+| Discover workflows from your own recorded activity | Screenpipe with recordings and an AI preset, its local API key, the backend, PostgreSQL, and a backend OpenAI key |
+| Run NOVA's complete calculation/report/delivery pipeline | Ghost plus Screenpipe's configured Slack connection to the demo destination; see the delivery limitation below |
 
-Home now uses real local Screenpipe activity and its configured AI preset. See [Screenpipe connection setup](docs/SCREENPIPE_DISCOVERY.md). The old simulation endpoints remain for development tests; they are not the Home submission path.
+**Prepared discovery is the default.** It creates local demo definitions, not evidence of an actual Screenpipe search. Switch to live mode explicitly to analyze recorded history. The two modes have separate workflow lists.
 
-## Docker services and frontend preview
+## 1. Launch the desktop app
 
-See [Docker setup](docs/DOCKER.md) for the root Compose stack: PostgreSQL, backend, frontend preview and Forma/NOVA. Run Electron locally for the full app, recording and replay. Container runtime verification is pending on a Docker-capable machine.
-
-## Run
-
-Use Node.js 22.12+ (Node 24 recommended).
+Requirements: **Node.js 22.12 or newer** (Node 24 recommended), npm, Git, and a graphical desktop. Development has been exercised on macOS; Electron also targets Windows and Linux, but this is not a packaged cross-platform release. Linux needs Chromium's usual GTK/NSS libraries and a working sandbox.
 
 ```sh
+git clone https://github.com/Mohammed-Maghri/hackathon_screenpipe.git
+cd hackathon_screenpipe
+git switch codex/submission
 npm ci
+```
+
+On a fresh checkout, create the root configuration:
+
+```sh
+cp .env.example .env
+```
+
+Keep `VITE_GHOST_DISCOVERY_MODE=prepared` for the quickest review. Then:
+
+```sh
 npm run dev
 ```
 
-For a renderer-only preview, run `npm run dev:web`. For the compiled desktop app:
+This opens **Electron**, with its renderer served at `http://localhost:5173`. Opening that URL in a regular browser does not provide the native recording/replay bridge. The backend is optional for this prepared demo path.
+
+For a compiled desktop run:
 
 ```sh
 npm run build
 npm start
 ```
 
-`npm run typecheck` checks all renderer, main, preload, and configuration TypeScript. The build produces `out/`; installer packaging is not configured. Electron supports Linux, macOS, and Windows. Linux needs a graphical session and Electron's standard GTK/NSS system libraries. Keep the Chromium sandbox enabled.
+There is no installer packaging command. To stop development, press **Ctrl+C** in its terminal. Restart the entire app after changing `.env`, main-process code, or preload code.
 
-### Linux sandbox setup
+## 2. Try a workflow
 
-On Linux hosts that restrict unprivileged user namespaces, Electron may report that its SUID sandbox helper is not configured. From the project directory, run:
+From Home, submit either:
+
+- **NOVA:** `Check sales and inventory and prepare next week's shopping list.`
+- **Forma:** `Review overdue payments and prepare a finance report.`
+
+Ghost creates a draft on this device and opens the editor. Changes persist locally. Click a node to select it; double-click to open its settings. The canvas supports adding nodes/connections, dragging, zooming, and fitting the graph.
+
+For a short browser-only review:
+
+1. Open the workflow's browser node and its recording page.
+2. The prepared hosted task and public demo login are installed automatically for the supported NOVA/Forma URLs.
+3. Choose **Test recording**, review the action summary, then start the test. Slow demo playback highlights the actions.
+4. Inspect the completed downloads and run outcomes in **Results**.
+
+NOVA exports sales CSV, inventory CSV, and a reference shopping-list workbook. Forma exports a finance CSV. A prepared task marked **Learned** has reusable teaching; it is not a completed run in your new workflow. A new run must produce its own verified results.
+
+### Demo accounts and websites
+
+| Website | Hosted login | Public demo credentials |
+| --- | --- | --- |
+| NOVA store | https://hackathon-screenpipe.vercel.app/nova/login | `alex@nova.test` / `nova-demo` |
+| Forma finance | https://hackathon-screenpipe.vercel.app/login | `demo@forma.test` / `ghost-demo` |
+
+These accounts belong to the included demo sites. Their session and sample edits are stored in that browser profile, separately from Ghost's workflow storage. Use the website's reset control to restore sample data before recording a mutation again. They do not process real payments.
+
+### Run the websites locally
+
+In another terminal, from the repository root:
 
 ```sh
-sudo chown root:root node_modules/electron/dist/chrome-sandbox
-sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
-npm start
+npm --prefix demo-websites ci
+npm --prefix demo-websites run dev
 ```
 
-This is a host setup step and may need repeating after Electron is reinstalled. Do not disable the Chromium sandbox to work around it.
+Open `http://127.0.0.1:3100/nova/login` or `http://127.0.0.1:3100/login` in Ghost's teaching browser. See the [demo website guide](demo-websites/README.md) for routes, recording scenarios, and build commands.
 
-## Design system
+**The bundled prepared recordings target the hosted origin.** Starting the local website does not redirect those recordings. To use localhost, configure a browser node with the local URL, sign in, record its actions, and verify replay. Existing recordings retain their original URLs.
 
-The app uses a **Screenpipe-aligned Ghost** theme: neutral light/dark surfaces, Inter content typography, JetBrains Mono controls, thin borders and compact corners. Lime highlights primary actions and live execution; navigation stays neutral. Fonts are bundled locally. Production uses Tailwind CSS v4: `src/renderer/src/styles/tokens.css` defines the semantic system, `globals.css` bridges shared utility recipes, and React components compose responsive layouts. The app fills the native window without a second inset border. Light, Dark and System are available in Settings and on Welcome; preferences persist and System follows OS changes. Home has a focused saved-workflow card grid and lower composer; full-page Settings has its own section sidebar, search and Back to app while preserving the screen behind it. Design notes and current `screenpipe-*` screenshots live in `.ui-craft/`; `design-preview/` preserves the earlier Air mockup.
+### Complete NOVA pipeline
 
-Home and the Workflows library present saved workflows as responsive cards. The whole library card opens its editor, while Run, Schedule, Open and Delete remain separate controls. Node counts appear at the top; editor descriptions start collapsed with Show/Hide controls. All existing workflow, recording, replay, processing, and scheduling behavior remains connected to its original handlers. Home-created session drafts open their local editor directly; saved library workflows continue to use the backend.
+The supported six-node NOVA graph validates the request, replays the browser exports, calculates restocking from that run's CSVs, writes reports, prepares/delivers a message, and requests review. Results includes Excel/CSV/JSON files, source hashes, comparisons, editable buying proposals, and approval records.
 
-## Validation
+**Delivery is currently specific to the hackathon workspace.** The complete run attempts to post through Screenpipe to GHOST LLC `#daily-reports`, configured in [`src/main/screenpipeSlack.ts`](src/main/screenpipeSlack.ts). It sends during the delivery step, before the final report approval. Without access to that Slack connection, the delivery step fails; browser replay and local outputs can still be inspected. Reviewers should use the browser-only test above unless they intentionally want to exercise this integration. No supplier purchase is placed.
 
-- Strict TypeScript and production build pass.
-- `git diff --check` passes.
-- After building, `node_modules/.bin/electron scripts/check-air-ui.cjs` checks appearance persistence, bundled typography, borderless framing, welcome dialogs, session draft navigation, templates, node inspector, responsive routes, recorder tabs, full-page Settings and Home/editor state retention without external actions.
-- Native Electron checks pass for teaching-page routing, embedded browsing, address entry, real link clicks, Back/Forward/Reload, loading state, viewport expansion, pause/stop, remote-page isolation, URL restrictions, and cleanup on exit.
+The Results scheduling controls create three one-time local runs due in one, two, and three minutes. Keep Ghost open; these are not a cloud scheduler and do not wake a closed app. Scheduled full runs use the same delivery behavior.
 
-## Structure
+## 3. Optional: backend and live Screenpipe discovery
 
-- `src/main`: Electron lifecycle, permissions, and narrowly scoped window-control IPC.
-- `src/preload`: context-isolated, allowlisted desktop bridge.
-- `src/renderer/src/components`: reusable controls, branding, and modal.
-- `src/renderer/src/pages/Welcome.tsx`: the welcome screen.
-- `src/renderer/src/pages/Dashboard.tsx`: the dashboard with local preview interactions.
-- `src/renderer/src/data/workflows.ts`: typed sample workflows and activity.
-- `src/renderer/src/styles/globals.css`: Tailwind theme bridge and shared controls; screen layouts use utilities in their React components.
-- `src/renderer/src/pages/Settings.tsx`: searchable app settings with section navigation and origin-state preservation.
-- `src/renderer/src/assets`: locally bundled artwork.
+### Start PostgreSQL and the API
 
-Hash-based React Router navigation connects `/` to `/dashboard`. Get started and Skip intro open the dashboard; See how it works explains the intended product in a native HTML dialog with focus containment and Escape dismissal. Native traffic lights are used on macOS; Linux and Windows use working custom window controls. Double-click the title bar to maximize or restore.
+Install Docker Desktop/Engine with Compose v2, or supply your own PostgreSQL connection. From the repository root:
 
-All fonts and artwork are bundled. Node integration is disabled, context isolation and renderer sandboxing are enabled, new windows/navigation are denied, and permission requests are rejected. The CSP allows local Vite development connections. Remote websites load only in the isolated teaching WebContentsView, without the Ghost preload bridge or Node integration.
+```sh
+docker compose up -d --wait postgres
+npm --prefix backend ci
+cp backend/.env.example backend/.env
+npm --prefix backend run prisma:generate
+npm --prefix backend run prisma:deploy
+npm --prefix backend run dev
+```
 
-Following the [electron-vite setup](https://electron-vite.org/guide/), Vite 7 is used because the stable electron-vite 5 release requires Vite 5–7. Dependencies are locked in `package-lock.json`.
+Copy the environment example only when `backend/.env` does not already exist. The default database URL is:
 
-## Historical dashboard preview
+```dotenv
+DATABASE_URL=postgresql://ghost:ghost_dev@127.0.0.1:5433/ghost?schema=public
+```
 
-The dashboard follows the supplied reference with a fixed sidebar, editorial heading, discovery cards, workflow table, connection overview, and activity feed. Home fits the desktop window with a sans-serif heading and no page scrolling; compact panels contain overflow when needed. The welcome screen stays fixed to the window. At smaller widths, cards reflow and the overview moves below the workflow list.
+In **`backend/.env`**, set `OPENAI_API_KEY` to your own key and optionally `OPENAI_MODEL` (default `gpt-4.1-mini`). The backend formats Screenpipe's final answer and provides AI processing/contract features. The backend key stays server-side.
 
-- Search by workflow or app; Ctrl/Cmd+K focuses search.
-- Filter saved workflows by All, Active, Scheduled, or Drafts.
-- Review example steps and explicitly preview them without executing actions.
-- Create drafts, use library templates, or import a local JSON file (up to 100 KB).
-- Import accepts `name`, optional `description`, and optional `steps` (an array of strings). Files are validated locally and never uploaded or executed.
-- Sidebar entries open appropriate workspace panels. Needs teaching and Start recording open the native teaching browser.
+Verify:
 
-All metrics, run statuses, schedules, and activity are illustrative. Drafts live in a shared in-memory store across page navigation and reset when reloading the app. No integrations or backend were added. App marks and thumbnail illustrations are rendered locally with icons and CSS.
+```sh
+curl http://127.0.0.1:3001/health
+```
 
-## Artwork
+Expected: `{"status":"ok","database":"up"}`. Interactive API docs are at `http://127.0.0.1:3001/docs/`. See the [backend guide](backend/README.md) for API and migration commands.
 
-`src/renderer/src/assets/landscape.png` was generated with the built-in imagegen tool. Prompt:
+### Connect Screenpipe
 
-> Use case: stylized-concept. Asset type: premium desktop app welcome background, landscape 1536x1024. Create a cinematic almost-black rocky mountain landscape with finely detailed obsidian ridges and restrained warm gold rim lighting. Mountain peaks on the right half around 45% down, descending foreground ridges filling bottom third. Left 45% and top third are nearly solid black empty negative space for UI text. A single exquisitely thin gold orbital circular arc rises behind the mountains on the right, crest at 13% from top, center around 78% across. Dramatic, expensive editorial 3D photographic texture, black and charcoal with tiny golden highlights, subdued ambient light. No text, no letters, no interface, no logos, no stars, no colorful sky. Inspired by a dark luxury desktop product with a large serif headline placed separately on the left. Output the artwork only.
+1. Install and open [Screenpipe](https://screenpi.pe/). Grant capture permissions and record the activity you intend to analyze. Configure its AI preset. Bun is required for the token command below.
+2. Obtain the local token with `bun x screenpipe@latest auth token`.
+3. Set these values in the **root `.env`**:
 
-## Standalone workflow pages
+```dotenv
+VITE_GHOST_DISCOVERY_MODE=live
+GHOST_BACKEND_URL=http://127.0.0.1:3001
+SCREENPIPE_LOCAL_API_URL=http://localhost:3030
+SCREENPIPE_LOCAL_API_KEY=your-local-screenpipe-token
+```
 
-Home (`#/dashboard`), the workflow list (`#/workflows`), and each workflow editor (`#/workflows/:id`) are separate, mutually exclusive routes. The Home sidebar opens the workflow list; workflow links open the full-page editor. The editor breadcrumb returns to the list. Browser Back and Forward follow these page transitions. The dashboard does not contain the workflow list or an embedded editor.
+4. Install Ghost's manual discovery Pipe:
 
-## Teaching browser and verified replay
+```sh
+npm run screenpipe:install
+```
 
-From a workflow, open **Needs teaching** or **Start recording**. The existing teaching page uses a sandboxed Electron `WebContentsView`, browser controls, local recording and event inspection. Stop, review the replay plan, edit saved inputs, and test with per-action approval and observable outcome verification.
+5. In Screenpipe, check that `ghost-workflow-discovery` has a working AI preset. Restart Ghost with `npm run dev` in a separate terminal from the backend.
+6. Describe a specific routine and select the time range containing it. Ghost dispatches the Pipe, tracks its exact run, reads its final JSON, formats it through the API, saves the workflow in PostgreSQL, and opens the board.
 
-See [Recording and replay reliability](docs/replay-reliability.md) for the implementation, functions, commands, test evidence, manual steps and remaining limits. The prototype review is historical; unsupported actions are now explicitly blocked and an unobserved result is not reported as success.
+The Pipe searches recording history; it does not execute the discovered website actions. Missing evidence is reported instead of invented. Review inferred steps and teach browser nodes before replay. `SCREENPIPE_DISCOVERY_OUTPUT_DIR` can override the final-answer directory if Screenpipe uses a nonstandard local location.
 
-## Graphics recovery
+The local token is read only by Electron main. Do not prefix secrets with `VITE_`. Screenpipe and the backend use their own AI configurations; configuring one does not configure the other. The backend sends the final discovery answer and request to its configured OpenAI model for formatting. Ghost does not send raw recordings to that formatter.
 
-Linux defaults to software rendering to avoid GPU/compositor failures on Wayland/Vulkan setups. Set `GHOST_SOFTWARE_RENDERING=0` to opt back into acceleration, or `GHOST_SOFTWARE_RENDERING=1` to force software rendering on any platform. This can reduce performance on graphics-heavy sites. The choice is applied before Electron starts its windows; fully restart Ghost after changing it.
+## Configuration reference
 
-Process exits are logged under `<Electron userData>/logs/process-errors.jsonl`, with reason, exit code, and rendering mode. An app renderer crash opens a native Reload/Close dialog. Reload resets unsaved editor state; recordings already persisted on disk remain available. Buffer-limit warnings alone do not establish a crash cause.
+| File / variable | Purpose |
+| --- | --- |
+| Root `.env`: `VITE_GHOST_DISCOVERY_MODE` | `prepared` (default local demo) or `live` (Screenpipe/backend); restart or rebuild after changing |
+| Root `.env`: `GHOST_BACKEND_URL` | Desktop API origin; default `http://127.0.0.1:3001` |
+| Root `.env`: `SCREENPIPE_LOCAL_API_URL`, `SCREENPIPE_LOCAL_API_KEY` | Local Screenpipe connection |
+| Root `.env`: `POSTGRES_*`, `BACKEND_PORT`, `FRONTEND_PORT`, `DEMO_WEBSITES_PORT` | Docker Compose settings; demo port defaults to 3100 (`FIXTURES_PORT` remains a fallback for existing configurations) |
+| `backend/.env`: `DATABASE_URL`, `OPENAI_API_KEY`, `OPENAI_MODEL` | Locally launched API database and AI configuration |
+| Root `.env`: `OPENAI_API_KEY`, `OPENAI_MODEL` | Used by the **containerized** backend; Compose does not read `backend/.env` |
 
-## Backend foundation
+The root and backend environment files are separate and ignored by Git. The `.env.example` files contain local defaults, not working personal credentials. If you change the API's published port, update `GHOST_BACKEND_URL` too.
 
-The independent Fastify/PostgreSQL/Prisma API lives in [`backend/`](backend/README.md).
-It includes workflow CRUD, graph integrity, migrations, local Compose configuration
-and integration tests. The desktop app is not wired to this API yet.
+## Optional: all supporting services in Docker
+
+Instead of running the backend and websites in separate Node terminals:
+
+```sh
+docker compose config --quiet
+docker compose up --build -d --wait --wait-timeout 180
+docker compose ps -a
+```
+
+This starts PostgreSQL (5433), migration job, backend (3001), demo websites (3100), and a **renderer-only preview** (8080). The migration container exiting successfully is expected. Run `npm run dev` on the host for the actual Electron app. Stop local servers on the same ports before starting the full stack.
+
+```sh
+node scripts/check-docker.mjs
+docker compose logs --tail=80 migrate backend demo-websites
+docker compose down
+```
+
+The smoke check creates and deletes one disposable API workflow. `docker compose down` retains the database volume. Do not add `--volumes` unless you intend to erase that database. The API currently has no general user authentication; Compose binds exposed services to localhost.
+
+## Verification
+
+Run commands from the repository root after installing the relevant project's dependencies:
+
+```sh
+# Desktop compilation and local engine checks
+npm run build
+npm test
+npm run test:processing
+node scripts/check-nova-logic.mjs
+node scripts/check-prelearned-unit.mjs
+node scripts/check-results.mjs
+node scripts/check-workflow-scripts.mjs
+
+# Demo websites
+npm --prefix demo-websites run build
+node demo-websites/scripts/check-restocking.mjs
+
+# API: requires DATABASE_URL and a reachable PostgreSQL server
+npm --prefix backend run build
+npm --prefix backend test
+```
+
+Backend integration tests create and remove isolated test schemas; the database user needs those permissions. Graphical Electron checks live in `scripts/` and `demo-websites/scripts/`. For example, after building Ghost, `node scripts/check-prelearned-browser.mjs` exercises the hosted NOVA browser recording in an isolated profile; use `GHOST_TEACH_SCENARIO=forma` for Forma. These need network access and a desktop session. Avoid concurrent tests sharing fixed debugging ports.
+
+Generated regression reports go to ignored `out/test-results/` or temporary profiles. The macOS reliability suite has previously stalled at `Native select did not change`; do not treat the whole browser suite as proven by unit checks alone.
+
+## Troubleshooting
+
+- **API unavailable:** start the backend, check `/health`, and confirm PostgreSQL and `DATABASE_URL`. Prepared workflows still use local storage; they will not appear in live mode's backend list.
+- **Screenpipe authentication error:** obtain its local token, update root `.env`, and fully restart Ghost. A healthy `/health` alone does not verify authenticated recording access.
+- **Pipe fails with `toToolDeclaration is not a function`:** this setup encountered an incompatible `pi-subagents` extension. Back up Screenpipe's `~/.screenpipe/pi-config/settings.json` and disable its `npm:pi-subagents` package entry, or install a version compatible with Screenpipe's bundled Pi runtime. Ghost discovery does not require that extension.
+- **Empty discovery:** confirm the selected local time range actually contains the task and Screenpipe was recording. Page visibility alone does not establish clicks or typed values.
+- **Demo replay fails:** check the hosted website is reachable, inspect the reported action, and re-teach if the page changed. Only the exact bundled hosted NOVA/Forma tasks are automatically prepared.
+- **NOVA delivery fails:** the complete runner expects the configured demo Slack workspace. Use the browser-only test to review exports without invoking delivery.
+- **Stale styles:** stop Ghost, remove `node_modules/.vite`, and restart. Keep the profile's Local Storage, recordings, and cookies to preserve your data.
+- **Linux rendering problems:** software rendering is enabled by default on Linux. `GHOST_SOFTWARE_RENDERING=1` enables it elsewhere; `0` opts back into acceleration. Keep Chromium's sandbox enabled.
+
+## Repository and data layout
+
+```text
+src/main/          Electron, recorder/replay, processing, NOVA runtime, file storage
+src/preload/       Allowlisted IPC bridge
+src/renderer/      React UI, React Flow editor, themes and assets
+src/shared/        Shared contracts and validation
+backend/           Fastify API, Prisma schema/migrations, backend tests
+demo-websites/     Next.js NOVA/Forma websites and their checks
+screenpipe/        Ghost's discovery Pipe instructions
+scripts/           Desktop/runtime validation and setup scripts
+examples/          Sample processing workflow used by regression checks
+docker/            Web-preview proxy configuration
+```
+
+Prepared workflows live in the desktop profile's local storage; live workflows live in PostgreSQL. Recordings, encrypted login data, downloads, processing outputs, workflow scripts, and NOVA run journals live under Electron's `ghost-desktop` user-data directory (on macOS: `~/Library/Application Support/ghost-desktop`). Browser data is separate from the PostgreSQL database.
+
+Generated workflow scripts are versioned runtime-bound modules, not independent CLI executables. The NOVA runner executes its supported operations through trusted adapters; arbitrary graph execution and arbitrary third-party integrations are not implemented. General browser automation depends on teachable, verifiable page behavior. Local scheduling requires an open app. Team content includes demonstration data.
+
+The UI supports Light, Dark, and System appearance. Asset attribution and licenses remain alongside active images in `src/renderer/src/assets/` and `demo-websites/public/nova/`.
