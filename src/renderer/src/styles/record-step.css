@@ -7,3 +7,61 @@
 @media (prefers-reduced-motion: reduce) {
   .browser-loading-bar.is-loading::after { animation: none; }
 }
+/* Browser teaching workspace: compact chrome, clear actions, maximal page space. */
+.record-shell .record-header { padding:16px 20px 14px; border-bottom:1px solid var(--border-subtle); }
+.record-shell .record-header nav { margin-bottom:10px; font-size:11px; }
+.record-shell .record-header h1 { font-size:23px; font-weight:550; letter-spacing:-.025em; }
+.record-shell .record-header > p { margin-top:6px; font-size:12px; }
+.record-shell .record-header-actions { gap:10px; }
+.record-shell .record-workspace { padding:14px 20px 16px; gap:14px; }
+.record-shell .teaching-browser,
+.record-shell .record-events { border-radius:4px; box-shadow:none; }
+.record-shell .dash-button,
+.record-shell .stop-recording { border-radius:3px; box-shadow:none; min-height:34px; }
+.record-shell .browser-tab { min-height:32px; padding:6px 12px; font-size:11px; background:var(--surface-canvas); }
+.record-shell .browser-address { padding:6px 8px; gap:3px; }
+.record-shell .browser-address > button { border-radius:3px; }
+.record-shell .browser-address > label { padding:6px 9px; border-radius:3px; background:var(--surface-canvas); }
+.record-shell .browser-address > label:focus-within { outline:1px solid var(--accent-action); outline-offset:1px; }
+.record-shell .record-events-title { padding:14px 14px 0; }
+.record-shell .record-events-title h2 { font-size:13px; }
+.record-shell .record-events-title > span { border-radius:3px; }
+.record-shell .record-events > header { padding:10px 14px 12px; }
+.record-shell .record-events > details { margin:0 14px 12px; border-radius:3px; }
+.record-shell .record-events > nav { padding-inline:14px; }
+.record-shell .record-event-scroll { padding:14px; scrollbar-width:thin; scrollbar-color:var(--border-subtle) transparent; }
+.record-shell .record-event-scroll li { padding-bottom:18px; }
+.record-shell .recorded-event-detail { border-radius:2px; }
+.record-shell .record-controls { padding:10px 12px; gap:8px; background:var(--surface-panel); }
+.record-shell .replay-progress { border-radius:3px; padding:10px; }
+.record-shell .record-pill,
+.record-shell .recording-event-json,
+.record-shell .authentication-banner { border-radius:3px; }
+.record-shell .record-node-info .app-mark { border-radius:3px; }
+.record-shell .browser-placeholder h2 { font-size:20px; margin-top:14px; }
+.record-shell .browser-placeholder p { font-size:13px; }
+.record-dialog { border-radius:5px; }
+.record-dialog .dashboard-dialog-inner { padding:22px; }
+.record-dialog h2 { font-family:inherit; font-size:22px; font-weight:550; letter-spacing:-.025em; }
+.record-dialog .dash-button,
+.record-dialog .dialog-close,
+.record-dialog input,
+.record-dialog select,
+.record-dialog textarea,
+.record-dialog .recording-event-json,
+.record-dialog .record-events { border-radius:3px; box-shadow:none; }
+.record-dialog .modal-copy { font-size:13px; line-height:1.65; }
+.record-shell button:focus-visible { outline:2px solid var(--accent-action); outline-offset:2px; }
+@media(max-width:760px) {
+ .record-shell .record-header { padding:12px; }
+ .record-shell .record-header h1 { font-size:20px; }
+ .record-shell .record-header-actions { gap:8px; }
+ .record-shell .record-workspace { padding:10px 12px 12px; gap:10px; }
+ .record-shell .record-controls { padding:8px; }
+ .record-dialog .dashboard-dialog-inner { padding:16px; }
+}
+@media(max-height:700px) {
+ .record-shell .record-header { padding-block:10px; }
+ .record-shell .record-header nav { margin-bottom:6px; }
+ .record-shell .record-workspace { padding-top:10px; padding-bottom:10px; }
+}

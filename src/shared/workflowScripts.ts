@@ -6,7 +6,7 @@ export interface ScriptNode {
 }
 export interface ScriptPackage {
   version: 1; workflowId: string; revision: string; fingerprint: string
-  createdAt: string; directory: string; nodes: ScriptNode[]; files: string[]
+  createdAt: string; fileHashes?: Record<string,string>; directory: string; nodes: ScriptNode[]; files: string[]
 }
 export interface WorkflowScriptsAPI {
   latest(workflowId: string): Promise<ScriptPackage | null>

@@ -1100,6 +1100,7 @@ export function RecordStep() {
       </main>
       {replay?.state === "needs-user-approval" && (
         <DashboardDialog
+          className="record-dialog"
           title="Approve recorded action"
           onClose={() =>
             void browser?.replayApprove(token.current, replay.sequence!, false)
@@ -1142,6 +1143,7 @@ export function RecordStep() {
       )}
       {preview && (
         <DashboardDialog
+          className="record-dialog"
           title="Test this recording"
           onClose={() => setPreview(null)}
         >
@@ -1208,6 +1210,7 @@ export function RecordStep() {
       )}
       {inspectedEvent && (
         <DashboardDialog
+          className="record-dialog"
           title={eventLabel(inspectedEvent).label}
           onClose={() => setInspectedEvent(null)}
         >
@@ -1221,6 +1224,7 @@ export function RecordStep() {
       )}
       {showCaptured && (compact || wide) && (
         <DashboardDialog
+          className="record-dialog"
           title="Captured browser actions"
           onClose={() => setShowCaptured(false)}
         >
@@ -1229,6 +1233,7 @@ export function RecordStep() {
       )}
       {help && (
         <DashboardDialog
+          className="record-dialog"
           title="Record the complete browser process"
           onClose={() => setHelp(false)}
         >

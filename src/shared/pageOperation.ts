@@ -28,6 +28,8 @@ export interface PageResult {
   evidence?: PageEvidence[]
   verified?: boolean
   scrollX?: number
+  scrollMaxX?: number
+  scrollMaxY?: number
   scrollY?: number
 }
 
@@ -131,7 +133,7 @@ export function pageOperation(request: PageRequest, source?: Element): PageResul
     selectionAll: element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement ? element.selectionStart === 0 && element.selectionEnd === element.value.length : element.isContentEditable ? window.getSelection()?.toString() === element.textContent : false,
     focused: root.activeElement === element || (element.isContentEditable && element.contains(root.activeElement)), editable: element.matches('input,textarea') || element.isContentEditable,
     inputType: element instanceof HTMLInputElement ? element.type : undefined, text: norm(element.textContent), expanded: element.getAttribute('aria-expanded') ?? undefined, pressed: element.getAttribute('aria-pressed') ?? undefined,
-    scrollX: element.scrollLeft, scrollY: element.scrollTop })
+    scrollMaxX: Math.max(0,element.scrollWidth-element.clientWidth), scrollMaxY: Math.max(0,element.scrollHeight-element.clientHeight), scrollX: element.scrollLeft, scrollY: element.scrollTop })
   if (request.op === 'highlight') {
     document.getElementById('ghost-replay-demo-overlay')?.remove()
     const rect = element.getBoundingClientRect()

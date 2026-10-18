@@ -1,3 +1,4 @@
+import {upgradeNova} from './upgradeNova'
 import type { WorkflowCreate, WorkflowUpdate, SavedWorkflowDetail, WorkflowDetailResult, WorkflowListResult, WorkflowListOptions, DiscoveryPreparation } from '../../../shared/discovery'
 
 export const preparedDiscovery = import.meta.env.VITE_GHOST_DISCOVERY_MODE !== 'live'
@@ -29,6 +30,7 @@ export const workflowClient = {
         try { await window.ghost.browser.prepareHosted(workflow.id, browserNodes) }
         catch { return {ok:false, error:'Unable to save the browser task and login. Workflow generation did not complete. Please retry.'} }
       }
+      if(workflow.nodes.some(n=>n.config.novaOperation)) await window.ghost?.nova?.configure(workflow)
       // Re-read after IPC so concurrent creations do not overwrite one another.
       write([workflow, ...read()]); return { ok: true, workflow }
     } catch { return storageError }
@@ -42,7 +44,23 @@ export const workflowClient = {
   },
   async getWorkflow(id: string): Promise<WorkflowDetailResult> {
     if (!preparedDiscovery) return window.ghost?.getWorkflow(id) ?? unavailable
-    try { const workflow = read().find(w => w.id === id); return workflow ? { ok: true, workflow } : { ok: false, error: 'This workflow is not saved on this device.' } } catch { return storageError }
+    try {
+      let workflow = read().find(w => w.id === id)
+      if(workflow && window.ghost?.nova){
+        const upgraded=upgradeNova(workflow)
+        if(upgraded){
+          // Preserve the entire original graph before upgrading; browser node ID/config are retained.
+          const backupKey='ghost.nova-upgrade-backup.'+id
+          if(!localStorage.getItem(backupKey))localStorage.setItem(backupKey,JSON.stringify(workflow))
+          await window.ghost.nova.configure(upgraded)
+          write(read().map(w=>w.id===id?upgraded:w));workflow=upgraded
+        } else if(workflow.nodes.some(n=>n.config.novaOperation)) {
+          const registered=await window.ghost.nova.list()
+          if(!registered.workflows.some(w=>w.id===id))await window.ghost.nova.configure(workflow)
+        }
+      }
+      return workflow ? {ok:true,workflow} : {ok:false,error:'This workflow is not saved on this device.'}
+    } catch(error) { return {ok:false,error:error instanceof Error?error.message:storageError.error} }
   },
   async updateWorkflow(id: string, input: WorkflowUpdate): Promise<WorkflowDetailResult> {
     if (!preparedDiscovery) return window.ghost?.updateWorkflow(id, input) ?? unavailable
@@ -50,11 +68,12 @@ export const workflowClient = {
       const rows = read(); const index = rows.findIndex(w => w.id === id)
       if (index < 0) return { ok: false, error: 'This workflow is not saved on this device.' }
       const workflow = { ...rows[index], ...input, updatedAt: new Date().toISOString() }
+      if(workflow.nodes.some(n=>n.config.novaOperation)) await window.ghost?.nova?.configure(workflow)
       rows[index] = workflow; write(rows); return { ok: true, workflow }
     } catch { return storageError }
   },
   async deleteWorkflow(id: string): Promise<DiscoveryPreparation> {
     if (!preparedDiscovery) return window.ghost?.deleteWorkflow(id) ?? unavailable
-    try { write(read().filter(w => w.id !== id)); return { ok: true } } catch { return storageError }
+    try { await window.ghost?.nova?.remove(id); write(read().filter(w => w.id !== id)); return { ok: true } } catch { return storageError }
   },
 }

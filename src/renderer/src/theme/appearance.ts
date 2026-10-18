@@ -9,8 +9,8 @@ const valid = (value: unknown): value is ThemePreference => value === 'light' ||
 function readPreference(): ThemePreference {
   try {
     const saved = localStorage.getItem(storageKey)
-    return valid(saved) ? saved : 'system'
-  } catch { return 'system' }
+    return valid(saved) ? saved : 'dark'
+  } catch { return 'dark' }
 }
 let preference = readPreference()
 let snapshot = { preference, resolved: resolve(preference) }

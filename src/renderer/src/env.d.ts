@@ -1,6 +1,8 @@
 /// <reference types="vite/client" />
 interface Window {
   ghost?: {
+    nova: import('../../shared/novaPipeline').NovaAPI
+    results: import('../../shared/results').ResultsAPI
     scripts: import('../../shared/workflowScripts').WorkflowScriptsAPI
     runtimeLogic: import('../../shared/processingPlan').RuntimeLogicAPI
     automation: import('../../shared/workflowSchedule').WorkflowAutomationAPI

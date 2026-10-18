@@ -1,3 +1,7 @@
+import projectFolder from '../assets/app-imagery/project-folder.svg'
+import openai from '../assets/app-imagery/openai.svg'
+import discord from '../assets/app-imagery/discord.svg'
+import {appIdentity} from '../data/appIdentity'
 import slack from '../assets/app-imagery/slack.svg'
 import microsoft from '../assets/app-imagery/microsoft.svg'
 import google from '../assets/app-imagery/google.svg'
@@ -11,11 +15,9 @@ import screenpipe from '../assets/app-imagery/screenpipe.svg'
 import { Workflow } from './ImageIcon'
 import { Mail } from 'lucide-react'
 
-const appImages: Record<string, string> = { Slack: slack, Microsoft: microsoft, Google: google, Excel: excel, Outlook: outlook, Gmail: gmail, Drive: drive, Chrome: chrome, Notion: notion, Screenpipe: screenpipe }
-const aliases: Record<string, string> = { 'google chrome': 'Chrome', browser: 'Chrome', 'google drive': 'Drive', 'microsoft excel': 'Excel', 'microsoft outlook': 'Outlook', 'google mail': 'Gmail', 'google gmail': 'Gmail', 'screen pipe': 'Screenpipe' }
+const appImages: Record<string, string> = { EmDash: projectFolder, Slack: slack, Microsoft: microsoft, Google: google, Excel: excel, Outlook: outlook, Gmail: gmail, Drive: drive, Chrome: chrome, Notion: notion, Screenpipe: screenpipe, ChatGPT: openai, Codex: openai, Discord: discord }
 export function AppMark({ app }: { app: string }) {
-  const normalized = app.trim().replace(/\s+/g, ' ').toLowerCase()
-  const key = aliases[normalized] ?? Object.keys(appImages).find(name => name.toLowerCase() === normalized) ?? app
+  const key = appIdentity(app)
   const Fallback = /email|e-mail|mail/i.test(app) ? Mail : Workflow
-  return <span className="app-mark app-mark--image inline-grid size-7.5 shrink-0 place-items-center overflow-hidden rounded-md border border-line bg-panel p-0.5 text-ink" title={app} role="img" aria-label={app}>{appImages[key] ? <img className="block size-full object-contain" src={appImages[key]} width="26" height="26" alt="" draggable={false} /> : <Fallback size={18} strokeWidth={1.6} aria-hidden="true" />}</span>
+  return <span className="app-mark app-mark--image inline-grid size-7.5 shrink-0 place-items-center overflow-hidden rounded-md border border-line bg-panel p-0.5 text-ink" style={key==='ChatGPT'||key==='Codex'?{backgroundColor:'#fff'}:undefined} data-app={key} title={app} role="img" aria-label={app}>{appImages[key] ? <img className="block size-full object-contain" src={appImages[key]} width="26" height="26" alt="" draggable={false} /> : <Fallback size={18} strokeWidth={1.6} aria-hidden="true" />}</span>
 }

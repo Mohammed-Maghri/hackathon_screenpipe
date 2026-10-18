@@ -56,7 +56,7 @@ export function NodeInspector({
           <X size={17} />
         </button>
       </header>
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-6 [scrollbar-gutter:stable]">
+      <div className="node-settings-body min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-6 [scrollbar-gutter:stable]">
         {children}
       </div>
     </aside>

@@ -2,7 +2,7 @@
    to the same semantic tokens used by the rest of Ghost. */
 .ghost-flow {
   --xy-background-color: var(--surface-canvas);
-  --xy-edge-stroke: var(--canvas-edge);
+  --xy-edge-stroke: var(--accent-brand);
   --xy-edge-stroke-selected: var(--accent-brand);
   --xy-edge-stroke-width: 1.5;
   --xy-connectionline-stroke: var(--accent-brand);
@@ -35,3 +35,102 @@
   from { transform: translateX(-100%); }
   to { transform: translateX(365%); }
 }
+
+/* Solid, restrained canvas chrome shares Home's sharp visual language. */
+.editor-shell .editor-header { border-bottom:1px solid var(--border-subtle); }
+.editor-shell .editor-header .dash-button,
+.editor-shell .editor-header .icon-button { border-radius:4px; box-shadow:none; }
+.ghost-flow .canvas-node {
+ border-radius:4px; padding:14px 16px; background:var(--surface-panel);
+ box-shadow:none; border-color:var(--border-strong); transition:border-color .15s;
+}
+.ghost-flow .canvas-node.is-selected { border-color:var(--accent-action); box-shadow:0 0 0 1px var(--accent-action); }
+.ghost-flow .canvas-node[data-run-state=RUNNING] { box-shadow:none; border-left:3px solid var(--accent-action); }
+.ghost-flow .canvas-node[data-run-state=FAILED] { border-left:3px solid var(--status-error, #ef6464); }
+.ghost-flow .canvas-node .node-heading { gap:9px; margin-bottom:12px; font-size:11px; }
+.ghost-flow .canvas-node .node-heading .app-mark { width:30px; height:30px; border-radius:4px; padding:3px; }
+.ghost-flow .canvas-node .node-heading > span:last-child { font-size:10px; font-variant-numeric:tabular-nums; letter-spacing:.08em; }
+.ghost-flow .canvas-node > strong { font-size:14px; line-height:1.45; font-weight:600; letter-spacing:-.015em; }
+.ghost-flow .canvas-node > p { margin-top:6px; line-height:1.6; }
+.ghost-flow .canvas-node footer { border-top:1px solid var(--border-subtle); padding-top:10px; margin-top:12px; }
+.ghost-flow .canvas-node .node-status { font-size:11px; }
+.ghost-flow .node-settings-hint { font-size:10px; }
+.ghost-flow .trigger-node .node-heading { margin-bottom:0; }
+.ghost-flow .trigger-node .node-heading > span:last-child { font-size:12px; letter-spacing:0; }
+.ghost-flow .react-flow__node:focus-visible { border-radius:4px; }
+.ghost-flow .canvas-toolbar,
+.ghost-flow .canvas-view-controls,
+.ghost-flow .generation-thinking-panel { border-radius:4px; box-shadow:none; }
+.ghost-flow .canvas-toolbar .canvas-tool > button,
+.ghost-flow .canvas-view-controls button { border-radius:3px; }
+.ghost-flow .react-flow__minimap { border-radius:4px !important; box-shadow:none; }
+.canvas-ghost-guide { display:flex; align-items:center; gap:10px; padding:9px 12px; border:1px solid var(--border-subtle); border-radius:4px; background:var(--surface-panel); text-align:left; cursor:pointer; }
+.canvas-ghost-guide strong { display:block; font-size:11px; font-weight:500; color:var(--text-primary); }
+.canvas-ghost-guide small { display:block; margin-top:1px; font-size:10px; color:var(--text-secondary); }
+.canvas-ghost-character { display:inline-flex; pointer-events:none; animation:canvas-ghost-float 4s ease-in-out infinite; }
+.canvas-ghost-character svg { width:22px; height:27px; }
+.canvas-ghost-guide:hover { border-color:var(--accent-action); }
+.canvas-ghost-guide:hover .canvas-ghost-character { animation-play-state:paused; transform:rotate(-8deg); }
+.canvas-ghost-guide:focus-visible { outline:2px solid var(--accent-action); outline-offset:3px; }
+@keyframes canvas-ghost-float { 0%,100% { transform:translateY(1px) rotate(-3deg); } 50% { transform:translateY(-3px) rotate(3deg); } }
+@media(max-width:760px) { .canvas-ghost-guide { padding:7px; } .canvas-ghost-guide > span:last-child { display:none; } }
+@media(prefers-reduced-motion:reduce) { .canvas-ghost-character { animation:none; } .canvas-ghost-guide:hover .canvas-ghost-character { transform:none; } }
+/* Node inspector: a flat editing surface with a stable header and clear sections. */
+.editor-shell .node-settings-panel { background:var(--surface-panel); box-shadow:none; }
+.editor-shell .node-settings-panel > header { min-height:72px; padding:14px 18px; border-top:2px solid var(--accent-action); align-items:flex-start; }
+.editor-shell .node-settings-panel > header p { font-size:10px; letter-spacing:.1em; text-transform:uppercase; }
+.editor-shell .node-settings-panel > header h2 { white-space:normal; overflow-wrap:anywhere; font-size:15px; line-height:1.4; font-weight:550; margin-top:5px; }
+.editor-shell .node-settings-panel > header button { flex:none; border-radius:3px; width:28px; height:28px; }
+.editor-shell .node-settings-body { padding:0 18px 20px; scrollbar-width:thin; scrollbar-color:var(--border-subtle) transparent; }
+.editor-shell .node-popup > nav { position:sticky; top:0; z-index:2; background:var(--surface-panel); gap:20px; height:43px; }
+.editor-shell .node-popup > nav > button { min-width:0; padding:0 2px; font-size:11px; }
+.editor-shell .inspector-content { padding-top:18px; }
+.editor-shell .inspector-node-heading { margin-bottom:16px; gap:10px; }
+.editor-shell .inspector-node-heading .app-mark { width:34px; height:34px; border-radius:4px; padding:3px; }
+.editor-shell .inspector-node-heading h3 { font-size:13px; line-height:1.4; }
+.editor-shell .node-settings-panel .editor-field { margin:16px 0; gap:7px; font-size:11px; }
+.editor-shell .node-settings-panel :is(input:not([type=checkbox]):not([type=radio]),textarea,select) {
+ border-radius:3px; box-shadow:none; font-size:12px; line-height:1.5;
+ background:var(--surface-canvas); padding:9px 10px;
+}
+.editor-shell .node-settings-panel :is(input,textarea,select):focus-visible { outline:1px solid var(--accent-action); outline-offset:1px; }
+.editor-shell .node-settings-panel .editor-field small { font-size:11px; line-height:1.6; }
+.editor-shell .node-settings-panel .node-description-editor { min-height:82px; }
+.editor-shell .node-settings-panel .dash-button { border-radius:3px; min-height:34px; padding:7px 11px; font-size:12px; box-shadow:none; }
+.editor-shell .node-settings-panel .recording-button { min-height:38px; }
+.editor-shell .node-settings-panel .inspector-content > h3 { margin-top:22px; padding-top:14px; border-top:1px solid var(--border-subtle); font-size:12px; }
+.editor-shell .node-settings-panel .inspector-instructions li,
+.editor-shell .node-settings-panel .evidence-empty,
+.editor-shell .node-settings-panel .processing-ports > span { border-radius:3px; }
+.editor-shell .node-settings-panel .processing-inspector { padding-top:18px; }
+.editor-shell .node-settings-panel .processing-kicker { font-size:10px; letter-spacing:.06em; }
+.editor-shell .node-settings-panel .delete-node { margin-top:22px; padding-top:14px; font-size:11px; }
+.editor-shell .node-primary-actions { padding-bottom:16px; }
+.editor-shell .node-primary-actions .recording-button:first-child { margin-top:0; }
+.editor-shell .node-primary-actions small { display:block; margin-top:7px; font-size:11px; line-height:1.6; }
+.editor-shell .node-secondary-settings > summary { font-size:12px; font-weight:500; color:var(--text-primary); padding:2px 0; }
+.editor-shell .node-secondary-settings[open] > summary { margin-bottom:14px; }
+.editor-shell .node-secondary-settings .instruction-heading { margin-top:16px; }
+.node-local-execution { margin-bottom:18px; padding:14px; border:1px solid var(--border-subtle); border-left:2px solid var(--accent-action); background:var(--surface-canvas); }
+.node-local-execution header { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+.node-local-execution header strong { font-size:12px; }
+.node-local-execution header span { font-size:10px; color:var(--accent-text); }
+.node-local-execution p,.node-local-execution li { font-size:11px; line-height:1.65; color:var(--text-secondary); overflow-wrap:anywhere; }
+.node-local-execution p { margin-top:8px; }
+.node-local-execution h4 { font-size:11px; font-weight:550; margin-top:14px; margin-bottom:6px; }
+.node-local-execution ul,.node-local-execution ol { padding-left:16px; margin:0; }
+.node-local-execution li + li { margin-top:5px; }
+.node-local-execution code { font-size:10px; }
+.node-local-execution > .dash-button { margin-top:14px; width:100%; }
+.node-local-execution > small { display:block; margin-top:8px; font-size:10px; line-height:1.6; color:var(--text-secondary); }
+.node-script-preview { margin-top:14px; padding-top:12px; border-top:1px solid var(--border-subtle); }
+.node-script-preview header { display:flex; flex-wrap:wrap; gap:5px; }
+.node-script-preview header strong { font-size:11px; }
+.node-script-preview header span { font-size:10px; color:var(--text-secondary); }
+.node-script-preview pre { max-height:240px; overflow:auto; padding:10px; margin:10px 0 6px; border:1px solid var(--border-subtle); border-radius:3px; font-size:10px; line-height:1.6; white-space:pre-wrap; overflow-wrap:anywhere; color:var(--text-primary); background:var(--surface-panel); scrollbar-width:thin; }
+.node-script-preview small { display:block; font-size:10px; line-height:1.5; color:var(--text-secondary); overflow-wrap:anywhere; }
+.node-script-preview .node-script-location { margin-top:4px; }
+.node-script-paths { margin-top:12px; font-size:11px; }
+.node-script-paths dt { margin-top:9px; font-weight:550; color:var(--text-primary); }
+.node-script-paths dd { margin:3px 0 0; color:var(--text-secondary); line-height:1.6; overflow-wrap:anywhere; }
+.node-discovery-response { max-height:320px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; padding:10px; font-family:inherit; font-size:11px; line-height:1.7; background:var(--surface-panel); border:1px solid var(--border-subtle); }

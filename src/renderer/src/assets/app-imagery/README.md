@@ -18,3 +18,10 @@ Retrieved2026-10-17:
 | screenpipe.svg |[Screenpipe press kit](https://screenpipe.com/press), [vector download](https://screenpipe.com/bimi/screenpipe.svg)|
 
 SVG Logos paths were retrieved from [Iconify's logos collection](https://github.com/iconify/icon-sets/blob/master/json/logos.json), which identifies the collection as CC0-1.0; its license is included in `LICENSE-logos.txt`. Microsoft and Screenpipe assets are their supplied product/brand marks, used to identify those applications. Brand names and trademarks remain with their respective owners.
+
+Added for recorded activity application identification:
+
+- `discord.svg`: https://github.com/gilbarbara/logos/blob/main/logos/discord-icon.svg
+- `openai.svg`: https://github.com/gilbarbara/logos/blob/main/logos/openai-icon.svg
+
+The OpenAI brand mark identifies both ChatGPT and Codex, with their individual app names retained. These are bundled SVG Logos assets under the same collection license above; trademarks remain with their owners. App aliases include desktop/executable names from Screenpipe. Unknown apps retain the existing fallback.

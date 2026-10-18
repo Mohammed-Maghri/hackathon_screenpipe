@@ -48,8 +48,9 @@ export function createActivityTimeline(config: { url?: string; key?: string; fet
         if (end <= start) throw new TimelineError('invalid', 'This day has not started yet.')
         const whole = await summary(new Date(start).toISOString(), new Date(end).toISOString())
         const buckets: ActivityBucket[] = []
-        // Query authoritative hourly measurements; never derive duration from frames.
-        for (let t = start; t < end; t += 3600000) buckets.push({ startTime: new Date(t).toISOString(), endTime: new Date(Math.min(t + 3600000, end)).toISOString(), minutes: 0, apps: [] })
+        // Recent windows use five-minute measurements; full days retain hourly buckets.
+        const bucketMs = end - start <= 2 * 3600000 ? 5 * 60000 : 3600000
+        for (let t = start; t < end; t += bucketMs) buckets.push({ startTime: new Date(t).toISOString(), endTime: new Date(Math.min(t + bucketMs, end)).toISOString(), minutes: 0, apps: [] })
         if (whole.total_active_minutes > 0) {
           let cursor = 0
           let failed = false

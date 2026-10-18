@@ -14,7 +14,7 @@ export function savedEditorNodes(workflow: SavedWorkflowDetail): EditorNode[] {
     processing: node.config.stepType === 'data_processing' ? node.config.dataProcessing as import('../../../shared/dataProcessing').ProcessingConfig : undefined,
     contract: node.config.contract ? node.config.contract as NodeContract : undefined,
     app: knownApps.includes(String(node.config.application)) ? node.config.application as AppName : undefined,
-    status: node.config.status === 'learned' ? 'Learned' : node.config.status === 'recorded' ? 'Recorded' : node.config.status === 'ready' ? 'Ready' : node.config.status === 'needs_recording' ? 'Needs teaching' : 'Needs configuration',
+    status: ['request','calculate','report','draft','review'].includes(String(node.config.novaOperation)) ? 'Ready' : node.config.status === 'learned' ? 'Learned' : node.config.status === 'recorded' ? 'Recorded' : node.config.status === 'ready' ? 'Ready' : node.config.status === 'needs_recording' ? 'Needs teaching' : 'Needs configuration',
     instructions: browserInstructions(Array.isArray(node.config.instructions) ? node.config.instructions.filter((item): item is string => typeof item === 'string') : [], node.config.stepType === 'browser' && typeof node.config.startUrl === 'string' ? node.config.startUrl : undefined),
     startUrl: typeof node.config.startUrl === 'string' ? node.config.startUrl : null,
     x: node.positionX, y: node.positionY,

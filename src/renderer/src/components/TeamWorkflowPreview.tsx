@@ -1,0 +1,16 @@
+import {useEffect,useRef,useState} from 'react'
+import {ReactFlow,Background,Controls,Handle,Position,MarkerType,type NodeProps,type Node,type ReactFlowInstance} from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
+import {AppMark} from './AppMark'
+import {TeamDiscussion} from './TeamDiscussion'
+const graphs:Record<string,string[][]>={
+ 'NOVA — Weekly restocking':[['Screenpipe','Read the weekly request'],['Chrome','Download sales & inventory'],['Excel','Parse and calculate buying list'],['Excel','Prepare approval workbook'],['Slack','Prepare report message'],['Ghost','Review buying list']],
+ 'Forma — Payment review':[['Chrome','Export payments'],['Excel','Parse payment records'],['Excel','Flag overdue balances'],['Ghost','Review payment report']],
+ 'Weekly team update':[['Screenpipe','Summarize team activity'],['Notion','Prepare weekly summary'],['Slack','Review channel update']],
+ 'Supplier delivery check':[['Chrome','Read incoming deliveries'],['Excel','Compare inventory needs'],['Excel','Flag late deliveries'],['Slack','Prepare supplier update']]
+}
+function PreviewNode({data}:NodeProps<Node<{app:string;label:string;index:number;reverse:boolean}>>){return <div className="team-board-node"><Handle type="target" position={data.reverse?Position.Right:Position.Left}/><header><AppMark app={data.app}/><small>STEP {data.index+1} · {data.app}</small></header><strong>{data.label}</strong><footer>Shared workflow · Preview</footer><Handle type="source" position={data.reverse?Position.Left:Position.Right}/></div>}
+const nodeTypes={preview:PreviewNode}
+export function TeamWorkflowPreview({name,owner}:{name:string;owner:string}){const container=useRef<HTMLDivElement>(null);const [flow,setFlow]=useState<ReactFlowInstance<Node<{app:string;label:string;index:number;reverse:boolean}>>|null>(null);
+useEffect(()=>{if(!flow||!container.current)return;let frame=0;const fit=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{const box=container.current?.getBoundingClientRect();if(box&&box.width>0&&box.height>0)void flow.fitView({padding:.18,duration:0,minZoom:.1,maxZoom:1})})};const observer=new ResizeObserver(fit);observer.observe(container.current);fit();return()=>{observer.disconnect();cancelAnimationFrame(frame)}},[flow]);
+const steps=graphs[name]??[];const nodes=steps.map(([app,label],i)=>({id:String(i),type:'preview',position:{x:(i<3?i:5-i)*310,y:Math.floor(i/3)*230},data:{app,label,index:i,reverse:i>=3}}));const edges=steps.slice(1).map((_,i)=>({id:'e'+i,source:String(i),target:String(i+1),type:'smoothstep',style:{stroke:'#ff8c49',strokeWidth:2},markerEnd:{type:MarkerType.ArrowClosed,color:'#ff8c49'}}));return <><p className="team-board-note">Shared by {owner} · {steps.length} steps · Read-only demo board</p><div className="team-board-layout"><div className="team-board-canvas" ref={container}><ReactFlow onInit={setFlow} nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView fitViewOptions={{padding:.2}} minZoom={.1} maxZoom={1.5} nodesDraggable={false} nodesConnectable={false} elementsSelectable={false} deleteKeyCode={null} colorMode="dark"><Background color="#303030" gap={20}/><Controls showInteractive={false}/></ReactFlow></div><TeamDiscussion topic={name}/></div></>}

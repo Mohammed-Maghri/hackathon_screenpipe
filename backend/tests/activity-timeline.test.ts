@@ -51,3 +51,17 @@ test('today uses whole-second request bounds compatible with Screenpipe timestam
  const r=await createActivityTimeline({key:'test',now:()=>Date.parse('2026-10-10T12:34:56.789Z'),fetch:async raw=>{const url=new URL(String(raw));assert.equal(url.searchParams.get('end_time'),'2026-10-10T12:34:56.000Z');return Response.json({...summary(url,0),data_status:'unknown'})}})(range)
  assert.ok(r.ok);if(r.ok)assert.equal(r.buckets.at(-1)?.endTime,'2026-10-10T12:34:56.000Z')
 })
+
+test('recent two-hour windows use 24 authoritative five-minute buckets ending now',async()=>{
+ const recent={startTime:'2026-10-17T10:00:00.000Z',endTime:'2026-10-17T12:00:00.000Z'}
+ let calls=0
+ const result=await createActivityTimeline({key:'test',now,fetch:async raw=>{calls++;return Response.json(summary(new URL(String(raw)),2))}})(recent)
+ assert.ok(result.ok)
+ if(result.ok){
+  assert.equal(result.buckets.length,24)
+  assert.equal(result.buckets[0].startTime,recent.startTime)
+  assert.equal(result.buckets.at(-1)?.endTime,recent.endTime)
+  for(const bucket of result.buckets){assert.equal(Date.parse(bucket.endTime)-Date.parse(bucket.startTime),300000);assert.equal(bucket.minutes,2)}
+ }
+ assert.equal(calls,25)
+})

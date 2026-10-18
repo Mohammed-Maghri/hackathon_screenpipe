@@ -1,3 +1,5 @@
+import {Team} from './pages/Team'
+import { Results } from './pages/Results'
 import { HashRouter, Route, Routes, useLocation, useParams } from 'react-router'
 import { MotionConfig } from 'motion/react'
 import { Welcome } from './pages/Welcome'
@@ -27,13 +29,15 @@ function AppRoutes() {
   const location = useLocation()
   const background = /^\/settings(?:\/|$)/.test(location.pathname) ? getSettingsBackground((location.state as { backgroundLocation?: unknown } | null)?.backgroundLocation) : undefined
   const workspacePath = background?.pathname ?? location.pathname
-  const nativeChrome = window.ghost?.platform === 'darwin' && /^\/(dashboard|workflows)(?:\/|$)/.test(workspacePath)
+  const nativeChrome = window.ghost?.platform === 'darwin' && /^\/(dashboard|workflows|results|team)(?:\/|$)/.test(workspacePath)
   return <>
     <div className="h-full" aria-hidden={background ? true : undefined} inert={Boolean(background)}>
       <WorkspaceFrame nativeChrome={nativeChrome}>
         <Routes location={background ?? location}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/settings/:section?" element={<Settings />} />
+          <Route path="/results" element={<Results />} />
+          <Route path="/team" element={<Team />} />
           <Route path="/workflows" element={<Workflows />} />
           <Route path="/workflows/:id/record/:nodeId" element={<RecordingPage />} />
           <Route path="/workflows/:id" element={<WorkflowPage />} />

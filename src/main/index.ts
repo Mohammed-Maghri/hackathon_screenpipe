@@ -1,3 +1,6 @@
+import {postNovaReport} from './screenpipeSlack'
+import { NovaPipeline } from './novaPipeline'
+import { ResultsStore } from './resultsStore'
 import { WorkflowScriptStore } from './workflowScripts'
 import { createActivityTimeline } from './activityTimeline'
 import { existsSync } from 'node:fs'
@@ -33,7 +36,7 @@ const devURL = !app.isPackaged ? process.env.ELECTRON_RENDERER_URL : undefined
 function createWindow(): void {
   const window = new BrowserWindow({
     width: 1440, height: 960, minWidth: 760, minHeight: 620,
-    title: 'Ghost', backgroundColor: nativeTheme.shouldUseDarkColors ? '#10151e' : '#ffffff', show: false,
+    title: 'Ghost', backgroundColor: nativeTheme.shouldUseDarkColors ? '#090909' : '#ffffff', show: false,
     frame: false, titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
     trafficLightPosition: { x: 25, y: 22 },
     webPreferences: {
@@ -72,7 +75,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  registerTeachingBrowser()
+  const teaching = registerTeachingBrowser()
   function authorizeBackend(event: Electron.IpcMainInvokeEvent) {
     const window = BrowserWindow.fromWebContents(event.sender)
     const trustedURL = new URL(devURL || '../renderer/index.html', import.meta.url).href
@@ -83,16 +86,29 @@ app.whenReady().then(() => {
   ipcMain.handle('appearance:set', (event, theme: unknown) => {
     authorizeBackend(event)
     if (theme !== 'light' && theme !== 'dark') throw new Error('Invalid appearance')
-    BrowserWindow.fromWebContents(event.sender)!.setBackgroundColor(theme === 'dark' ? '#10151e' : '#ffffff')
+    BrowserWindow.fromWebContents(event.sender)!.setBackgroundColor(theme === 'dark' ? '#090909' : '#ffffff')
   })
+  const results = new ResultsStore(join(app.getPath('userData'), 'recordings'))
+  ipcMain.handle('results:list', event => { authorizeBackend(event); return results.list() })
+  ipcMain.handle('results:compare', (event, recordingId, runId) => { authorizeBackend(event); return results.compare(recordingId, runId) })
+  ipcMain.handle('results:reveal', async (event, recordingId, runId, fileId) => { authorizeBackend(event); shell.showItemInFolder(await results.artifact(recordingId, runId, fileId)) })
   const scripts = new WorkflowScriptStore(join(app.getPath('userData'), 'workflow-scripts'))
   ipcMain.handle('scripts:latest', (event, workflowId) => { authorizeBackend(event); return scripts.latest(workflowId) })
   ipcMain.handle('scripts:generate', (event, workflow) => { authorizeBackend(event); return scripts.generate(workflow) })
   ipcMain.handle('scripts:read', (event, workflowId, revision, file) => { authorizeBackend(event); return scripts.read(workflowId, revision, file) })
   ipcMain.handle('scripts:reveal', async (event, workflowId, revision) => { authorizeBackend(event); shell.showItemInFolder(join(await scripts.path(workflowId, revision), 'manifest.json')) })
+  const nova = new NovaPipeline(join(app.getPath('userData'), 'nova-pipeline'), scripts, results, teaching.runSaved, postNovaReport)
+  for (const method of ['configure', 'run', 'list', 'scheduleTests', 'cancelSchedule', 'cancelRun', 'approve', 'remove', 'saveScenario', 'approveScenario'] as const) {
+    ipcMain.handle('nova:' + method, (event, input) => { authorizeBackend(event); return (nova[method] as (input: unknown) => unknown).call(nova, input) })
+  }
+  ipcMain.handle('nova:preview', (event, runId, fileId) => { authorizeBackend(event); return nova.preview(runId, fileId) })
+  ipcMain.handle('nova:reveal', async (event, runId, fileId) => { authorizeBackend(event); shell.showItemInFolder(await nova.artifact(runId, fileId)) })
+  void nova.ready.catch(error => logFailure('nova', error.message))
+  setInterval(() => { void nova.tick().catch(error => logFailure('nova', error.message)) }, 5000).unref()
   const processing = new LocalProcessingService(app.getPath('userData'))
   const runtimeLogic = new RuntimeLogicService(app.getPath('userData'), processing)
   const scheduler = new WorkflowScheduler(app.getPath('userData'), async id => {
+    if (await nova.has(id)) { const run = await nova.run(id); if (run.state !== 'needs_review') throw Error(run.error ?? 'NOVA run failed.'); return }
     const loaded = await getSavedWorkflow(id)
     if (!loaded.ok) throw new Error(loaded.error)
     if (loaded.workflow.status === 'ARCHIVED') throw new Error('Unarchive this workflow before running it.')
