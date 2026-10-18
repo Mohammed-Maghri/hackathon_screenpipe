@@ -1,0 +1,40 @@
+.dashboard-sidebar.editor-sidebar {
+ background:#0c0c0c; border-color:#242424; padding-top:14px; padding-bottom:14px;
+ font-family:var(--font-ui); box-shadow:none;
+}
+.dashboard-sidebar .sidebar-toolbar { height:28px; margin-bottom:16px; justify-content:space-between; color:#777; }
+.dashboard-sidebar .sidebar-toolbar .icon-button { width:28px; height:28px; border-radius:3px; }
+.dashboard-sidebar .sidebar-brand { height:40px; padding-inline:10px; margin-bottom:4px; }
+.dashboard-sidebar .sidebar-brand .brand { gap:10px; }
+.dashboard-sidebar .sidebar-search { margin-top:22px; height:34px; border-radius:3px; background:#111; border-color:#292929; padding-inline:10px; font-size:11px; }
+.dashboard-sidebar .sidebar-search:hover { border-color:#57504b; }
+.dashboard-sidebar .sidebar-search kbd { font-family:inherit; font-size:9px; color:#777; }
+.dashboard-sidebar .sidebar-primary-nav { margin-top:20px; gap:5px; }
+.dashboard-sidebar .nav-item { height:39px; border-radius:3px; padding-inline:11px; gap:11px; font-family:inherit; font-size:12px; font-weight:450; color:#aaa; background:transparent; }
+.dashboard-sidebar .nav-item svg { flex-shrink:0; width:17px; height:17px; }
+.dashboard-sidebar .nav-item:hover { background:#171717; color:#eee; }
+.dashboard-sidebar .nav-item[aria-current=page] { background:#211812; color:#ff9b5c; font-weight:550; }
+.dashboard-sidebar .nav-item[aria-current=page]::before { content:''; position:absolute; left:0; top:10px; bottom:10px; width:2px; background:#ff8c49; border-radius:1px; }
+.dashboard-sidebar .sidebar-recents { margin-top:30px; scrollbar-width:thin; scrollbar-color:transparent transparent; }
+.dashboard-sidebar .sidebar-recents:hover { scrollbar-color:#444 transparent; }
+.dashboard-sidebar .sidebar-recents h2 { font-family:inherit; font-size:10px; font-weight:500; letter-spacing:.035em; color:#777; padding-inline:11px; }
+.dashboard-sidebar .sidebar-recent-row { height:34px; border-radius:3px; padding-inline:10px; gap:9px; color:#929292; font-size:11px; }
+.dashboard-sidebar .sidebar-recent-row > :first-child { width:19px; height:19px; min-width:19px; flex-shrink:0; }
+.dashboard-sidebar .sidebar-recent-row img { width:19px; height:19px; object-fit:contain; }
+.dashboard-sidebar .sidebar-recent-row:hover,.dashboard-sidebar .sidebar-recent-row[aria-current=page] { background:#171717; color:#eee; }
+.dashboard-sidebar .sidebar-footer { padding-top:16px; gap:2px; }
+.dashboard-sidebar .sidebar-footer .nav-item { height:33px; font-size:11px; color:#939393; }
+.dashboard-sidebar .profile-button { margin-top:14px; padding:14px 7px 0; min-height:51px; border-color:#242424; gap:10px; }
+.sidebar-profile-photo { width:30px; height:30px; flex-shrink:0; border-radius:50%; object-fit:cover; border:1px solid #393939; }
+.dashboard-sidebar .profile-button strong { font-size:11px; font-weight:550; color:#ddd; }
+.dashboard-sidebar .profile-button strong + span { font-size:10px; color:#777; }
+.dashboard-sidebar[data-collapsed=true] :is(.nav-item,.sidebar-brand,.sidebar-search,.profile-button) { justify-content:center; padding-inline:0; }
+.dashboard-sidebar[data-collapsed=true] .sidebar-toolbar { justify-content:center; }
+.dashboard-sidebar[data-collapsed=true] .sidebar-toolbar > button + button { display:none; }
+.dashboard-sidebar :is(a,button):focus-visible { outline:2px solid #ff8c49; outline-offset:2px; }
+@media(max-width:1023px) {
+ .dashboard-sidebar :is(.nav-item,.sidebar-brand,.sidebar-search,.profile-button) { justify-content:center; padding-inline:0; }
+ .dashboard-sidebar .sidebar-toolbar { justify-content:center; }
+ .dashboard-sidebar .sidebar-toolbar > button + button { display:none; }
+}
+@media(max-height:650px) { .dashboard-sidebar .sidebar-toolbar { margin-bottom:8px; } .dashboard-sidebar .sidebar-search { margin-top:12px; } .dashboard-sidebar .sidebar-recents { margin-top:18px; } .dashboard-sidebar .sidebar-footer { padding-top:8px; } }

@@ -1,3 +1,4 @@
+import '../styles/welcome.css';
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { ArrowDown, ArrowRight, CircleHelp } from "lucide-react";
@@ -47,7 +48,7 @@ function ExampleWorkflow() {
                 <ArrowDown size={18} strokeWidth={1.5} />
               </div>
             )}
-            <div className="flex items-center gap-4 rounded-card border border-line bg-panel p-5 shadow-soft [@media(max-height:740px)]:p-4 [&_.app-mark]:size-10 [&_.app-mark]:rounded-control [&_.app-mark]:border-0 [&_.app-mark]:bg-sidebar [&_.app-mark]:p-2">
+            <div className="welcome-example-node flex items-center gap-4 rounded-card border border-line bg-panel p-5 shadow-soft [@media(max-height:740px)]:p-4 [&_.app-mark]:size-10 [&_.app-mark]:rounded-control [&_.app-mark]:border-0 [&_.app-mark]:bg-sidebar [&_.app-mark]:p-2">
               <AppMark app={step.app} />
               <div className="min-w-0">
                 <h3 className="text-sm font-medium tracking-normal">{step.title}</h3>
@@ -65,14 +66,14 @@ export function Welcome() {
   const navigate = useNavigate();
   const [dialog, setDialog] = useState<DialogKind | null>(null);
   return (
-    <div className="window-shell relative flex h-full min-h-0 flex-col overflow-hidden bg-canvas text-ink">
+    <div className="welcome-screen window-shell relative flex h-full min-h-0 flex-col overflow-hidden bg-canvas text-ink">
       <div className="welcome-titlebar relative h-14 shrink-0 border-b border-line bg-canvas [&>.titlebar]:h-full">
         <TitleBar onSkip={() => navigate("/dashboard")} />
       </div>
       <main className="welcome-main grid min-h-0 flex-1 grid-cols-[1.1fr_1fr] overflow-y-auto overscroll-contain max-[1099px]:grid-cols-1">
         <section aria-labelledby="welcome-heading" className="flex items-center justify-center px-12 py-12 max-[1250px]:px-8 [@media(max-height:740px)]:py-6">
           <div className="welcome-content w-full max-w-[440px]">
-            <div className="mb-8 [@media(max-height:740px)]:mb-6">
+            <div className="welcome-brand mb-8 [@media(max-height:740px)]:mb-6">
               <GhostLogo />
             </div>
             <h1 id="welcome-heading" className="text-[52px] font-medium leading-[1.08] tracking-[-.045em] max-[1250px]:text-5xl [@media(max-height:740px)]:text-[40px]">
@@ -96,7 +97,7 @@ export function Welcome() {
               ))}
             </ol>
             <button className="dash-button dash-button--primary group min-h-11 gap-5" onClick={() => navigate("/dashboard")}>
-              Create my first workflow
+              Open workspace
               <ArrowRight size={16} aria-hidden="true" className="transition-transform duration-150 group-hover:translate-x-0.5" />
             </button>
           </div>
