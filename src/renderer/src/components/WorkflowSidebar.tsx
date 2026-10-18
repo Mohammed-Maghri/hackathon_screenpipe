@@ -1,3 +1,6 @@
+import '../styles/sidebar.css';
+import { AppMark } from './AppMark';
+import mohammedPhoto from '../assets/team/mohammed.jpg';
 import { workflowClient, preparedDiscovery } from "../data/workflowClient";
 import { useContext, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -8,7 +11,6 @@ import {
   ChartNoAxesCombined,
   CircleHelp,
   House,
-  Layers3,
   MoreHorizontal,
   PanelLeftClose,
   PanelLeftOpen,
@@ -88,8 +90,8 @@ export function WorkflowSidebar({
     return () => window.removeEventListener("keydown", key);
   }, [location.pathname]);
   const recentItems = [
-    ...drafts.map((item) => ({ id: item.id, name: item.name })),
-    ...recent,
+    ...drafts.map((item) => ({ id: item.id, name: item.name, app: "Ghost" })),
+    ...recent.map(item=>({...item,app:item.applicationIcons?.[0]??item.applications?.[0]??"Ghost"})),
   ]
     .filter(
       (item, index, list) =>
@@ -137,13 +139,14 @@ export function WorkflowSidebar({
       {desktopMac && controls && createPortal(toolbar, controls)}
       <aside
         aria-label="Workflow sidebar"
+        data-collapsed={collapsed}
         className={`dashboard-sidebar editor-sidebar relative flex min-h-0 shrink-0 flex-col border-r border-sidebar-line bg-sidebar px-4 pt-7 pb-4 text-sidebar-ink ${collapsed ? "w-18 !px-3" : "w-[248px] max-[1200px]:w-56"} max-lg:w-18 max-lg:px-3`}
       >
         {!desktopMac && toolbar}
         <Link
           to="/dashboard"
           aria-label="Ghost home"
-          className={`app-no-drag flex h-9 items-center px-3 ${center} [&_.brand>svg]:h-8 [&_.brand>svg]:w-6.5 ${collapsed ? "[&_.brand>span]:hidden" : "max-lg:[&_.brand>span]:hidden"}`}
+          className={`sidebar-brand app-no-drag flex h-9 items-center px-3 ${center} [&_.brand>svg]:h-8 [&_.brand>svg]:w-6.5 ${collapsed ? "[&_.brand>span]:hidden" : "max-lg:[&_.brand>span]:hidden"}`}
         >
           <GhostLogo />
         </Link>
@@ -204,9 +207,10 @@ export function WorkflowSidebar({
                 key={item.id}
                 to={`/workflows/${item.id}`}
                 title={item.name}
+                aria-current={location.pathname===`/workflows/${item.id}`?"page":undefined}
                 className="sidebar-recent-row flex h-9 min-w-0 items-center gap-2.5 rounded-control px-3 text-xs text-muted hover:bg-sunken hover:text-ink"
               >
-                <span className="size-1 shrink-0 rounded-full bg-strong" />
+                <AppMark app={item.app} />
                 <span className="truncate">{item.name}</span>
               </Link>
             ))}
@@ -247,13 +251,11 @@ export function WorkflowSidebar({
             title="My workspace"
             onClick={() => openPanel("profile")}
           >
-            <span className="grid size-8.5 shrink-0 place-items-center rounded-control bg-sunken text-muted">
-              <Layers3 size={17} />
-            </span>
+            <img className="sidebar-profile-photo" src={mohammedPhoto} alt=""/>
             <span className={`min-w-0 text-xs ${labels}`}>
-              <strong className="block font-medium">Personal workspace</strong>
+              <strong className="block font-medium">Mohammed Maghri</strong>
               <span className="mt-0.5 block text-muted">
-                Local to your device
+                Personal workspace
               </span>
             </span>
           </button>

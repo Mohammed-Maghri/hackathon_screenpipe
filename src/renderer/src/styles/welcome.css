@@ -1,0 +1,26 @@
+.welcome-screen { background:#090909; font-family:var(--font-ui); }
+.welcome-screen .welcome-titlebar,.welcome-screen .welcome-footer { background:#0c0c0c; border-color:#242424; }
+.welcome-screen .welcome-main { background:#090909; }
+.welcome-screen .welcome-main > aside { background:#0e0e0e; border-color:#242424; }
+.welcome-screen h1,.welcome-screen h2,.welcome-screen h3 { font-family:var(--font-ui); }
+.welcome-screen #welcome-heading { font-size:clamp(32px,3.8vw,48px); font-weight:550; line-height:1.13; letter-spacing:-.045em; }
+.welcome-screen .welcome-content > p { font-size:14px; color:#999; line-height:1.7; }
+.welcome-screen .welcome-guide-steps { gap:20px; }
+.welcome-screen .welcome-guide-steps li > span { border-radius:3px; background:#15120f; color:#ff9b5c; border-color:#3b2b20; width:25px; height:25px; font-size:10px; }
+.welcome-screen .welcome-guide-steps h2 { font-size:13px; font-weight:550; }
+.welcome-screen .welcome-guide-steps p { color:#888; font-size:12px; }
+.welcome-screen .dash-button { border-radius:3px; font-size:12px; }
+.welcome-screen .welcome-example-node { border-radius:4px; background:#131313; box-shadow:none; border-color:#303030; padding:18px; }
+.welcome-screen .welcome-example-node .app-mark { background:transparent; padding:4px; }
+.welcome-screen .welcome-example figcaption h2 { font-size:22px; font-weight:550; }
+.welcome-screen .welcome-example figcaption > p { font-size:12px; color:#969696; }
+.welcome-screen .welcome-footer { min-height:64px; padding-block:10px; }
+.welcome-brand { position:relative; width:max-content; }
+.welcome-brand .brand > svg { width:36px; height:43px; transform-origin:50% 85%; animation:welcome-ghost-bob 4s ease-in-out infinite; }
+.welcome-brand .brand > svg ellipse { transform-box:fill-box; transform-origin:center; animation:welcome-ghost-blink 6s ease-in-out infinite; }
+.welcome-brand::after { content:''; position:absolute; left:3px; bottom:-7px; width:30px; height:4px; border-radius:50%; background:#ff8c4924; animation:welcome-ghost-shadow 4s ease-in-out infinite; }
+@keyframes welcome-ghost-bob { 0%,100% { transform:translateY(0) rotate(-3deg); } 50% { transform:translateY(-7px) rotate(3deg); } }
+@keyframes welcome-ghost-shadow { 0%,100% { transform:scaleX(1); opacity:.7; } 50% { transform:scaleX(.7); opacity:.35; } }
+@keyframes welcome-ghost-blink { 0%,44%,48%,100% { transform:scaleY(1); } 46% { transform:scaleY(.12); } }
+@media(max-height:700px) { .welcome-screen #welcome-heading { font-size:34px; } .welcome-screen .welcome-guide-steps { gap:12px; margin-block:20px; } .welcome-screen .welcome-brand { margin-bottom:20px; } }
+@media(prefers-reduced-motion:reduce) { .welcome-brand .brand > svg,.welcome-brand .brand > svg ellipse,.welcome-brand::after { animation:none; } }
