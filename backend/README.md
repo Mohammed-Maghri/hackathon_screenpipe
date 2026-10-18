@@ -1,175 +1,41 @@
 # Ghost backend
 
-Node.js/TypeScript API used by Ghost for workflow persistence, development AI discovery, node contracts and encrypted input backups. Browser execution and scheduling run in Electron, not this API. General user authentication and real Screenpipe discovery are not implemented. Start with the [team setup guide](../docs/TEAM_ONBOARDING.md); some foundation-era descriptions below are historical.
+Fastify + PostgreSQL + Prisma API for live workflow persistence, Screenpipe-answer formatting, processing plans, contracts, and recording input backups. Browser execution runs in Electron. Prepared NOVA/Forma workflows are stored locally and do not require this API.
 
-## Start
-
-Use Node 22.12+ (tested with Node 24).
+Follow the [root setup guide](../README.md#3-optional-backend-and-live-screenpipe-discovery) for the complete system. From the repository root:
 
 ```sh
-cd backend
-npm ci
-cp .env.example .env # only on a fresh checkout; preserve an existing .env
-# For local PostgreSQL, with Docker Compose installed:
-docker compose up -d --wait
-npm run prisma:generate
-npm run prisma:deploy
-npm run dev
+docker compose up -d --wait postgres
+npm --prefix backend ci
+cp backend/.env.example backend/.env
+npm --prefix backend run prisma:generate
+npm --prefix backend run prisma:deploy
+npm --prefix backend run dev
 ```
 
-This workspace already has an ignored `.env` pointing to the supplied development database's dedicated `ghost` schema. Its initial migration has been applied; do not replace that file unless switching to local PostgreSQL. No credentials are committed. The example instead uses Compose on localhost:5433. PostgreSQL 18 stores its volume under `/var/lib/postgresql`.
+Copy the environment example only for a fresh checkout. Set `DATABASE_URL` and, for AI features, `OPENAI_API_KEY` in `backend/.env`. Containerized API configuration comes from root `.env` instead.
+
+## API
+
+- Health/database: `GET http://127.0.0.1:3001/health`
+- Interactive OpenAPI: `http://127.0.0.1:3001/docs/`
+- Machine-readable specification: `http://127.0.0.1:3001/docs/json`
+- Workflow CRUD: `/api/workflows` and `/api/workflows/:id`
+- Final Screenpipe answer formatting: `POST /api/workflow-discovery/format`
+
+Swagger describes the current routes and schemas. The API does not provide general account authentication; use it locally. Development mock discovery endpoints are test facilities, not recorded evidence.
+
+## Build, migrations, checks
 
 ```sh
-npm run build
-npm start
-curl http://127.0.0.1:3001/health
+npm --prefix backend run prisma:status
+npm --prefix backend run typecheck
+npm --prefix backend run build
+npm --prefix backend test
+# Run the compiled API instead of the development watcher:
+npm --prefix backend start
 ```
 
-The server defaults to loopback because authentication is intentionally absent. CORS is an explicit renderer-origin allowlist, not access control. Workflow `ownerId` is metadata, not an authenticated identity. Native HTTP clients need no Origin; Electron file origins are not automatically granted browser CORS access.
+Tests require a reachable database and a role allowed to create/drop isolated test schemas. They do not reset the application schema. Use `prisma:deploy` to apply checked-in migrations; `prisma:migrate` is for developing new migrations.
 
-## Structure
-
-- `src/server.ts`: process startup and graceful shutdown.
-- `src/app.ts`: injectable Fastify application, CORS, logging, health and route registration.
-- `src/config/env.ts`: dotenv loading and Zod environment validation.
-- `src/database/client.ts`: reusable PostgreSQL adapter/client factory; one shared client per app, disconnected on close.
-- `src/errors/handler.ts`: consistent validation, not-found, conflict and internal error responses.
-- `src/modules/workflows/`: separate routes, controllers, schemas and services.
-- `prisma/schema.prisma`: relational models and indexes.
-- `prisma/migrations/`: versioned SQL migrations.
-- `tests/`: API/database integration coverage through Fastify injection.
-
-Prisma 7 uses [`prisma.config.ts`](https://www.prisma.io/docs/orm/v7/reference/prisma-config-reference) for CLI connection configuration, the `prisma-client` generator with explicit output, and the [PostgreSQL driver adapter](https://www.prisma.io/docs/orm/v7/core-concepts/supported-databases/postgresql) at runtime. Generated TypeScript is compiled into `dist/generated/`; generation happens before build/typecheck. Prisma 8 release candidates are intentionally not used. Scoped npm overrides pin patched `deepmerge-ts` and `mysql2` dependencies in Prisma tooling; migration/build tests pass with these versions and npm audit reports zero vulnerabilities.
-
-## Models and integrity
-
-All six models have UUID identifiers and created/updated timestamps. Users optionally own workflows. Workflows own typed nodes, directed edges and run history. Workflow runs own node runs with attempts, lifecycle state, input/output/error JSON and execution timestamps. UUIDs are generated by Prisma; direct SQL inserts must supply them. `updatedAt` is maintained by Prisma, not a database trigger.
-
-Composite foreign keys ensure edge endpoints and node runs belong to the same workflow. Indexes cover ownership, status, creation order and relationship lookups. Graph validation rejects duplicate IDs/connections, missing endpoints and self-edges. Cycles are not yet treated as execution errors because there is no executor. Node config is bounded JSON under the API's 1 MiB body limit.
-
-Graph replacement and metadata updates are atomic. Graphs with any run history cannot be replaced until versioning is implemented. Metadata can still change. DELETE explicitly removes a workflow and all its graph and run history. Concurrent serialization conflicts return 409; no write is silently retried. There are no user or run creation APIs yet.
-
-## Endpoints
-
-| Method | Path | Behavior |
-| --- | --- | --- |
-| GET | `/health` | 200 when PostgreSQL responds; 503 otherwise |
-| GET | `/api/workflows` | Paginated summaries and total; `limit` (1–100), `offset`, optional `status`, `ownerId`, `search` (case-insensitive name/description, max 200 characters) |
-| POST | `/api/workflows` | Create metadata and optional graph; 201 with Location |
-| GET | `/api/workflows/:id` | Workflow including ordered nodes/edges; 404 when missing |
-| PATCH | `/api/workflows/:id` | Partial metadata update; nodes and edges must be provided together to replace graph |
-| DELETE | `/api/workflows/:id` | Delete workflow and dependent records; 204, or 404 when missing |
-
-```sh
-curl -X POST http://127.0.0.1:3001/api/workflows \
-  -H 'Content-Type: application/json' \
-  -d '{"name":"Daily report","description":"Draft workflow","status":"DRAFT"}'
-```
-
-For graphs, supply UUIDs for each node and edge. Nodes accept `type` (TRIGGER/ACTION/CONDITION/TRANSFORM/OUTPUT), `label`, optional `positionX`, `positionY`, and `config`. Edges accept `sourceNodeId`, `targetNodeId` and optional `label`. POST defaults status to DRAFT and graph to empty. PATCH with `nodes: []` and `edges: []` clears an unused graph. Owner references must already exist; ownership assignment is not user provisioning.
-
-Errors use `{ "error": { "code": "...", "message": "..." } }`; validation adds issue paths/messages. Request bodies, query URLs and database error contents are not logged. Internal details are not returned to clients.
-
-## Migrations and verification
-
-```sh
-npm run prisma:validate
-npm run prisma:migrate -- --name describe_change # development only; requires shadow DB permissions
-npm run prisma:deploy                         # apply checked-in migrations
-npm run prisma:status
-npm run typecheck
-npm run build
-npm test
-```
-
-Tests require a reachable DATABASE_URL and permission to create/drop schemas. They create a random `ghost_test_*` schema, apply the migration twice, verify zero schema drift, exercise CRUD and database constraints, then drop only that test schema. They never reset the configured application schema. An abruptly terminated test may leave its randomly named schema behind.
-
-Verified against the supplied PostgreSQL development server: migration deployment/status, 10 passing test cases including the parent integration suite, strict typecheck and production build. Docker Compose runtime was not tested because Docker is unavailable in this environment.
-
-Future integrations should enter through new modules/services. Keep remote integration configuration separate from credentials, version workflow definitions before introducing execution, and let the local Electron engine report run/node-run outcomes through a future authenticated API. These are boundaries for later implementation, not implemented features.
-
-## Real Home discovery
-
-Home now calls Screenpipe from the Electron host and saves validated results through `POST /api/workflow-discovery/screenpipe`. Screenpipe credentials remain host-local; raw capture text is not uploaded here. See [connection setup and limitations](../docs/SCREENPIPE_DISCOVERY.md). The following simulation endpoints are retained for development tests, not called by Home.
-
-## Legacy development mock discovery and board generation
-
-Start the backend with `npm run dev` from `backend/`, and the desktop with `npm run dev`
-from the repository root. Swagger UI is at `http://127.0.0.1:3001/docs/`, JSON at `/docs/json`.
-
-Set `OPENAI_API_KEY` in the ignored `backend/.env`, and optionally `OPENAI_MODEL`
-(default `gpt-4.1-mini`). Credentials stay in the backend and are not exposed to Electron's
-renderer. Restart the backend after changing environment variables. The desktop defaults to
-`http://127.0.0.1:3001`; override through the main-process `GHOST_BACKEND_URL` environment variable.
-
-The Home button now follows this development flow:
-
-1. `POST /api/workflow-discovery/mock` with `{prompt, timeRange}` waits five seconds and
-   returns a simulation-ready JSON acknowledgement. No fixed workflow or activity fixture
-   is returned. No Screenpipe process or API is used.
-2. `POST /api/workflow-discovery/generate` with `{prompt, timeRange, requestId}` sends the
-   original user input directly to OpenAI, asking it to mimic a high-level Screenpipe
-   discovery response. The model creates a plausible workflow tailored to that request,
-   with application names, step types, simulated evidence IDs and missing information.
-   It does not create browser automation instructions.
-3. The backend validates the result, maps observed application/type/URL/evidence metadata
-   from the validated simulated response, assigns UUIDs and canvas positions, creates sequential edges, and
-   transactionally persists the entire DRAFT graph in PostgreSQL.
-4. Home shows a Generating card while loading mock activity and generating/saving the board.
-   On success it becomes a Just created card with app artwork and an **Open board** action;
-   Home does not navigate automatically. Failed requests keep a retry card.
-   Opening the saved board and reloading fetches it again. **Save changes** persists
-   edited titles, node positions and details; the Home cards list the saved workflow.
-
-Both mock/generate endpoints reject `NODE_ENV=production`. The simulated response varies
-with the prompt and is not evidence of the user's real activity. Generated descriptions
-are labeled `[Development mock]`, and nodes store `source: development_mock`. Browser
-nodes start at `needs_recording`, application nodes at `needs_configuration`. Unknown
-URLs remain null unless an explicit credential-free HTTP(S) URL without query/fragment was supplied in the prompt. All evidence IDs use a `sim_obs_` prefix; nodes also record `basis: simulated`. Attached context files are not uploaded. Full workflow execution is
-still separate from generation. Other sample overview statistics/activity are unchanged.
-
-The mock delay is five seconds; AI generation and database persistence take additional time.
-Provider timeout, refusal, invalid output and database failures never show a successful board.
-A request UUID is retained in Home memory for retrying the same prompt/range and becomes the
-workflow UUID; an already-saved result is returned without regenerating. Concurrent duplicate
-requests within one server return 409. Across multiple servers, the database UUID constraint
-prevents duplicate workflows, but concurrent requests may still incur multiple AI calls.
-After restarting Home following an uncertain outcome, check saved cards before resubmitting.
-
-The older `/api/workflow-discovery/prepare` remains available as a preparation-only endpoint.
-Runtime validation stays in Zod; Swagger metadata does not strip request fields.
-
-Implementation follows the [OpenAI Structured Outputs documentation](https://developers.openai.com/api/docs/guides/structured-outputs).
-
-Validation:
-- `npm test` in `backend/`: AI contract/error tests with a stubbed provider, a real five-second
-  mock-delay check, production guards, and isolated PostgreSQL migration/CRUD/generation persistence tests.
-- Build both projects, then run `node scripts/check-discovery.mjs` from the root: real Electron
-  Home → IPC → Fastify → generated canvas → edit/save/reload, using AI and database test doubles.
-- A separate development smoke request verified live OpenAI output. A GitHub/Trello/Notion request is used to verify prompt-tailored simulation independently of the old reporting fixture.
-
-Manual check: enter a reporting request on Home, submit once, watch the mock-loading then AI
-progress card, then choose Open board on the completed card and confirm it contains nodes and connections. Rename the
-workflow, move a node, use Save changes, and reload. Return Home and reopen the saved card.
-
-The desktop Workflows page reads this paginated API directly, with search and status filters. New workflow saves an empty draft through POST /api/workflows. The table shows persisted update times, node counts and application images; it does not fabricate run history or schedules.
-
-### Recorded password backups
-
-The desktop automatically uploads encrypted recording passwords when recording stops, on exit, and when replay input replacements are saved. `POST`, `GET`, and `DELETE /api/recording-secrets` use a per-recording bearer capability derived by the desktop; the database stores its SHA-256 hash and an AES-256-GCM encrypted payload. Workflow/list APIs do not expose credentials. Remote backends require HTTPS; loopback development permits HTTP.
-
-The desktop retains the encryption key locally and can recover missing password ciphertext from the backend without re-entry. This does not provide cross-device key recovery: deleting the desktop key still requires recording credentials again. Offline replay uses the local encrypted copy. The recording screen shows backend sync success/failure and offers Retry password sync. Apply `npm run prisma:deploy` before running the updated backend. One-time verification codes remain subject to the website's expiration rules.
-
-Replay now fetches the encrypted input bundle before preview and execution. Version 2 includes ordinary field values, checkbox/select values, and saved replacements as well as passwords. Server values override stale local values. Existing password-only backups are upgraded automatically. The normal replay dialog has no input editing form and does not upload local values before running. An unavailable backend falls back to local inputs with an explicit message.
-
-### Node input/output definitions
-
-New generated workflows distinguish `browser`, `application`, `logic`, and `review` steps. Browser interactions remain whole-session recordings. Logic/review nodes have `config.contract` containing named typed inputs, upstream node/output bindings, typed outputs (including row fields), validation criteria, and a human-review requirement. Unknown business rules are explicit workflow inputs rather than invented thresholds.
-
-Use **Define inputs & outputs** on an existing board to call `POST /api/workflows/:id/contracts`. The backend derives contracts from saved node descriptions, preserves browser identities, checks binding/type compatibility, and saves the graph atomically. A concurrent edit or invalid response leaves the stored workflow unchanged. Graphs with execution history still require workflow versioning before replacement. The node inspector displays each source, output and validation criterion.
-
-Logic nodes also store `config.modelTask`: their description as instructions, input definitions, a strict JSON output schema, validation criteria, and review requirements. Editing/saving the node refreshes its model instructions. These definitions prepare future execution; this feature does not implement the full pipeline runner or claim that a described validation criterion has already passed. File outputs are artifact references; parsing their contents remains an execution task.
-
-Validation: `npm test` includes contract generation, invalid bindings, review gates, persistence, and concurrent-change protection. From the repository root, `node scripts/check-node-contracts.mjs` checks the desktop flow after building. An optional live model check is `node node_modules/tsx/dist/cli.mjs tests/node-contract-live.ts` from `backend/`; it uses synthetic inputs and writes no workflow records.
-
-AI execution is limited to `logic` nodes that parse, filter, check or analyze an earlier node's output. Such nodes must bind at least one required input to an upstream output. `executor` is `recording` for browsers, `application` for desktop actions, `human` for review, and `ai` only for data-processing logic. Non-AI nodes never retain a model task. An Excel download remains a browser output artifact; the consuming AI node declares `parse_artifact_contents` preparation before applying its description to the workbook data. This is an execution definition, not an implemented Excel parser.
+Source lives under `src/`, database definitions under `prisma/`, and API tests under `tests/`. Generated Prisma code and `dist/` are ignored. Do not commit `.env` or credentials.

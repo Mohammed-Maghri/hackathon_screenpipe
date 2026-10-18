@@ -1,7 +1,7 @@
 import electronPath from 'electron';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { readFile, mkdtemp, writeFile } from 'node:fs/promises';
+import { readFile, mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
@@ -98,7 +98,8 @@ for(let run=1;run<=20;run++){
  guest.close();guest=null;
  console.log('PASS actual Next',users?'users':'finance','dashboard run',run);
 }
-await writeFile(`docs/next-replay-${users?'users':'finance'}-results.json`,JSON.stringify({date:new Date().toISOString(),runs:20,successful:20,platform:process.env.GHOST_TEST_PLATFORM||'x11',scenario:'native typed login, Tab, encrypted password, background clicks, dropdown, CSV download'},null,2));
+await mkdir('out/test-results', { recursive: true });
+await writeFile(`out/test-results/next-replay-${users?'users':'finance'}-results.json`,JSON.stringify({date:new Date().toISOString(),runs:20,successful:20,platform:process.env.GHOST_TEST_PLATFORM||'x11',scenario:'native typed login, Tab, encrypted password, background clicks, dropdown, CSV download'},null,2));
 assert.ok(!/UnhandledPromiseRejection/.test(errors),errors);
 console.log('PASS: encrypted password capture, secret-free export, blocker-free login preview and verified full login/task replay');
 }catch(error){console.error(error);process.exitCode=1}

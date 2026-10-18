@@ -18,7 +18,6 @@ import {
   Check,
   CircleDot,
   Plus,
-  Search,
   Workflow,
 } from "../components/ImageIcon";
 import { TitleBar } from "../components/TitleBar";
@@ -83,18 +82,11 @@ export function Dashboard() {
   const [workflowTotal, setWorkflowTotal] = useState(0);
   const [refresh, setRefresh] = useState(0);
   const listRequest = useRef(0);
-  const [query, setQuery] = useState("");
   const [panel, setPanel] = useState<Panel>(null);
   const [notice, setNotice] = useState("");
   const [importError, setImportError] = useState("");
-  const searchRef = useRef<HTMLInputElement>(null);
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const discoveryRef = useRef<HTMLElement>(null);
-  const discovered = savedWorkflows.filter((workflow) =>
-    `${workflow.name} ${workflow.description ?? ""}`
-      .toLowerCase()
-      .includes(query.toLowerCase()),
-  );
   useEffect(() => {
     let active = true;
     const request = ++listRequest.current;
@@ -171,7 +163,6 @@ export function Dashboard() {
     setPreparing(true);
     setGenerationMessage("");
     setWorkflowPage(0);
-    setQuery("");
     setGeneration({ request, phase: "activity" });
     setGenerationStage(demoMode ? "Preparing your workflow…" : "Checking Screenpipe discovery…");
     const fail = (error: string) => {
@@ -570,7 +561,7 @@ export function Dashboard() {
                 </article>
               )}
               <div className="discovery-grid grid grid-cols-2 gap-4 max-[900px]:grid-cols-1">
-                {discovered.map((workflow) => (
+                {savedWorkflows.map((workflow) => (
                   <div
                     key={workflow.id}
                     data-new-workflow={
@@ -614,7 +605,7 @@ export function Dashboard() {
                   </button>
                 </div>
               )}
-              {!workflowsLoading && !savedWorkflows.length && !query && (
+              {!workflowsLoading && !savedWorkflows.length && (
                 <div className="home-demo-workflows">
                   <small className="text-muted">Demo workflows · Select one to prepare it</small>
                   {[
@@ -625,7 +616,6 @@ export function Dashboard() {
                   ].slice(0,pageSize).map(item=><button key={item.name} className="home-workflow-row" onClick={()=>{setPrompt(item.prompt);promptRef.current?.focus()}}><AppMark app={item.app}/><span className="home-workflow-info"><strong>{item.name}</strong><small>{item.apps}</small></span><span className="home-workflow-state">Prepare</span><ArrowRight size={15}/></button>)}
                 </div>
               )}
-              {!workflowsLoading && !!query && !discovered.length && <p className="home-panel-message">No matching workflows. Try a different name.</p>}
               {workflowTotal > pageSize && (
                 <div className="workflow-pagination mt-4 flex items-center gap-4 text-xs tabular-nums text-muted">
                   <button
@@ -651,22 +641,6 @@ export function Dashboard() {
                   </button>
                 </div>
               )}
-              <details className="home-workflow-filter mt-5">
-                <summary className="w-fit cursor-pointer text-xs text-muted">
-                  Filter recent workflows
-                </summary>
-                <label className="mt-3 flex max-w-80 items-center gap-2 rounded-control border border-strong px-3 py-2 text-muted">
-                  <Search size={15} />
-                  <input
-                    ref={searchRef}
-                    aria-label="Search workflows on this page"
-                    className="w-full min-w-0 border-0 bg-transparent text-sm outline-none focus-visible:outline-none"
-                    placeholder="Search recent workflows…"
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                  />
-                </label>
-              </details>
             </section>
             <HomeActivity onConnection={setConnection}/>
             </div>

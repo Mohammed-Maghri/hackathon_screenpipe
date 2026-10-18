@@ -1,4 +1,4 @@
-// Isolated browser UI regression. Start the built renderer and a headless Chrome debugging session first; see docs/ACTIVITY_TIMELINE.md.
+// Isolated browser UI regression. Start the built renderer and a headless Chrome debugging session first.
 import { writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 const pages=await fetch(`http://127.0.0.1:${process.env.GHOST_UI_DEBUG_PORT || 9338}/json`).then(r=>r.json());const ws=new WebSocket(pages.find(p=>p.type==='page').webSocketDebuggerUrl);await new Promise(r=>ws.onopen=r);let id=0;const pending=new Map();ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.id){const p=pending.get(m.id);pending.delete(m.id);m.error?p.reject(Error(JSON.stringify(m.error))):p.resolve(m.result)}};const call=(method,params={})=>new Promise((resolve,reject)=>{const i=++id;pending.set(i,{resolve,reject});ws.send(JSON.stringify({id:i,method,params}))});const evaluate=async(expression)=>{const r=await call('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result.value};

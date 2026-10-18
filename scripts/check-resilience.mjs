@@ -1,7 +1,7 @@
 import electronPath from 'electron';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { readFile, mkdtemp, writeFile } from 'node:fs/promises';
+import { readFile, mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
@@ -122,7 +122,8 @@ for (const scenario of ['slow','changed-id','duplicate','missing','unknown','int
  checks.push({scenario,initialState:result.state,category:result.failureCode??null});
  console.log('PASS resilience',scenario);
 }
-await writeFile('docs/replay-resilience-results.json',JSON.stringify({date:new Date().toISOString(),checks},null,2));
+await mkdir('out/test-results', { recursive: true });
+await writeFile('out/test-results/replay-resilience-results.json',JSON.stringify({date:new Date().toISOString(),checks},null,2));
 
 } catch(error){console.error('FAIL',error);if(host){console.error('Diagnostics',await host.eval(`window.__state && window.ghost.browser.diagnostics(window.__state.sessionId)`).catch(String));console.error('Replay',await host.eval('window.__replay').catch(String));}console.error('Profile',profile,'Electron log',errors.slice(-3000));process.exitCode=1}
 finally{guest?.close();host?.close();electron.kill('SIGTERM');server.closeAllConnections();server.close();}

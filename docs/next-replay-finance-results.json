@@ -1,7 +1,0 @@
-{
-  "date": "2026-10-13T19:55:48.383Z",
-  "runs": 20,
-  "successful": 20,
-  "platform": "headless",
-  "scenario": "native typed login, Tab, encrypted password, background clicks, dropdown, CSV download"
-}

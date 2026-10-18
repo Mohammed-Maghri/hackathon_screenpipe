@@ -71,10 +71,10 @@ services:
       retries: 5
     restart: unless-stopped
 
-  fixtures:
-    build: ./tests
+  demo-websites:
+    build: ./demo-websites
     ports:
-      - "127.0.0.1:${FIXTURES_PORT:-3100}:3100"
+      - "127.0.0.1:${DEMO_WEBSITES_PORT:-${FIXTURES_PORT:-3100}}:3100"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 10s

@@ -1,7 +1,7 @@
 import electronPath from 'electron';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { readFile, mkdtemp, writeFile } from 'node:fs/promises';
+import { readFile, mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
@@ -78,7 +78,8 @@ token=await open();await nativeClick('#next');await until(()=>guest.eval(`locati
 token=await open();await type('#name','Existing');await guest.call('Input.dispatchKeyEvent',{type:'keyDown',key:'a',code:'KeyA',windowsVirtualKeyCode:65,modifiers:2});await guest.call('Input.dispatchKeyEvent',{type:'keyUp',key:'a',code:'KeyA',windowsVirtualKeyCode:65,modifiers:2});await guest.call('Input.insertText',{text:'Replacement'});await until(()=>guest.eval(`document.querySelector('#name').value==='Replacement'`),'Select-all typing failed');await stop(token);await host.eval('window.__replay=null');await api('replayStart',token);await until(()=>host.eval(`window.__replay && ['completed','failed','unknown'].includes(window.__replay.state)`),'Input replay did not finish');assert.equal((await host.eval('window.__replay')).state,'completed');assert.equal(await guest.eval(`document.querySelector('#name').value`),'Replacement');checks.push('Ctrl+A and native replacement verified');
 }
 console.log('PASS failure cases:',checks);
-await writeFile(process.env.GHOST_TEST_FRAMES_ONLY ? 'docs/reliability-frame-results.json' : 'docs/reliability-failure-results.json',JSON.stringify({date:new Date().toISOString(),checks},null,2));
+await mkdir('out/test-results', { recursive: true });
+await writeFile(process.env.GHOST_TEST_FRAMES_ONLY ? 'out/test-results/reliability-frame-results.json' : 'out/test-results/reliability-failure-results.json',JSON.stringify({date:new Date().toISOString(),checks},null,2));
 console.log(JSON.stringify({counts,profile}));
 
 } catch(error){console.error('FAIL',error);if(host){console.error('Diagnostics',await host.eval(`window.__state && window.ghost.browser.diagnostics(window.__state.sessionId)`).catch(String));console.error('Replay',await host.eval('window.__replay').catch(String));}console.error('Profile',profile,'Electron log',errors.slice(-3000));process.exitCode=1}

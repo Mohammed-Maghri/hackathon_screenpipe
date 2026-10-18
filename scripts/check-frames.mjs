@@ -1,7 +1,7 @@
 import electronPath from 'electron';
 import assert from 'node:assert/strict'
 import http from 'node:http'
-import { mkdtemp, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
 const port=9342, debug=9232
 let mode='same'
@@ -87,6 +87,7 @@ token=await open('same');context=await frameContext();await click(context,'#next
 token=await open('same');context=await frameContext();await context.eval(`document.querySelector('#next').href='#section'`);await click(context,'#next');await until(async()=>JSON.parse(await api('recordingExport',token)).events.some(e=>e.type==='frame-navigation'),'Frame hash navigation captured');await api('recordingControl',token,'stop');
 server.removeAllListeners('request');server.on('request',(req,res)=>{if(req.url==='/child'){res.setHeader('Content-Type','text/html');res.end(child.replace('href="/done"','href="#section"'))}else oldListeners[0](req,res)})
 result=await replay(token);assert.equal(result.state,'completed',JSON.stringify(result));checks.push('same-document child-frame navigation verified');server.removeAllListeners('request');server.on('request',oldListeners[0])
-await writeFile('docs/frame-support-results.json',JSON.stringify({date:new Date().toISOString(),counts,checks},null,2));console.log('PASS',checks)
+await mkdir('out/test-results', { recursive: true });
+await writeFile('out/test-results/frame-support-results.json',JSON.stringify({date:new Date().toISOString(),counts,checks},null,2));console.log('PASS',checks)
 }catch(error){console.error(error);if(host)console.error('Replay',await host.eval('window.__replay').catch(String));console.error(logs.slice(-1800));process.exitCode=1}
 finally{guest?.close();host?.close();electron.kill('SIGTERM');const timer=setTimeout(()=>electron.kill('SIGKILL'),2000);timer.unref();server.closeAllConnections();server.close()}
