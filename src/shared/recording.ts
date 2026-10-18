@@ -17,10 +17,14 @@ export interface RecordingStatus {
   error: string | null
 }
 export interface ReplayPreview {
+  interactions?: number
+  navigations?: number
+  savedRecordingAvailable?: boolean
   inputSource?: 'backend' | 'local'
   notes?: string[]
   inputs: { sequence: number; label: string; value: string; secret?: boolean; saved?: boolean }[]
   steps: number
+  loginURL?: string
   startURL: string | null
   blockers: string[]
 }

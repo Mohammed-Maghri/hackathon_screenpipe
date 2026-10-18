@@ -1,3 +1,4 @@
+import { workflowClient, preparedDiscovery } from "../data/workflowClient";
 import { useContext, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router";
@@ -49,11 +50,11 @@ export function WorkflowSidebar({
     : "max-lg:justify-center max-lg:px-0";
   useEffect(() => {
     let current = true;
-    if (!window.ghost) {
+    if (!window.ghost && !preparedDiscovery) {
       setRecentState("ready");
       return;
     }
-    void window.ghost
+    void workflowClient
       .listWorkflows(0, { limit: 4 })
       .then((result) => {
         if (!current) return;

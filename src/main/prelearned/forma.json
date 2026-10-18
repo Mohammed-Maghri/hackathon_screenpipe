@@ -1,0 +1,769 @@
+{
+  "version": 1,
+  "scenario": "forma",
+  "startUrl": "https://hackathon-screenpipe.vercel.app/users",
+  "verifiedAt": "2026-10-18T00:09:39.920Z",
+  "sourceRecordingId": "9f65eeea-c5de-4bea-b4a9-92b465e18e56",
+  "sourcePlanHash": "9274698194298b3fdedcac43fe4239850b6d01b7a459454ff7ca64696b922baf",
+  "events": [
+    {
+      "sequence": 1,
+      "timestamp": "2026-10-18T00:09:38.698Z",
+      "elapsedMs": 317,
+      "type": "navigation",
+      "url": "https://hackathon-screenpipe.vercel.app/users",
+      "data": {
+        "source": "address"
+      }
+    },
+    {
+      "sequence": 2,
+      "timestamp": "2026-10-18T00:09:38.890Z",
+      "elapsedMs": 509,
+      "type": "page-ready",
+      "url": "https://hackathon-screenpipe.vercel.app/users",
+      "data": {
+        "iframeCount": 0,
+        "framePolicy": "frame-aware-v1",
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 0
+        },
+        "pageTitle": "Forma \u2014 Workspace",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 3,
+      "timestamp": "2026-10-18T00:09:39.028Z",
+      "elapsedMs": 647,
+      "type": "navigation",
+      "url": "https://hackathon-screenpipe.vercel.app/users",
+      "data": {
+        "sameDocument": true,
+        "source": "page"
+      }
+    },
+    {
+      "sequence": 4,
+      "timestamp": "2026-10-18T00:09:39.100Z",
+      "elapsedMs": 719,
+      "type": "pointerdown",
+      "url": "https://hackathon-screenpipe.vercel.app/users",
+      "data": {
+        "actionId": "d35f7d32-4933-4b96-8694-c4325a36301b",
+        "target": {
+          "selector": "html > body > div:nth-of-type(2) > aside > a",
+          "tag": "a",
+          "id": "",
+          "stableId": "",
+          "testId": "",
+          "role": "link",
+          "accessibleName": "f. forma",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "f. forma",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 14,
+            "y": 25,
+            "width": 146,
+            "height": 37
+          },
+          "cookieConsent": false
+        },
+        "pointer": {
+          "clientX": 87,
+          "clientY": 43.5,
+          "pageX": 87,
+          "pageY": 43.5,
+          "screenX": 625,
+          "screenY": 414.5,
+          "elementX": 73,
+          "elementY": 18.5,
+          "relativeX": 0.5,
+          "relativeY": 0.5,
+          "button": 0,
+          "buttons": 1,
+          "detail": 0,
+          "pointerType": "mouse",
+          "modifiers": {
+            "alt": false,
+            "ctrl": false,
+            "meta": false,
+            "shift": false
+          }
+        },
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 0
+        },
+        "pageTitle": "Forma \u2014 Workspace",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 5,
+      "timestamp": "2026-10-18T00:09:39.110Z",
+      "elapsedMs": 729,
+      "type": "pointerup",
+      "url": "https://hackathon-screenpipe.vercel.app/users",
+      "data": {
+        "actionId": "f15e9607-a2ce-4a47-8fb4-9f87851483ac",
+        "target": {
+          "selector": "html > body > div:nth-of-type(2) > aside > a",
+          "tag": "a",
+          "id": "",
+          "stableId": "",
+          "testId": "",
+          "role": "link",
+          "accessibleName": "f. forma",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "f. forma",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 14,
+            "y": 25,
+            "width": 146,
+            "height": 37
+          },
+          "cookieConsent": false
+        },
+        "pointer": {
+          "clientX": 87,
+          "clientY": 43.5,
+          "pageX": 87,
+          "pageY": 43.5,
+          "screenX": 625,
+          "screenY": 414.5,
+          "elementX": 73,
+          "elementY": 18.5,
+          "relativeX": 0.5,
+          "relativeY": 0.5,
+          "button": 0,
+          "buttons": 0,
+          "detail": 0,
+          "pointerType": "mouse",
+          "modifiers": {
+            "alt": false,
+            "ctrl": false,
+            "meta": false,
+            "shift": false
+          }
+        },
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 0
+        },
+        "pageTitle": "Forma \u2014 Workspace",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 6,
+      "timestamp": "2026-10-18T00:09:39.111Z",
+      "elapsedMs": 730,
+      "type": "click",
+      "url": "https://hackathon-screenpipe.vercel.app/users",
+      "data": {
+        "actionId": "0947091c-4c55-40cc-8860-16173904ee85",
+        "target": {
+          "selector": "html > body > div:nth-of-type(2) > aside > a",
+          "tag": "a",
+          "id": "",
+          "stableId": "",
+          "testId": "",
+          "role": "link",
+          "accessibleName": "f. forma",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "f. forma",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 14,
+            "y": 25,
+            "width": 146,
+            "height": 37
+          },
+          "cookieConsent": false
+        },
+        "pointer": {
+          "clientX": 87,
+          "clientY": 43,
+          "pageX": 87,
+          "pageY": 43,
+          "screenX": 625,
+          "screenY": 414,
+          "elementX": 73,
+          "elementY": 18,
+          "relativeX": 0.5,
+          "relativeY": 0.4864864864864865,
+          "button": 0,
+          "buttons": 0,
+          "detail": 1,
+          "pointerType": "mouse",
+          "modifiers": {
+            "alt": false,
+            "ctrl": false,
+            "meta": false,
+            "shift": false
+          }
+        },
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 0
+        },
+        "pageTitle": "Forma \u2014 Workspace",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 7,
+      "timestamp": "2026-10-18T00:09:39.143Z",
+      "elapsedMs": 762,
+      "type": "navigation",
+      "url": "https://hackathon-screenpipe.vercel.app/finance",
+      "data": {
+        "sameDocument": true,
+        "source": "page"
+      }
+    },
+    {
+      "sequence": 8,
+      "timestamp": "2026-10-18T00:09:39.196Z",
+      "elapsedMs": 815,
+      "type": "action-outcome",
+      "url": "https://hackathon-screenpipe.vercel.app/finance",
+      "data": {
+        "actionId": "0947091c-4c55-40cc-8860-16173904ee85",
+        "evidence": [
+          {
+            "target": {
+              "selector": "div > aside > a",
+              "tag": "a",
+              "id": "",
+              "stableId": "",
+              "testId": "",
+              "role": "link",
+              "accessibleName": "f. forma",
+              "label": "",
+              "placeholder": "",
+              "name": "",
+              "text": "f. forma",
+              "inputType": "",
+              "redacted": false,
+              "attributes": {},
+              "frame": "main",
+              "shadowHost": null,
+              "credential": false,
+              "loginAction": false,
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              },
+              "cookieConsent": false
+            },
+            "absent": true
+          }
+        ],
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 0
+        },
+        "pageTitle": "Forma \u2014 Workspace",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 9,
+      "timestamp": "2026-10-18T00:09:39.196Z",
+      "elapsedMs": 815,
+      "type": "pointerdown",
+      "url": "https://hackathon-screenpipe.vercel.app/finance",
+      "data": {
+        "actionId": "2783a796-79d3-46ca-b7d2-836634eb88f9",
+        "target": {
+          "selector": "[data-testid=\"export-report\"]",
+          "tag": "button",
+          "id": "",
+          "stableId": "",
+          "testId": "export-report",
+          "role": "button",
+          "accessibleName": "Export report \u2193",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "Export report \u2193",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 655.4921875,
+            "y": 115.75,
+            "width": 147.5078125,
+            "height": 45.5
+          },
+          "cookieConsent": false
+        },
+        "pointer": {
+          "clientX": 729,
+          "clientY": 139,
+          "pageX": 729,
+          "pageY": 139,
+          "screenX": 0,
+          "screenY": 0,
+          "elementX": 73.5078125,
+          "elementY": 23.25,
+          "relativeX": 0.49833165616227953,
+          "relativeY": 0.510989010989011,
+          "button": 0,
+          "buttons": 1,
+          "detail": 0,
+          "pointerType": "mouse",
+          "modifiers": {
+            "alt": false,
+            "ctrl": false,
+            "meta": false,
+            "shift": false
+          }
+        },
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 0
+        },
+        "pageTitle": "Forma \u2014 Workspace",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 10,
+      "timestamp": "2026-10-18T00:09:39.196Z",
+      "elapsedMs": 815,
+      "type": "action-outcome",
+      "url": "https://hackathon-screenpipe.vercel.app/finance",
+      "data": {
+        "actionId": "0947091c-4c55-40cc-8860-16173904ee85",
+        "evidence": [
+          {
+            "target": {
+              "selector": "div > aside > a",
+              "tag": "a",
+              "id": "",
+              "stableId": "",
+              "testId": "",
+              "role": "link",
+              "accessibleName": "f. forma",
+              "label": "",
+              "placeholder": "",
+              "name": "",
+              "text": "f. forma",
+              "inputType": "",
+              "redacted": false,
+              "attributes": {},
+              "frame": "main",
+              "shadowHost": null,
+              "credential": false,
+              "loginAction": false,
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              },
+              "cookieConsent": false
+            },
+            "absent": true
+          }
+        ],
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 0
+        },
+        "pageTitle": "Forma \u2014 Workspace",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 11,
+      "timestamp": "2026-10-18T00:09:39.197Z",
+      "elapsedMs": 816,
+      "type": "pointerup",
+      "url": "https://hackathon-screenpipe.vercel.app/finance",
+      "data": {
+        "actionId": "bf081e29-8e1e-4660-a025-9bc4aace2792",
+        "target": {
+          "selector": "[data-testid=\"export-report\"]",
+          "tag": "button",
+          "id": "",
+          "stableId": "",
+          "testId": "export-report",
+          "role": "button",
+          "accessibleName": "Export report \u2193",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "Export report \u2193",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 655.4921875,
+            "y": 115.75,
+            "width": 147.5078125,
+            "height": 45.5
+          },
+          "cookieConsent": false
+        },
+        "pointer": {
+          "clientX": 729,
+          "clientY": 139,
+          "pageX": 729,
+          "pageY": 139,
+          "screenX": 0,
+          "screenY": 0,
+          "elementX": 73.5078125,
+          "elementY": 23.25,
+          "relativeX": 0.49833165616227953,
+          "relativeY": 0.510989010989011,
+          "button": 0,
+          "buttons": 0,
+          "detail": 0,
+          "pointerType": "mouse",
+          "modifiers": {
+            "alt": false,
+            "ctrl": false,
+            "meta": false,
+            "shift": false
+          }
+        },
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 0
+        },
+        "pageTitle": "Forma \u2014 Workspace",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 12,
+      "timestamp": "2026-10-18T00:09:39.197Z",
+      "elapsedMs": 816,
+      "type": "action-outcome",
+      "url": "https://hackathon-screenpipe.vercel.app/finance",
+      "data": {
+        "actionId": "0947091c-4c55-40cc-8860-16173904ee85",
+        "evidence": [
+          {
+            "target": {
+              "selector": "div > aside > a",
+              "tag": "a",
+              "id": "",
+              "stableId": "",
+              "testId": "",
+              "role": "link",
+              "accessibleName": "f. forma",
+              "label": "",
+              "placeholder": "",
+              "name": "",
+              "text": "f. forma",
+              "inputType": "",
+              "redacted": false,
+              "attributes": {},
+              "frame": "main",
+              "shadowHost": null,
+              "credential": false,
+              "loginAction": false,
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              },
+              "cookieConsent": false
+            },
+            "absent": true
+          }
+        ],
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 0
+        },
+        "pageTitle": "Forma \u2014 Workspace",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 13,
+      "timestamp": "2026-10-18T00:09:39.197Z",
+      "elapsedMs": 816,
+      "type": "click",
+      "url": "https://hackathon-screenpipe.vercel.app/finance",
+      "data": {
+        "actionId": "e526a7d3-084f-48c1-ae15-0d9e81676443",
+        "target": {
+          "selector": "[data-testid=\"export-report\"]",
+          "tag": "button",
+          "id": "",
+          "stableId": "",
+          "testId": "export-report",
+          "role": "button",
+          "accessibleName": "Export report \u2193",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "Export report \u2193",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 655.4921875,
+            "y": 115.75,
+            "width": 147.5078125,
+            "height": 45.5
+          },
+          "cookieConsent": false
+        },
+        "pointer": {
+          "clientX": 729,
+          "clientY": 139,
+          "pageX": 729,
+          "pageY": 139,
+          "screenX": 0,
+          "screenY": 0,
+          "elementX": 73.5078125,
+          "elementY": 23.25,
+          "relativeX": 0.49833165616227953,
+          "relativeY": 0.510989010989011,
+          "button": 0,
+          "buttons": 0,
+          "detail": 1,
+          "pointerType": "mouse",
+          "modifiers": {
+            "alt": false,
+            "ctrl": false,
+            "meta": false,
+            "shift": false
+          }
+        },
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 0
+        },
+        "pageTitle": "Forma \u2014 Workspace",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 14,
+      "timestamp": "2026-10-18T00:09:39.202Z",
+      "elapsedMs": 821,
+      "type": "download-start",
+      "url": "https://hackathon-screenpipe.vercel.app/finance",
+      "data": {
+        "downloadId": "67906181-129b-4cf9-9805-9d2ea5d7d933",
+        "causedBy": "e526a7d3-084f-48c1-ae15-0d9e81676443",
+        "filename": "forma-payments.csv",
+        "mimeType": "text/csv"
+      }
+    },
+    {
+      "sequence": 15,
+      "timestamp": "2026-10-18T00:09:39.219Z",
+      "elapsedMs": 838,
+      "type": "download-done",
+      "url": "https://hackathon-screenpipe.vercel.app/finance",
+      "data": {
+        "downloadId": "67906181-129b-4cf9-9805-9d2ea5d7d933",
+        "state": "completed",
+        "filename": "forma-payments.csv",
+        "bytes": 372
+      }
+    },
+    {
+      "sequence": 16,
+      "timestamp": "2026-10-18T00:09:39.263Z",
+      "elapsedMs": 882,
+      "type": "action-outcome",
+      "url": "https://hackathon-screenpipe.vercel.app/finance",
+      "data": {
+        "actionId": "e526a7d3-084f-48c1-ae15-0d9e81676443",
+        "evidence": [
+          {
+            "target": {
+              "selector": "[data-testid=\"action-result\"]",
+              "tag": "div",
+              "id": "",
+              "stableId": "",
+              "testId": "action-result",
+              "role": "status",
+              "accessibleName": "",
+              "label": "",
+              "placeholder": "",
+              "name": "",
+              "text": "\u2713Export ready. Your CSV download has started.\u00d7",
+              "inputType": "",
+              "redacted": false,
+              "attributes": {},
+              "frame": "main",
+              "shadowHost": null
+            },
+            "text": "\u2713Export ready. Your CSV download has started.\u00d7"
+          }
+        ],
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 0
+        },
+        "pageTitle": "Forma \u2014 Workspace",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 17,
+      "timestamp": "2026-10-18T00:09:39.297Z",
+      "elapsedMs": 916,
+      "type": "action-outcome",
+      "url": "https://hackathon-screenpipe.vercel.app/finance",
+      "data": {
+        "actionId": "e526a7d3-084f-48c1-ae15-0d9e81676443",
+        "evidence": [
+          {
+            "target": {
+              "selector": "[data-testid=\"action-result\"]",
+              "tag": "div",
+              "id": "",
+              "stableId": "",
+              "testId": "action-result",
+              "role": "status",
+              "accessibleName": "",
+              "label": "",
+              "placeholder": "",
+              "name": "",
+              "text": "\u2713Export ready. Your CSV download has started.\u00d7",
+              "inputType": "",
+              "redacted": false,
+              "attributes": {},
+              "frame": "main",
+              "shadowHost": null
+            },
+            "text": "\u2713Export ready. Your CSV download has started.\u00d7"
+          }
+        ],
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 0
+        },
+        "pageTitle": "Forma \u2014 Workspace",
+        "frame": "main",
+        "framePath": []
+      }
+    }
+  ]
+}

@@ -1,3 +1,5 @@
+import { GhostLogo } from './GhostLogo';
+import { AppMark } from './AppMark';
 import {
   memo,
   useCallback,
@@ -53,12 +55,15 @@ import { CanvasAddMenu } from "./CanvasAddMenu";
 import { ToolbarTooltip } from "./ToolbarTooltip";
 import { NodeStatusBadge } from "./NodeStatusBadge";
 import "@xyflow/react/dist/style.css";
+import "../styles/workflow-generation.css";
 
 type GhostNode = Node<
-  { item: EditorNode; runState?: ProcessingEvent["status"]; index: number },
+  { item: EditorNode; runState?: ProcessingEvent["status"]; index: number; generationPhase?: number },
   "ghost"
 >;
 type Props = {
+  generating?: boolean;
+  onGenerationComplete?: () => void;
   nodes: EditorNode[];
   setNodes: Dispatch<SetStateAction<EditorNode[]>>;
   connections: string[][];
@@ -95,6 +100,7 @@ const GhostCanvasNode = memo(function GhostCanvasNode({
     <div
       className={`canvas-node group/node w-[280px] rounded-card border bg-panel px-4 py-4 text-left text-ink shadow-soft transition-[border-color,box-shadow] motion-reduce:transition-none ${selected ? "is-selected border-action ring-3 ring-action-soft" : "border-strong hover:border-action"} ${runState === "RUNNING" ? "!border-action ring-3 ring-action-soft" : ""} ${item.kind === "Data Processing" ? "data-processing-node" : ""} ${trigger ? "trigger-node !w-[200px] !rounded-full !py-3" : ""} node-${item.id}`}
       data-run-state={runState}
+      data-generation-phase={data.generationPhase}
       aria-pressed={selected}
     >
       {!trigger && (
@@ -108,7 +114,9 @@ const GhostCanvasNode = memo(function GhostCanvasNode({
       <div
         className={`node-heading flex items-center gap-2 text-xs text-muted ${trigger ? "" : "mb-3"}`}
       >
-        <Icon size={15} strokeWidth={1.7} />
+        {!trigger && (item.app || item.kind === "Browser action")
+          ? <AppMark app={item.kind === "Browser action" ? "Chrome" : item.app!} />
+          : <Icon size={15} strokeWidth={1.7} />}
         <span>
           {trigger
             ? item.title
@@ -192,8 +200,23 @@ function Canvas({
   onDirty,
   onNotice,
   processingStatus,
+  generating = false,
+  onGenerationComplete,
 }: Props) {
   const { resolved } = useAppearance();
+  const [generationTick, setGenerationTick] = useState(0);
+  const generationIndex = Math.floor(generationTick / 5);
+  const generationPhase = generationTick % 5;
+  useEffect(() => {
+    if (!generating) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const done = generationIndex >= nodes.length;
+    const timer = window.setTimeout(() => {
+      if (done) onGenerationComplete?.();
+      else setGenerationTick(value => value + 1);
+    }, reduced ? 40 : done ? 1400 : [1100, 750, 1300, 750, 1400][generationPhase]);
+    return () => window.clearTimeout(timer);
+  }, [generating, generationTick, generationIndex, generationPhase, nodes.length, onGenerationComplete]);
   const instance = useReactFlow<GhostNode, Edge>();
   const { zoom } = useViewport();
   const [panMode, setPanMode] = useState(false);
@@ -204,13 +227,13 @@ function Canvas({
         id: item.id,
         type: "ghost",
         position: { x: item.x, y: item.y },
-        data: { item, index, runState: processingStatus[item.id]?.status },
+        data: { item, index, runState: processingStatus[item.id]?.status, generationPhase: !generating ? undefined : index < generationIndex ? 4 : index === generationIndex && generationPhase >= 1 ? Math.max(0, generationPhase - 2) : -1 },
         selected: item.id === selectedId,
         ariaRole: "button",
         ariaLabel: `${item.title} · ${item.status}. Space selects. Enter opens settings.`,
         domAttributes: { "aria-pressed": item.id === selectedId },
       })),
-    [nodes, selectedId, processingStatus],
+    [nodes, selectedId, processingStatus, generating, generationIndex, generationPhase],
   );
   const [flowNodes, setFlowNodes] = useState(mapped);
   useEffect(
@@ -228,7 +251,7 @@ function Canvas({
       connections
         .filter(
           ([a, b]) =>
-            nodes.some((n) => n.id === a) && nodes.some((n) => n.id === b),
+            nodes.some((n) => n.id === a) && nodes.some((n) => n.id === b) && (!generating || nodes.findIndex(n => n.id === b) < generationIndex || (nodes.findIndex(n => n.id === b) === generationIndex && generationPhase >= 2)),
         )
         .map(([source, target]) => ({
           id: `${source}:${target}`,
@@ -236,8 +259,10 @@ function Canvas({
           target,
           ariaLabel: `Connection from ${nodes.find(node => node.id === source)?.title} to ${nodes.find(node => node.id === target)?.title}`,
           ...edgeDefaults,
+          className: generating ? "board-generation-edge" : undefined,
+          style: generating ? { stroke: "var(--accent-brand)", strokeWidth: 2.5 } : edgeDefaults.style,
         })),
-    [nodes, connections],
+    [nodes, connections, generating, generationIndex, generationPhase],
   );
   const [selectedEdges, setSelectedEdges] = useState<Set<string>>(new Set());
   const edges = useMemo(
@@ -380,15 +405,15 @@ function Canvas({
         isValidConnection={valid}
         onBeforeDelete={beforeDelete}
         onNodeClick={(_, node) => {
-          if (!panMode) onSelect(node.id);
+          if (!panMode && !generating) onSelect(node.id);
         }}
         onNodeDoubleClick={(_, node) => {
-          if (!panMode) onOpen(node.id);
+          if (!panMode && !generating) onOpen(node.id);
         }}
         onPaneClick={() => onSelect("")}
-        nodesDraggable={!panMode}
-        nodesConnectable={!panMode}
-        elementsSelectable={!panMode}
+        nodesDraggable={!panMode && !generating}
+        nodesConnectable={!panMode && !generating}
+        elementsSelectable={!panMode && !generating}
         multiSelectionKeyCode={null}
         panOnScroll
         panOnDrag
@@ -399,7 +424,7 @@ function Canvas({
         minZoom={0.2}
         maxZoom={2.5}
         colorMode={resolved}
-        deleteKeyCode={["Delete", "Backspace"]}
+        deleteKeyCode={generating ? null : ["Delete", "Backspace"]}
         className="ghost-flow"
         aria-label="Workflow canvas"
         ariaLabelConfig={{
@@ -409,6 +434,17 @@ function Canvas({
             "Click to select. Double-click to open settings.",
         }}
       >
+        {generating && <Panel position="bottom-center" className="generation-thinking-panel !m-5 rounded-2xl border border-line bg-panel p-4 shadow-soft" data-testid="workflow-generation" data-stage={generationIndex >= nodes.length ? 'ready' : ['thinking','card','arrow','logo','text'][generationPhase]}>
+          <div className="flex items-center gap-4">
+            <span className="generation-thinking-mark"><GhostLogo compact /></span>
+            <div className="min-w-0 flex-1"><p role="status" aria-live="polite" className="text-sm font-medium text-ink">{generationIndex >= nodes.length ? 'Your workflow is ready' : 'Thinking · building your workflow'}{generationIndex < nodes.length && <span aria-hidden="true" className="generation-thinking-dots"><i/><i/><i/></span>}</p>
+              {generationIndex < nodes.length && <p className="mt-1 text-xs text-ink">{['Preparing the next step', 'Creating the node', generationIndex === 0 ? 'Setting the starting point' : 'Drawing the connection', 'Adding the app logo', 'Writing the step details'][generationPhase]}</p>}
+              <p className="mt-1 text-xs text-muted">{generationIndex >= nodes.length ? 'Saved on this device · ready to edit' : `${nodes[generationIndex]?.app ?? 'Workflow'} · Step ${generationIndex + 1} of ${nodes.length} · Prepared workflow`}</p>
+            </div>
+            <button className="dash-button shrink-0" onClick={onGenerationComplete}>Show all steps</button>
+          </div>
+          <div className="generation-thinking-track mt-3"><span style={{width: `${Math.min(100, generationTick / (nodes.length * 5) * 100)}%`}} /></div>
+        </Panel>}
         <Background
           variant={BackgroundVariant.Dots}
           gap={20}

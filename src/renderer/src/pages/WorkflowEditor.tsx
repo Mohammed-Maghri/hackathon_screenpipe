@@ -1,3 +1,5 @@
+import { WorkflowScripts } from '../components/WorkflowScripts';
+import { workflowClient, preparedDiscovery } from "../data/workflowClient";
 import { WorkflowEvidence } from "../components/WorkflowEvidence";
 import { evidenceSchema } from "../../../shared/screenpipeDiscovery";
 import { browserInstructions } from "../../../shared/browserInstructions";
@@ -65,8 +67,12 @@ type Log = {
 };
 export function WorkflowEditor({
   backendWorkflow,
+  generating = false,
+  onGenerationComplete,
 }: {
   backendWorkflow?: import("../../../shared/discovery").SavedWorkflowDetail;
+  generating?: boolean;
+  onGenerationComplete?: () => void;
 } = {}) {
   const { id } = useParams();
   const workflows = useWorkflows();
@@ -202,11 +208,13 @@ export function WorkflowEditor({
       .filter((node) => node.kind === "Browser action")
       .map((node) => node.id),
   );
+  const preparedBrowserNodes = JSON.stringify(nodes.filter(node => node.kind === "Browser action" && node.startUrl).map(node => ({id:node.id, url:node.startUrl!})));
   useEffect(() => {
     if (!id || !window.ghost?.browser) return;
     let disposed = false;
     void window.ghost.browser
-      .learnedSteps(id, JSON.parse(learningNodeIds))
+      .prepareHosted(id, JSON.parse(preparedBrowserNodes))
+      .then(() => window.ghost!.browser.learnedSteps(id, JSON.parse(learningNodeIds)))
       .then((results) => {
         if (disposed) return;
         setNodes((current) =>
@@ -230,7 +238,7 @@ export function WorkflowEditor({
     return () => {
       disposed = true;
     };
-  }, [id, learningNodeIds]);
+  }, [id, learningNodeIds, preparedBrowserNodes]);
   const boardSignature = JSON.stringify({ title, nodes, connections });
   const autosaveDraft = backendWorkflow?.status === "DRAFT";
   const savedBoardRef = useRef(savedBoard);
@@ -265,7 +273,7 @@ export function WorkflowEditor({
     try {
       const result = autosaveDraft
         ? await saveWorkflowDraft(backendWorkflow.id, update)
-        : await window.ghost.updateWorkflow(backendWorkflow.id, update);
+        : await workflowClient.updateWorkflow(backendWorkflow.id, update);
       if (result.ok) {
         failedSave.current = "";
         setSaveError("");
@@ -1120,7 +1128,7 @@ export function WorkflowEditor({
                     : writing
                       ? "Saving…"
                       : savedBoard === boardSignature
-                        ? "Saved to backend"
+                        ? preparedDiscovery ? "Saved on this device" : "Saved to backend"
                         : autosaveDraft
                           ? "Autosave pending…"
                           : "Unsaved changes"
@@ -1145,6 +1153,7 @@ export function WorkflowEditor({
                         : "Save changes"}
                   </button>
                 )}
+              {backendWorkflow && <WorkflowScripts workflow={{...backendWorkflow,...workflowPayload(backendWorkflow,title,nodes,connections,edgeIds.current)}} />}
               <button
                 className="dash-button"
                 onClick={() => setDialog("Share workflow")}
@@ -1307,6 +1316,8 @@ export function WorkflowEditor({
           <div className="editor-center flex min-h-0 min-w-0 flex-1 flex-col">
             {tab === "Canvas" ? (
               <WorkflowCanvas
+                generating={generating}
+                onGenerationComplete={onGenerationComplete}
                 nodes={nodes}
                 setNodes={setNodes}
                 connections={connections}

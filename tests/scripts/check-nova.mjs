@@ -39,7 +39,7 @@ try {
  await navigate('/nova/products');await click('[data-testid=edit-product-hoodie]');await type('#nova-product-stock','72');await click('[data-testid=nova-save-product]');await wait("document.querySelector('[role=status]')?.textContent.includes('Product saved')");await navigate('/nova/products');assert.ok(await evaluate("document.querySelector('.nova-catalog').textContent.includes('72 in stock')"));
  await navigate('/nova/marketing');await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent==='Create campaign').click()");await type('#nova-campaign-name','Autumn launch');await evaluate("document.querySelector('dialog form').requestSubmit()");await wait("document.querySelector('.nova-campaigns').textContent.includes('Autumn launch')");
  await navigate('/nova/customers');assert.equal(await evaluate('document.querySelectorAll("tbody tr").length'),12);
- await navigate('/nova/restocking');await click('[data-testid=restock-demo-stock]');
+ await navigate('/nova/restocking');await click('.nova-sample-data summary');await click('[data-testid=restock-demo-stock]');
  await wait("document.querySelector('#restock-hoodie-stock')?.value==='1'");
  assert.equal(await evaluate("document.querySelectorAll('[data-testid^=restock-result-]').length"),5);
  const firstBuy=Number(await evaluate("document.querySelector('[data-testid=restock-buy-hoodie]').textContent"));assert.ok(firstBuy>0);

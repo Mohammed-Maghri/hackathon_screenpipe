@@ -1,0 +1,1906 @@
+{
+  "version": 1,
+  "scenario": "nova",
+  "startUrl": "https://hackathon-screenpipe.vercel.app/nova",
+  "verifiedAt": "2026-10-18T00:08:34.615Z",
+  "sourceRecordingId": "e57817c9-93b1-48b4-b9c0-9c5ae8dce682",
+  "sourcePlanHash": "57c01ccade81d2aaa7cdc794eed4d8da1618fed7437c45f2aac52e86a7f36adc",
+  "events": [
+    {
+      "sequence": 1,
+      "timestamp": "2026-10-18T00:08:32.342Z",
+      "elapsedMs": 157,
+      "type": "navigation",
+      "url": "https://hackathon-screenpipe.vercel.app/nova",
+      "data": {
+        "source": "address"
+      }
+    },
+    {
+      "sequence": 2,
+      "timestamp": "2026-10-18T00:08:32.365Z",
+      "elapsedMs": 180,
+      "type": "page-ready",
+      "url": "https://hackathon-screenpipe.vercel.app/nova",
+      "data": {
+        "iframeCount": 0,
+        "framePolicy": "frame-aware-v1",
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 0
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 3,
+      "timestamp": "2026-10-18T00:08:32.385Z",
+      "elapsedMs": 200,
+      "type": "navigation",
+      "url": "https://hackathon-screenpipe.vercel.app/nova",
+      "data": {
+        "sameDocument": true,
+        "source": "page"
+      }
+    },
+    {
+      "sequence": 4,
+      "timestamp": "2026-10-18T00:08:32.487Z",
+      "elapsedMs": 302,
+      "type": "pointerdown",
+      "url": "https://hackathon-screenpipe.vercel.app/nova",
+      "data": {
+        "actionId": "2eb8c142-a1d9-4ec6-a950-7ad9f66b9cbe",
+        "target": {
+          "selector": "html > body > div:nth-of-type(2) > aside > nav > a:nth-of-type(4)",
+          "tag": "a",
+          "id": "",
+          "stableId": "",
+          "testId": "",
+          "role": "link",
+          "accessibleName": "Restocking",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "Restocking",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 0,
+            "y": 210.5,
+            "width": 168.0625,
+            "height": 42.5
+          },
+          "cookieConsent": false
+        },
+        "pointer": {
+          "clientX": 84.03125,
+          "clientY": 231.75,
+          "pageX": 84.03125,
+          "pageY": 231.75,
+          "screenX": 622.03125,
+          "screenY": 602.75,
+          "elementX": 84.03125,
+          "elementY": 21.25,
+          "relativeX": 0.5,
+          "relativeY": 0.5,
+          "button": 0,
+          "buttons": 1,
+          "detail": 0,
+          "pointerType": "mouse",
+          "modifiers": {
+            "alt": false,
+            "ctrl": false,
+            "meta": false,
+            "shift": false
+          }
+        },
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 0
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 5,
+      "timestamp": "2026-10-18T00:08:32.491Z",
+      "elapsedMs": 306,
+      "type": "scroll",
+      "url": "https://hackathon-screenpipe.vercel.app/nova",
+      "data": {
+        "target": {
+          "selector": "html > body > div:nth-of-type(2) > aside",
+          "tag": "aside",
+          "id": "",
+          "stableId": "",
+          "testId": "",
+          "role": "",
+          "accessibleName": "",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "HomeOrders48ProductsRestockingCustomersContentAnalyticsMarketingDiscountsSales channels Online StorePoint of SaleApps CustomersReviewsSubscriptionsSettingsSwitch to Forma \u2197LOCAL DEMO STORE",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 0,
+            "y": 58,
+            "width": 170,
+            "height": 554
+          },
+          "cookieConsent": false
+        },
+        "scrollLeft": 8,
+        "scrollTop": 0,
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 0
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 6,
+      "timestamp": "2026-10-18T00:08:32.491Z",
+      "elapsedMs": 306,
+      "type": "pointerup",
+      "url": "https://hackathon-screenpipe.vercel.app/nova",
+      "data": {
+        "actionId": "a4c44176-693a-4bbd-a7e5-40367d3dd983",
+        "target": {
+          "selector": "html > body > div:nth-of-type(2) > aside > nav > a:nth-of-type(4)",
+          "tag": "a",
+          "id": "",
+          "stableId": "",
+          "testId": "",
+          "role": "link",
+          "accessibleName": "Restocking",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "Restocking",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 0,
+            "y": 210.5,
+            "width": 168.0625,
+            "height": 42.5
+          },
+          "cookieConsent": false
+        },
+        "pointer": {
+          "clientX": 84.03125,
+          "clientY": 231.75,
+          "pageX": 84.03125,
+          "pageY": 231.75,
+          "screenX": 622.03125,
+          "screenY": 602.75,
+          "elementX": 84.03125,
+          "elementY": 21.25,
+          "relativeX": 0.5,
+          "relativeY": 0.5,
+          "button": 0,
+          "buttons": 0,
+          "detail": 0,
+          "pointerType": "mouse",
+          "modifiers": {
+            "alt": false,
+            "ctrl": false,
+            "meta": false,
+            "shift": false
+          }
+        },
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 0
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 7,
+      "timestamp": "2026-10-18T00:08:32.492Z",
+      "elapsedMs": 307,
+      "type": "click",
+      "url": "https://hackathon-screenpipe.vercel.app/nova",
+      "data": {
+        "actionId": "d0e1ee6b-02c1-4466-b29f-ff478b1275ac",
+        "target": {
+          "selector": "html > body > div:nth-of-type(2) > aside > nav > a:nth-of-type(4)",
+          "tag": "a",
+          "id": "",
+          "stableId": "",
+          "testId": "",
+          "role": "link",
+          "accessibleName": "Restocking",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "Restocking",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 0,
+            "y": 210.5,
+            "width": 168.0625,
+            "height": 42.5
+          },
+          "cookieConsent": false
+        },
+        "pointer": {
+          "clientX": 84,
+          "clientY": 231,
+          "pageX": 84,
+          "pageY": 231,
+          "screenX": 622,
+          "screenY": 602,
+          "elementX": 84,
+          "elementY": 20.5,
+          "relativeX": 0.4998140572703607,
+          "relativeY": 0.4823529411764706,
+          "button": 0,
+          "buttons": 0,
+          "detail": 1,
+          "pointerType": "mouse",
+          "modifiers": {
+            "alt": false,
+            "ctrl": false,
+            "meta": false,
+            "shift": false
+          }
+        },
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 0
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 8,
+      "timestamp": "2026-10-18T00:08:32.621Z",
+      "elapsedMs": 436,
+      "type": "navigation",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "sameDocument": true,
+        "source": "page"
+      }
+    },
+    {
+      "sequence": 9,
+      "timestamp": "2026-10-18T00:08:32.696Z",
+      "elapsedMs": 511,
+      "type": "action-outcome",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "d0e1ee6b-02c1-4466-b29f-ff478b1275ac",
+        "evidence": [
+          {
+            "target": {
+              "selector": "div > aside > nav > a:nth-of-type(4)",
+              "tag": "a",
+              "id": "",
+              "stableId": "",
+              "testId": "",
+              "role": "link",
+              "accessibleName": "Restocking",
+              "label": "",
+              "placeholder": "",
+              "name": "",
+              "text": "Restocking",
+              "inputType": "",
+              "redacted": false,
+              "attributes": {},
+              "frame": "main",
+              "shadowHost": null,
+              "credential": false,
+              "loginAction": false,
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              },
+              "cookieConsent": false
+            },
+            "absent": true
+          }
+        ],
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1432
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 10,
+      "timestamp": "2026-10-18T00:08:32.697Z",
+      "elapsedMs": 512,
+      "type": "pointerdown",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "39098c1b-8d32-4a49-bedf-2526b874b8ea",
+        "target": {
+          "selector": "[data-testid=\"restock-sales-export\"]",
+          "tag": "button",
+          "id": "",
+          "stableId": "",
+          "testId": "restock-sales-export",
+          "role": "button",
+          "accessibleName": "Download sales CSV",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "Download sales CSV",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "context": {
+            "role": "",
+            "name": "Source files for Ghost",
+            "testId": "",
+            "id": ""
+          },
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 592.59375,
+            "y": 434.1640625,
+            "width": 140.7265625,
+            "height": 36
+          },
+          "cookieConsent": false
+        },
+        "pointer": {
+          "clientX": 663,
+          "clientY": 452,
+          "pageX": 663,
+          "pageY": 1884,
+          "screenX": 0,
+          "screenY": 0,
+          "elementX": 70.40625,
+          "elementY": 17.8359375,
+          "relativeX": 0.5003053350358074,
+          "relativeY": 0.4954427083333333,
+          "button": 0,
+          "buttons": 1,
+          "detail": 0,
+          "pointerType": "mouse",
+          "modifiers": {
+            "alt": false,
+            "ctrl": false,
+            "meta": false,
+            "shift": false
+          }
+        },
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1432
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 11,
+      "timestamp": "2026-10-18T00:08:32.697Z",
+      "elapsedMs": 512,
+      "type": "action-outcome",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "d0e1ee6b-02c1-4466-b29f-ff478b1275ac",
+        "evidence": [
+          {
+            "target": {
+              "selector": "div > aside > nav > a:nth-of-type(4)",
+              "tag": "a",
+              "id": "",
+              "stableId": "",
+              "testId": "",
+              "role": "link",
+              "accessibleName": "Restocking",
+              "label": "",
+              "placeholder": "",
+              "name": "",
+              "text": "Restocking",
+              "inputType": "",
+              "redacted": false,
+              "attributes": {},
+              "frame": "main",
+              "shadowHost": null,
+              "credential": false,
+              "loginAction": false,
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              },
+              "cookieConsent": false
+            },
+            "absent": true
+          }
+        ],
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1432
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 12,
+      "timestamp": "2026-10-18T00:08:32.697Z",
+      "elapsedMs": 512,
+      "type": "pointerup",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "adf45804-5b1e-498c-ac22-1e1051f1f511",
+        "target": {
+          "selector": "[data-testid=\"restock-sales-export\"]",
+          "tag": "button",
+          "id": "",
+          "stableId": "",
+          "testId": "restock-sales-export",
+          "role": "button",
+          "accessibleName": "Download sales CSV",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "Download sales CSV",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "context": {
+            "role": "",
+            "name": "Source files for Ghost",
+            "testId": "",
+            "id": ""
+          },
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 592.59375,
+            "y": 434.1640625,
+            "width": 140.7265625,
+            "height": 36
+          },
+          "cookieConsent": false
+        },
+        "pointer": {
+          "clientX": 663,
+          "clientY": 452,
+          "pageX": 663,
+          "pageY": 1884,
+          "screenX": 0,
+          "screenY": 0,
+          "elementX": 70.40625,
+          "elementY": 17.8359375,
+          "relativeX": 0.5003053350358074,
+          "relativeY": 0.4954427083333333,
+          "button": 0,
+          "buttons": 0,
+          "detail": 0,
+          "pointerType": "mouse",
+          "modifiers": {
+            "alt": false,
+            "ctrl": false,
+            "meta": false,
+            "shift": false
+          }
+        },
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1432
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 13,
+      "timestamp": "2026-10-18T00:08:32.698Z",
+      "elapsedMs": 513,
+      "type": "action-outcome",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "d0e1ee6b-02c1-4466-b29f-ff478b1275ac",
+        "evidence": [
+          {
+            "target": {
+              "selector": "div > aside > nav > a:nth-of-type(4)",
+              "tag": "a",
+              "id": "",
+              "stableId": "",
+              "testId": "",
+              "role": "link",
+              "accessibleName": "Restocking",
+              "label": "",
+              "placeholder": "",
+              "name": "",
+              "text": "Restocking",
+              "inputType": "",
+              "redacted": false,
+              "attributes": {},
+              "frame": "main",
+              "shadowHost": null,
+              "credential": false,
+              "loginAction": false,
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              },
+              "cookieConsent": false
+            },
+            "absent": true
+          }
+        ],
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1432
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 14,
+      "timestamp": "2026-10-18T00:08:32.698Z",
+      "elapsedMs": 513,
+      "type": "click",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "12939afa-f5da-4c81-849a-d9a9a554899c",
+        "target": {
+          "selector": "[data-testid=\"restock-sales-export\"]",
+          "tag": "button",
+          "id": "",
+          "stableId": "",
+          "testId": "restock-sales-export",
+          "role": "button",
+          "accessibleName": "Download sales CSV",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "Download sales CSV",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "context": {
+            "role": "",
+            "name": "Source files for Ghost",
+            "testId": "",
+            "id": ""
+          },
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 592.59375,
+            "y": 434.1640625,
+            "width": 140.7265625,
+            "height": 36
+          },
+          "cookieConsent": false
+        },
+        "pointer": {
+          "clientX": 663,
+          "clientY": 452,
+          "pageX": 663,
+          "pageY": 1884,
+          "screenX": 0,
+          "screenY": 0,
+          "elementX": 70.40625,
+          "elementY": 17.8359375,
+          "relativeX": 0.5003053350358074,
+          "relativeY": 0.4954427083333333,
+          "button": 0,
+          "buttons": 0,
+          "detail": 1,
+          "pointerType": "mouse",
+          "modifiers": {
+            "alt": false,
+            "ctrl": false,
+            "meta": false,
+            "shift": false
+          }
+        },
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1432
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 15,
+      "timestamp": "2026-10-18T00:08:32.702Z",
+      "elapsedMs": 517,
+      "type": "download-start",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "downloadId": "69565e59-5fa5-41a5-9aa1-90b8cbd91f05",
+        "causedBy": "12939afa-f5da-4c81-849a-d9a9a554899c",
+        "filename": "nova-restock-sales.csv",
+        "mimeType": "text/csv"
+      }
+    },
+    {
+      "sequence": 16,
+      "timestamp": "2026-10-18T00:08:32.719Z",
+      "elapsedMs": 534,
+      "type": "download-done",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "downloadId": "69565e59-5fa5-41a5-9aa1-90b8cbd91f05",
+        "state": "completed",
+        "filename": "nova-restock-sales.csv",
+        "bytes": 2828
+      }
+    },
+    {
+      "sequence": 17,
+      "timestamp": "2026-10-18T00:08:32.735Z",
+      "elapsedMs": 550,
+      "type": "action-outcome",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "12939afa-f5da-4c81-849a-d9a9a554899c",
+        "evidence": [
+          {
+            "target": {
+              "selector": "html > body > div:nth-of-type(2) > main > div:nth-of-type(2) > p",
+              "tag": "p",
+              "id": "",
+              "stableId": "",
+              "testId": "",
+              "role": "status",
+              "accessibleName": "",
+              "label": "",
+              "placeholder": "",
+              "name": "",
+              "text": "Sales CSV downloaded, including product IDs, quantities and status.",
+              "inputType": "",
+              "redacted": false,
+              "attributes": {},
+              "frame": "main",
+              "shadowHost": null
+            },
+            "text": "Sales CSV downloaded, including product IDs, quantities and status."
+          }
+        ],
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1512.5
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 18,
+      "timestamp": "2026-10-18T00:08:32.804Z",
+      "elapsedMs": 619,
+      "type": "action-outcome",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "12939afa-f5da-4c81-849a-d9a9a554899c",
+        "evidence": [
+          {
+            "target": {
+              "selector": "html > body > div:nth-of-type(2) > main > div:nth-of-type(2) > p",
+              "tag": "p",
+              "id": "",
+              "stableId": "",
+              "testId": "",
+              "role": "status",
+              "accessibleName": "",
+              "label": "",
+              "placeholder": "",
+              "name": "",
+              "text": "Sales CSV downloaded, including product IDs, quantities and status.",
+              "inputType": "",
+              "redacted": false,
+              "attributes": {},
+              "frame": "main",
+              "shadowHost": null
+            },
+            "text": "Sales CSV downloaded, including product IDs, quantities and status."
+          }
+        ],
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1513
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 19,
+      "timestamp": "2026-10-18T00:08:32.805Z",
+      "elapsedMs": 620,
+      "type": "scroll",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "target": {
+          "selector": "html",
+          "tag": "html",
+          "id": "",
+          "stableId": "",
+          "testId": "",
+          "role": "",
+          "accessibleName": "",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 0,
+            "y": -1513,
+            "width": 823,
+            "height": 2124.9609375
+          },
+          "cookieConsent": false
+        },
+        "scrollLeft": 0,
+        "scrollTop": 1513,
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1513
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 20,
+      "timestamp": "2026-10-18T00:08:32.806Z",
+      "elapsedMs": 621,
+      "type": "action-outcome",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "12939afa-f5da-4c81-849a-d9a9a554899c",
+        "evidence": [
+          {
+            "target": {
+              "selector": "html > body > div:nth-of-type(2) > main > div:nth-of-type(2) > p",
+              "tag": "p",
+              "id": "",
+              "stableId": "",
+              "testId": "",
+              "role": "status",
+              "accessibleName": "",
+              "label": "",
+              "placeholder": "",
+              "name": "",
+              "text": "Sales CSV downloaded, including product IDs, quantities and status.",
+              "inputType": "",
+              "redacted": false,
+              "attributes": {},
+              "frame": "main",
+              "shadowHost": null
+            },
+            "text": "Sales CSV downloaded, including product IDs, quantities and status."
+          }
+        ],
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1513
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 21,
+      "timestamp": "2026-10-18T00:08:32.806Z",
+      "elapsedMs": 621,
+      "type": "pointerdown",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "a3dd560f-262c-45dd-ade7-609d4cd01c0f",
+        "target": {
+          "selector": "[data-testid=\"restock-inventory-export\"]",
+          "tag": "button",
+          "id": "",
+          "stableId": "",
+          "testId": "restock-inventory-export",
+          "role": "button",
+          "accessibleName": "Download inventory CSV",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "Download inventory CSV",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "context": {
+            "role": "",
+            "name": "Source files for Ghost",
+            "testId": "",
+            "id": ""
+          },
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 592.59375,
+            "y": 479.9609375,
+            "width": 161.40625,
+            "height": 36
+          },
+          "cookieConsent": false
+        },
+        "pointer": {
+          "clientX": 673,
+          "clientY": 498,
+          "pageX": 673,
+          "pageY": 2011,
+          "screenX": 0,
+          "screenY": 0,
+          "elementX": 80.40625,
+          "elementY": 18.0390625,
+          "relativeX": 0.4981606969990319,
+          "relativeY": 0.5010850694444444,
+          "button": 0,
+          "buttons": 1,
+          "detail": 0,
+          "pointerType": "mouse",
+          "modifiers": {
+            "alt": false,
+            "ctrl": false,
+            "meta": false,
+            "shift": false
+          }
+        },
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1513
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 22,
+      "timestamp": "2026-10-18T00:08:32.806Z",
+      "elapsedMs": 621,
+      "type": "action-outcome",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "12939afa-f5da-4c81-849a-d9a9a554899c",
+        "evidence": [
+          {
+            "target": {
+              "selector": "html > body > div:nth-of-type(2) > main > div:nth-of-type(2) > p",
+              "tag": "p",
+              "id": "",
+              "stableId": "",
+              "testId": "",
+              "role": "status",
+              "accessibleName": "",
+              "label": "",
+              "placeholder": "",
+              "name": "",
+              "text": "Sales CSV downloaded, including product IDs, quantities and status.",
+              "inputType": "",
+              "redacted": false,
+              "attributes": {},
+              "frame": "main",
+              "shadowHost": null
+            },
+            "text": "Sales CSV downloaded, including product IDs, quantities and status."
+          }
+        ],
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1513
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 23,
+      "timestamp": "2026-10-18T00:08:32.806Z",
+      "elapsedMs": 622,
+      "type": "pointerup",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "ab142b4a-e922-4f42-a0a9-4153aa052e0d",
+        "target": {
+          "selector": "[data-testid=\"restock-inventory-export\"]",
+          "tag": "button",
+          "id": "",
+          "stableId": "",
+          "testId": "restock-inventory-export",
+          "role": "button",
+          "accessibleName": "Download inventory CSV",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "Download inventory CSV",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "context": {
+            "role": "",
+            "name": "Source files for Ghost",
+            "testId": "",
+            "id": ""
+          },
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 592.59375,
+            "y": 479.9609375,
+            "width": 161.40625,
+            "height": 36
+          },
+          "cookieConsent": false
+        },
+        "pointer": {
+          "clientX": 673,
+          "clientY": 498,
+          "pageX": 673,
+          "pageY": 2011,
+          "screenX": 0,
+          "screenY": 0,
+          "elementX": 80.40625,
+          "elementY": 18.0390625,
+          "relativeX": 0.4981606969990319,
+          "relativeY": 0.5010850694444444,
+          "button": 0,
+          "buttons": 0,
+          "detail": 0,
+          "pointerType": "mouse",
+          "modifiers": {
+            "alt": false,
+            "ctrl": false,
+            "meta": false,
+            "shift": false
+          }
+        },
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1513
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 24,
+      "timestamp": "2026-10-18T00:08:32.807Z",
+      "elapsedMs": 622,
+      "type": "action-outcome",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "12939afa-f5da-4c81-849a-d9a9a554899c",
+        "evidence": [
+          {
+            "target": {
+              "selector": "html > body > div:nth-of-type(2) > main > div:nth-of-type(2) > p",
+              "tag": "p",
+              "id": "",
+              "stableId": "",
+              "testId": "",
+              "role": "status",
+              "accessibleName": "",
+              "label": "",
+              "placeholder": "",
+              "name": "",
+              "text": "Sales CSV downloaded, including product IDs, quantities and status.",
+              "inputType": "",
+              "redacted": false,
+              "attributes": {},
+              "frame": "main",
+              "shadowHost": null
+            },
+            "text": "Sales CSV downloaded, including product IDs, quantities and status."
+          }
+        ],
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1513
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 25,
+      "timestamp": "2026-10-18T00:08:32.807Z",
+      "elapsedMs": 622,
+      "type": "click",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "cf557e85-6377-46c6-93e3-c2275309ad1a",
+        "target": {
+          "selector": "[data-testid=\"restock-inventory-export\"]",
+          "tag": "button",
+          "id": "",
+          "stableId": "",
+          "testId": "restock-inventory-export",
+          "role": "button",
+          "accessibleName": "Download inventory CSV",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "Download inventory CSV",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "context": {
+            "role": "",
+            "name": "Source files for Ghost",
+            "testId": "",
+            "id": ""
+          },
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 592.59375,
+            "y": 479.9609375,
+            "width": 161.40625,
+            "height": 36
+          },
+          "cookieConsent": false
+        },
+        "pointer": {
+          "clientX": 673,
+          "clientY": 498,
+          "pageX": 673,
+          "pageY": 2011,
+          "screenX": 0,
+          "screenY": 0,
+          "elementX": 80.40625,
+          "elementY": 18.0390625,
+          "relativeX": 0.4981606969990319,
+          "relativeY": 0.5010850694444444,
+          "button": 0,
+          "buttons": 0,
+          "detail": 1,
+          "pointerType": "mouse",
+          "modifiers": {
+            "alt": false,
+            "ctrl": false,
+            "meta": false,
+            "shift": false
+          }
+        },
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1513
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 26,
+      "timestamp": "2026-10-18T00:08:32.811Z",
+      "elapsedMs": 626,
+      "type": "download-start",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "downloadId": "67231b48-3b2b-4ad8-acdf-f453f54c880d",
+        "causedBy": "cf557e85-6377-46c6-93e3-c2275309ad1a",
+        "filename": "nova-restock-inventory.csv",
+        "mimeType": "text/csv"
+      }
+    },
+    {
+      "sequence": 27,
+      "timestamp": "2026-10-18T00:08:32.819Z",
+      "elapsedMs": 634,
+      "type": "download-done",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "downloadId": "67231b48-3b2b-4ad8-acdf-f453f54c880d",
+        "state": "completed",
+        "filename": "nova-restock-inventory.csv",
+        "bytes": 829
+      }
+    },
+    {
+      "sequence": 28,
+      "timestamp": "2026-10-18T00:08:32.915Z",
+      "elapsedMs": 730,
+      "type": "action-outcome",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "cf557e85-6377-46c6-93e3-c2275309ad1a",
+        "evidence": [
+          {
+            "target": {
+              "selector": "html > body > div:nth-of-type(2) > main > div:nth-of-type(2) > p",
+              "tag": "p",
+              "id": "",
+              "stableId": "",
+              "testId": "",
+              "role": "status",
+              "accessibleName": "",
+              "label": "",
+              "placeholder": "",
+              "name": "",
+              "text": "Inventory CSV downloaded from saved stock and supplier settings.",
+              "inputType": "",
+              "redacted": false,
+              "attributes": {},
+              "frame": "main",
+              "shadowHost": null
+            },
+            "text": "Inventory CSV downloaded from saved stock and supplier settings."
+          }
+        ],
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1513
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 29,
+      "timestamp": "2026-10-18T00:08:32.921Z",
+      "elapsedMs": 736,
+      "type": "scroll",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "target": {
+          "selector": "html",
+          "tag": "html",
+          "id": "",
+          "stableId": "",
+          "testId": "",
+          "role": "",
+          "accessibleName": "",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 0,
+            "y": -1214.5,
+            "width": 823,
+            "height": 2124.9609375
+          },
+          "cookieConsent": false
+        },
+        "scrollLeft": 0,
+        "scrollTop": 1214.5,
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1214.5
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 30,
+      "timestamp": "2026-10-18T00:08:32.922Z",
+      "elapsedMs": 737,
+      "type": "action-outcome",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "cf557e85-6377-46c6-93e3-c2275309ad1a",
+        "evidence": [
+          {
+            "target": {
+              "selector": "html > body > div:nth-of-type(2) > main > div:nth-of-type(2) > p",
+              "tag": "p",
+              "id": "",
+              "stableId": "",
+              "testId": "",
+              "role": "status",
+              "accessibleName": "",
+              "label": "",
+              "placeholder": "",
+              "name": "",
+              "text": "Inventory CSV downloaded from saved stock and supplier settings.",
+              "inputType": "",
+              "redacted": false,
+              "attributes": {},
+              "frame": "main",
+              "shadowHost": null
+            },
+            "text": "Inventory CSV downloaded from saved stock and supplier settings."
+          }
+        ],
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1214.5
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 31,
+      "timestamp": "2026-10-18T00:08:32.922Z",
+      "elapsedMs": 737,
+      "type": "pointerdown",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "7d3ef9b5-6081-434a-aeb1-14356a54aef3",
+        "target": {
+          "selector": "[data-testid=\"restock-excel\"]",
+          "tag": "button",
+          "id": "",
+          "stableId": "",
+          "testId": "restock-excel",
+          "role": "button",
+          "accessibleName": "Download Excel for approval",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "Download Excel for approval",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "context": {
+            "role": "",
+            "name": "Next week's shopping list",
+            "testId": "",
+            "id": ""
+          },
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 602.25,
+            "y": 288.0859375,
+            "width": 180.75,
+            "height": 36
+          },
+          "cookieConsent": false
+        },
+        "pointer": {
+          "clientX": 693,
+          "clientY": 306,
+          "pageX": 693,
+          "pageY": 1520.5,
+          "screenX": 0,
+          "screenY": 0,
+          "elementX": 90.75,
+          "elementY": 17.9140625,
+          "relativeX": 0.5020746887966805,
+          "relativeY": 0.4976128472222222,
+          "button": 0,
+          "buttons": 1,
+          "detail": 0,
+          "pointerType": "mouse",
+          "modifiers": {
+            "alt": false,
+            "ctrl": false,
+            "meta": false,
+            "shift": false
+          }
+        },
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1214.5
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 32,
+      "timestamp": "2026-10-18T00:08:32.927Z",
+      "elapsedMs": 742,
+      "type": "action-outcome",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "cf557e85-6377-46c6-93e3-c2275309ad1a",
+        "evidence": [
+          {
+            "target": {
+              "selector": "html > body > div:nth-of-type(2) > main > div:nth-of-type(2) > p",
+              "tag": "p",
+              "id": "",
+              "stableId": "",
+              "testId": "",
+              "role": "status",
+              "accessibleName": "",
+              "label": "",
+              "placeholder": "",
+              "name": "",
+              "text": "Inventory CSV downloaded from saved stock and supplier settings.",
+              "inputType": "",
+              "redacted": false,
+              "attributes": {},
+              "frame": "main",
+              "shadowHost": null
+            },
+            "text": "Inventory CSV downloaded from saved stock and supplier settings."
+          }
+        ],
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1214.5
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 33,
+      "timestamp": "2026-10-18T00:08:32.927Z",
+      "elapsedMs": 742,
+      "type": "pointerup",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "6f957e20-be13-4643-ad1a-137a276ea1f8",
+        "target": {
+          "selector": "[data-testid=\"restock-excel\"]",
+          "tag": "button",
+          "id": "",
+          "stableId": "",
+          "testId": "restock-excel",
+          "role": "button",
+          "accessibleName": "Download Excel for approval",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "Download Excel for approval",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "context": {
+            "role": "",
+            "name": "Next week's shopping list",
+            "testId": "",
+            "id": ""
+          },
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 602.25,
+            "y": 288.0859375,
+            "width": 180.75,
+            "height": 36
+          },
+          "cookieConsent": false
+        },
+        "pointer": {
+          "clientX": 693,
+          "clientY": 306,
+          "pageX": 693,
+          "pageY": 1520.5,
+          "screenX": 0,
+          "screenY": 0,
+          "elementX": 90.75,
+          "elementY": 17.9140625,
+          "relativeX": 0.5020746887966805,
+          "relativeY": 0.4976128472222222,
+          "button": 0,
+          "buttons": 0,
+          "detail": 0,
+          "pointerType": "mouse",
+          "modifiers": {
+            "alt": false,
+            "ctrl": false,
+            "meta": false,
+            "shift": false
+          }
+        },
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1214.5
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 34,
+      "timestamp": "2026-10-18T00:08:32.927Z",
+      "elapsedMs": 742,
+      "type": "action-outcome",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "cf557e85-6377-46c6-93e3-c2275309ad1a",
+        "evidence": [
+          {
+            "target": {
+              "selector": "html > body > div:nth-of-type(2) > main > div:nth-of-type(2) > p",
+              "tag": "p",
+              "id": "",
+              "stableId": "",
+              "testId": "",
+              "role": "status",
+              "accessibleName": "",
+              "label": "",
+              "placeholder": "",
+              "name": "",
+              "text": "Inventory CSV downloaded from saved stock and supplier settings.",
+              "inputType": "",
+              "redacted": false,
+              "attributes": {},
+              "frame": "main",
+              "shadowHost": null
+            },
+            "text": "Inventory CSV downloaded from saved stock and supplier settings."
+          }
+        ],
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1214.5
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 35,
+      "timestamp": "2026-10-18T00:08:32.928Z",
+      "elapsedMs": 743,
+      "type": "click",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "bf3cdeae-182d-449c-a19d-d55b09e13238",
+        "target": {
+          "selector": "[data-testid=\"restock-excel\"]",
+          "tag": "button",
+          "id": "",
+          "stableId": "",
+          "testId": "restock-excel",
+          "role": "button",
+          "accessibleName": "Download Excel for approval",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "Download Excel for approval",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "context": {
+            "role": "",
+            "name": "Next week's shopping list",
+            "testId": "",
+            "id": ""
+          },
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 602.25,
+            "y": 288.0859375,
+            "width": 180.75,
+            "height": 36
+          },
+          "cookieConsent": false
+        },
+        "pointer": {
+          "clientX": 693,
+          "clientY": 306,
+          "pageX": 693,
+          "pageY": 1520,
+          "screenX": 0,
+          "screenY": 0,
+          "elementX": 90.75,
+          "elementY": 17.9140625,
+          "relativeX": 0.5020746887966805,
+          "relativeY": 0.4976128472222222,
+          "button": 0,
+          "buttons": 0,
+          "detail": 1,
+          "pointerType": "mouse",
+          "modifiers": {
+            "alt": false,
+            "ctrl": false,
+            "meta": false,
+            "shift": false
+          }
+        },
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1214.5
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 36,
+      "timestamp": "2026-10-18T00:08:33.116Z",
+      "elapsedMs": 931,
+      "type": "scroll",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "target": {
+          "selector": "html",
+          "tag": "html",
+          "id": "",
+          "stableId": "",
+          "testId": "",
+          "role": "",
+          "accessibleName": "",
+          "label": "",
+          "placeholder": "",
+          "name": "",
+          "text": "",
+          "inputType": "",
+          "redacted": false,
+          "attributes": {},
+          "frame": "main",
+          "shadowHost": null,
+          "credential": false,
+          "loginAction": false,
+          "rect": {
+            "x": 0,
+            "y": -1214.5,
+            "width": 823,
+            "height": 2124.9609375
+          },
+          "cookieConsent": false
+        },
+        "scrollLeft": 0,
+        "scrollTop": 1214.5,
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1214.5
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 37,
+      "timestamp": "2026-10-18T00:08:33.117Z",
+      "elapsedMs": 932,
+      "type": "download-start",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "downloadId": "20e222ce-1498-42fd-a971-924e13dd90dc",
+        "causedBy": "bf3cdeae-182d-449c-a19d-d55b09e13238",
+        "filename": "nova-shopping-list.xlsx",
+        "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      }
+    },
+    {
+      "sequence": 38,
+      "timestamp": "2026-10-18T00:08:33.134Z",
+      "elapsedMs": 949,
+      "type": "download-done",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "downloadId": "20e222ce-1498-42fd-a971-924e13dd90dc",
+        "state": "completed",
+        "filename": "nova-shopping-list.xlsx",
+        "bytes": 8634
+      }
+    },
+    {
+      "sequence": 39,
+      "timestamp": "2026-10-18T00:08:33.219Z",
+      "elapsedMs": 1034,
+      "type": "action-outcome",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "bf3cdeae-182d-449c-a19d-d55b09e13238",
+        "evidence": [
+          {
+            "target": {
+              "selector": "html > body > div:nth-of-type(2) > main > div:nth-of-type(2) > p",
+              "tag": "p",
+              "id": "",
+              "stableId": "",
+              "testId": "",
+              "role": "status",
+              "accessibleName": "",
+              "label": "",
+              "placeholder": "",
+              "name": "",
+              "text": "Excel shopping list downloaded. Awaiting your approval; nothing has been ordered.",
+              "inputType": "",
+              "redacted": false,
+              "attributes": {},
+              "frame": "main",
+              "shadowHost": null
+            },
+            "text": "Excel shopping list downloaded. Awaiting your approval; nothing has been ordered."
+          }
+        ],
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1214.5
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    },
+    {
+      "sequence": 40,
+      "timestamp": "2026-10-18T00:08:33.238Z",
+      "elapsedMs": 1053,
+      "type": "action-outcome",
+      "url": "https://hackathon-screenpipe.vercel.app/nova/restocking",
+      "data": {
+        "actionId": "bf3cdeae-182d-449c-a19d-d55b09e13238",
+        "evidence": [
+          {
+            "target": {
+              "selector": "html > body > div:nth-of-type(2) > main > div:nth-of-type(2) > p",
+              "tag": "p",
+              "id": "",
+              "stableId": "",
+              "testId": "",
+              "role": "status",
+              "accessibleName": "",
+              "label": "",
+              "placeholder": "",
+              "name": "",
+              "text": "Excel shopping list downloaded. Awaiting your approval; nothing has been ordered.",
+              "inputType": "",
+              "redacted": false,
+              "attributes": {},
+              "frame": "main",
+              "shadowHost": null
+            },
+            "text": "Excel shopping list downloaded. Awaiting your approval; nothing has been ordered."
+          }
+        ],
+        "viewport": {
+          "width": 838,
+          "height": 612,
+          "devicePixelRatio": 2
+        },
+        "scroll": {
+          "x": 0,
+          "y": 1214.5
+        },
+        "pageTitle": "NOVA \u2014 Store operations",
+        "frame": "main",
+        "framePath": []
+      }
+    }
+  ]
+}

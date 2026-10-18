@@ -3,6 +3,12 @@ import type { RecordedEvent, RecordingStatus, ReplayStatus, ReplayPreview } from
 import type { BrowserBounds, BrowserAction, BrowserState } from '../shared/browser'
 contextBridge.exposeInMainWorld('ghost', {
   platform: process.platform,
+  scripts: {
+    latest: (id: string) => ipcRenderer.invoke('scripts:latest', id),
+    generate: (workflow: import('../shared/discovery').SavedWorkflowDetail) => ipcRenderer.invoke('scripts:generate', workflow),
+    read: (id: string, revision: string, file: string) => ipcRenderer.invoke('scripts:read', id, revision, file),
+    reveal: (id: string, revision: string) => ipcRenderer.invoke('scripts:reveal', id, revision),
+  },
   setAppearance: (theme: 'light' | 'dark') => ipcRenderer.invoke('appearance:set', theme),
   automation: {
     list: () => ipcRenderer.invoke('automation:list'),
@@ -53,7 +59,9 @@ contextBridge.exposeInMainWorld('ghost', {
     action: (token: string, action: BrowserAction) => ipcRenderer.invoke('teaching:action', token, action),
     bounds: (token: string, bounds: BrowserBounds) => ipcRenderer.send('teaching:bounds', token, bounds),
     close: (token: string) => ipcRenderer.invoke('teaching:close', token),
+    teachHosted: (token: string) => ipcRenderer.invoke('recording:teach-hosted', token),
     recordingControl: (token: string, action: 'pause' | 'resume' | 'stop') => ipcRenderer.invoke('recording:control', token, action),
+    prepareHosted: (workflowId: string, nodes: {id: string; url: string}[]) => ipcRenderer.invoke('recording:prepare-hosted', workflowId, nodes),
     learnedSteps: (workflowId: string, nodeIds: string[]) => ipcRenderer.invoke('recording:learned', workflowId, nodeIds),
     syncSecrets: (token: string) => ipcRenderer.invoke('recording:sync-secrets', token),
     recordingStatus: (token: string) => ipcRenderer.invoke('recording:status', token),

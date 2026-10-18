@@ -12,13 +12,13 @@ export function sameDestination(actual: string, expected: string) {
   const normalize = (value: string) => { const url = new URL(value); url.searchParams.sort(); return url.href }
   return normalize(actual) === normalize(expected)
 }
-export async function replayRecording(contents: WebContents, owner: BrowserWindow, steps: RecordedEvent[], signal: AbortSignal, report: (status: ReplayStatus) => void | Promise<void>, approve: (event: RecordedEvent) => Promise<boolean>, visible: () => boolean = () => true, frames?: FrameBridge, authenticate?: (targetURL: string) => Promise<void>, decryptInput?: (event: RecordedEvent) => string, options: { resume?: ReplayStatus; timeout?: number; authorized?: boolean; demo?: boolean } = {}) {
+export async function replayRecording(contents: WebContents, owner: BrowserWindow, steps: RecordedEvent[], signal: AbortSignal, report: (status: ReplayStatus) => void | Promise<void>, approve: (event: RecordedEvent) => Promise<boolean>, visible: () => boolean = () => true, frames?: FrameBridge, authenticate?: (targetURL: string, progress: (action: string) => Promise<void>) => Promise<void>, decryptInput?: (event: RecordedEvent) => string, options: { resume?: ReplayStatus; timeout?: number; authorized?: boolean; demo?: boolean } = {}) {
   const results: ActionResult[] = options.resume?.results ? structuredClone(options.resume.results) : steps.map(e => ({ sequence: e.sequence, type: e.type, state: 'pending' }))
   let attached = false, currentIndex = options.resume?.currentActionIndex ?? 0, lastVerified = options.resume?.lastVerifiedCheckpoint ?? -1, documentToken = options.resume?.documentToken
   let phase: 'precondition' | 'execution' | 'verification' = 'precondition'
   const timeout = options.timeout ?? 10000
   let current: RecordedEvent | undefined, result: ActionResult | undefined, dispatched = false
-  const status = (state: ReplayStatus['state'], error: string | null = null): ReplayStatus => ({ state, artifacts: [...(options.resume?.artifacts ?? []), ...downloads.map(file => ({ id: basename(file.path), filename: file.filename, path: file.path, bytes: file.bytes, mimeType: file.mimeType, state: file.state, sequence: file.sequence }))], currentActionIndex: currentIndex, lastVerifiedCheckpoint: lastVerified, observedURL: contents.isDestroyed() ? undefined : recordedURL(contents.getURL()).url, documentToken, resumable: ['failed', 'unknown', 'cancelled'].includes(state), failureCode: result?.diagnostics?.failureCode, completed: results.filter(r => ['verified', 'skipped'].includes(r.state)).length, total: steps.length, sequence: current?.sequence ?? null, action: current ? `${current.type}: action ${current.sequence}` : 'Preparing', error, results: results.map(r => ({ ...r })) })
+  const status = (state: ReplayStatus['state'], error: string | null = null): ReplayStatus => ({ state, artifacts: [...(options.resume?.artifacts ?? []), ...downloads.map(file => ({ id: basename(file.path), filename: file.filename, path: file.path, bytes: file.bytes, mimeType: file.mimeType, state: file.state, sequence: file.sequence }))], currentActionIndex: currentIndex, lastVerifiedCheckpoint: lastVerified, observedURL: contents.isDestroyed() || !contents.getURL() ? undefined : recordedURL(contents.getURL()).url, documentToken, resumable: ['failed', 'unknown', 'cancelled'].includes(state), failureCode: result?.diagnostics?.failureCode, completed: results.filter(r => ['verified', 'skipped'].includes(r.state)).length, total: steps.length, sequence: current?.sequence ?? null, action: current ? `${current.type}: action ${current.sequence}` : 'Preparing', error, results: results.map(r => ({ ...r })) })
   const downloads: { item: DownloadItem; filename: string; mimeType: string; state: string; path: string; bytes: number; sequence: number }[] = []
   let downloadError = ''
   const onDownload = (_event: Event, item: DownloadItem, source: WebContents) => {
@@ -175,7 +175,10 @@ export async function replayRecording(contents: WebContents, owner: BrowserWindo
     check()
     if (!steps.length) throw new Error('Empty recording.')
     const initialURL = steps.find(e => e.type === 'navigation')?.url ?? steps[0].url
-    if (authenticate && !options.resume) await authenticate(initialURL)
+    if (authenticate && !options.resume) {
+      await until(() => visible() && owner.isVisible() && !owner.isMinimized() && !contents.isLoading(), 'The browser must finish opening before sign-in.', 20000)
+      await authenticate(initialURL, async action => { await report({...status('running'), action: 'Login: '+action}) })
+    }
     check()
     if (contents.debugger.isAttached()) throw new Error('The browser debugger is already in use. Close developer tools before replay.')
     contents.debugger.attach('1.3'); attached = true
@@ -239,7 +242,7 @@ export async function replayRecording(contents: WebContents, owner: BrowserWindo
         if (options.demo) {
           const pointer = event.data.pointer as { relativeX?: number; relativeY?: number } | undefined
           await page({ op: 'highlight', target, offset: event.data.background && pointer ? { x: pointer.relativeX ?? .5, y: pointer.relativeY ?? .5 } : undefined })
-          await demoPause(1100)
+          await demoPause(700)
           await locate(event)
         }
         result.diagnostics.precondition = 'Target uniquely resolved, visible and available.'
@@ -316,7 +319,7 @@ export async function replayRecording(contents: WebContents, owner: BrowserWindo
           result.evidence = expectedDownloads ? 'Download completed and file size, name and type verified on disk; file contents are not business-result verification.' : expectsNavigation ? 'Resulting navigation verified.' : focusOnly ? 'Editable target focus verified.' : 'Recorded observable page outcome verified (not a business-success assertion).'
         }
       }
-      if (options.demo) await demoPause(650)
+      if (options.demo) await demoPause(400)
       result.state = 'verified'; result.diagnostics.verification = 'satisfied'; result.diagnostics.execution = dispatched ? 'dispatched' : 'not-needed'; result.diagnostics.precondition = 'satisfied'; lastVerified = index; documentToken = await token(); await report(status('running'))
     }
     await report(status('completed'))

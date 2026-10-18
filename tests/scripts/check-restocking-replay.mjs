@@ -38,6 +38,7 @@ await type('#nova-email','alex@nova.test');await type('#nova-password','nova-dem
 await until(()=>guest.eval("!!document.querySelector('.nova-content')"),'Login failed');
 await api('navigate',token,base+'/nova/restocking');
 await until(()=>guest.eval("!!document.querySelector('[data-testid=restock-demo-stock]')"),'Restocking page missing');
+if(await guest.eval("!!document.querySelector('.nova-sample-data summary')"))await nativeClick('.nova-sample-data summary');
 await nativeClick('[data-testid=restock-demo-stock]');
 await until(()=>guest.eval("document.querySelector('#restock-hoodie-stock')?.value==='1'"),'Demo stock missing');
 const bounds=(await api('diagnostics',token)).bounds;

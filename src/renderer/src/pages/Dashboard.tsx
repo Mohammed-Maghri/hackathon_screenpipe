@@ -1,3 +1,5 @@
+import { workflowClient, preparedDiscovery } from "../data/workflowClient";
+import { workflowPrompts, demoWorkflow, matchDemo, type DemoScenario } from "../data/demoDiscovery";
 import { ActivityTimeline } from "../components/ActivityTimeline";
 import { SavedWorkflowCard } from "../components/SavedWorkflowCard";
 import { Database, FileText, ChevronDown } from "lucide-react";
@@ -38,6 +40,8 @@ export function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const [prompt, setPrompt] = useState("");
+  const demoMode = preparedDiscovery;
+  const [demoChoice, setDemoChoice] = useState(false);
   const [range, setRange] =
     useState<import("../../../shared/discovery").DiscoveryRequest["timeRange"]>(
       "Last 7 days",
@@ -91,12 +95,12 @@ export function Dashboard() {
     const request = ++listRequest.current;
     setWorkflowsLoading(true);
     setWorkflowsError("");
-    if (!window.ghost) {
+    if (!window.ghost && !preparedDiscovery) {
       setWorkflowsError("Open the desktop app to load your saved workflows.");
       setWorkflowsLoading(false);
       return;
     }
-    void window.ghost
+    void workflowClient
       .listWorkflows(workflowPage * pageSize, { limit: pageSize })
       .then((result) => {
         if (!active || request !== listRequest.current) return;
@@ -147,21 +151,24 @@ export function Dashboard() {
       }),
     [],
   );
-  async function generateWorkflow(request: DiscoveryRequest) {
+  async function generateWorkflow(request: DiscoveryRequest, chosenDemo?: DemoScenario) {
     if (!request.prompt.trim() || preparingRef.current) return;
-    if (!window.ghost) {
+    if (!window.ghost && !preparedDiscovery) {
       setGenerationMessage(
         "Open Ghost in the desktop app to connect to the backend.",
       );
       return;
     }
+    const scenario = demoMode ? chosenDemo ?? matchDemo(request.prompt) : null;
+    if (demoMode && !scenario) { setDemoChoice(true); setGenerationMessage('Choose the application for this workflow.'); return; }
+    setDemoChoice(false);
     preparingRef.current = true;
     setPreparing(true);
     setGenerationMessage("");
     setWorkflowPage(0);
     setQuery("");
     setGeneration({ request, phase: "activity" });
-    setGenerationStage("Checking Screenpipe discovery…");
+    setGenerationStage(demoMode ? "Preparing your workflow…" : "Checking Screenpipe discovery…");
     const fail = (error: string) => {
       setGeneration({ request, phase: "failed", error });
       setGenerationMessage("");
@@ -170,10 +177,9 @@ export function Dashboard() {
       const signature = JSON.stringify(request);
       if (generationRequest.current?.signature !== signature)
         generationRequest.current = { signature, id: crypto.randomUUID() };
-      const result = await window.ghost.discoverWorkflow({
-        ...request,
-        requestId: generationRequest.current.id,
-      });
+      const result = demoMode && scenario
+        ? await workflowClient.createWorkflow(demoWorkflow(scenario, request.prompt))
+        : await window.ghost!.discoverWorkflow({ ...request, requestId: generationRequest.current.id });
       if (!result.ok) {
         fail(result.error);
         return;
@@ -219,7 +225,7 @@ export function Dashboard() {
       setRefresh((value) => value + 1);
       setGeneration(null);
       generationRequest.current = null;
-      navigate(`/workflows/${workflow.id}`);
+      navigate(`/workflows/${workflow.id}`, { state: demoMode ? { assembling: workflow.id } : null });
     } catch {
       fail(
         "Unable to generate this workflow. Retry to recover any saved result.",
@@ -362,6 +368,7 @@ export function Dashboard() {
               <p className="mt-5 text-base text-muted max-[760px]:text-sm">
                 Turn a routine into a workflow. Start with what you do.
               </p>
+              {demoChoice && <div className="mt-3 flex justify-center gap-2">{(['nova','forma'] as const).map(scenario=><button className="dash-button" key={scenario} onClick={()=>void generateWorkflow({prompt,timeRange:range},scenario)}>{scenario==='nova'?'NOVA restocking':'Forma finance'}</button>)}</div>}
               <section
                 className="discovery-composer mt-8 text-left"
                 aria-label="Find a workflow"
@@ -403,7 +410,7 @@ export function Dashboard() {
                     <details className="relative">
                       <summary className="flex cursor-pointer list-none items-center gap-2 rounded-control py-1.5 text-xs text-muted [&::-webkit-details-marker]:hidden">
                         <Database size={15} />
-                        Screenpipe history
+                        {demoMode ? 'Workflow context' : 'Screenpipe history'}
                         <ChevronDown size={12} />
                       </summary>
                       <div className="absolute top-full left-0 z-10 mt-2 w-64 rounded-card border border-line bg-overlay p-4 shadow-float">
@@ -427,8 +434,7 @@ export function Dashboard() {
                           id="home-discovery-source"
                           className="mt-3 text-xs leading-relaxed text-muted"
                         >
-                          Discovery uses your configured local Screenpipe
-                          history.
+                          {demoMode ? 'Prepared demo context. Original prompt is preserved; the draft is saved on this device.' : 'Discovery uses your configured local Screenpipe history.'}
                         </p>
                       </div>
                     </details>
@@ -458,21 +464,21 @@ export function Dashboard() {
               <div className="mt-4 flex flex-wrap justify-center gap-2 [&>button]:inline-flex [&>button]:items-center [&>button]:gap-2 [&>button]:rounded-control [&>button]:border [&>button]:border-line [&>button]:px-3 [&>button]:py-2 [&>button]:text-xs [&>button]:text-muted [&>button]:hover:border-action-line [&>button]:hover:bg-action-soft [&>button]:hover:text-action">
                 <button
                   onClick={() => {
-                    setPrompt("Find my daily reporting process");
+                    setPrompt(demoMode ? workflowPrompts.nova : "Find my daily reporting process");
                     promptRef.current?.focus();
                   }}
                 >
                   <FileText size={14} />
-                  Team updates
+                  {demoMode ? "NOVA · Restock products" : "Team updates"}
                 </button>
                 <button
                   onClick={() => {
-                    setPrompt("Show how I handle customer follow-ups");
+                    setPrompt(demoMode ? workflowPrompts.forma : "Show how I handle customer follow-ups");
                     promptRef.current?.focus();
                   }}
                 >
                   <Bell size={14} />
-                  Customer follow-ups
+                  {demoMode ? "Forma · Review payments" : "Customer follow-ups"}
                 </button>
                 <button onClick={() => setPanel("examples")}>
                   <Plus size={14} />
@@ -697,7 +703,7 @@ export function Dashboard() {
                 <ChevronDown size={15} />
               </summary>
               <div className="mt-6">
-                <ActivityTimeline
+                {demoMode ? <p className="text-sm text-muted">Live activity is not connected in this configuration.</p> : <ActivityTimeline
                   busy={preparing}
                   onDiscover={(selectedRange) =>
                     void generateWorkflow({
@@ -708,7 +714,7 @@ export function Dashboard() {
                       selectedRange,
                     })
                   }
-                />
+                />}
               </div>
             </details>
           </div>
@@ -728,11 +734,11 @@ export function Dashboard() {
         >
           {panel === "examples" && (
             <div className="grid gap-2">
-              {[
+              {(demoMode ? Object.values(workflowPrompts) : [
                 "Find my daily reporting process",
                 "Show how I handle customer follow-ups",
                 "Create a workflow from my Notion updates",
-              ].map((example) => (
+              ]).map((example) => (
                 <button
                   key={example}
                   className="dash-button justify-between text-left whitespace-normal"

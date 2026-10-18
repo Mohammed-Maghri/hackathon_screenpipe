@@ -1,3 +1,5 @@
+import { installPrelearnedBrowser, prelearnedSource, preparedLogin } from './prelearnedBrowser'
+import { teachHostedTask } from './teachHostedTask'
 import { captureBrowserOutputs } from './dataProcessing/captureOutputs'
 import { LoginVault } from './loginVault'
 import { signInWithSavedLogin } from './savedLogin'
@@ -190,6 +192,14 @@ export function registerTeachingBrowser() {
     try { await signInWithSavedLogin(entry.contents, entry.owner, login, controller.signal); return { ok: true } }
     finally { if (entry.replay === controller) entry.replay = undefined; publish(entry) }
   })
+  ipcMain.handle('recording:prepare-hosted', async (event, workflowId: unknown, nodes: unknown) => {
+    owner(event)
+    if (typeof workflowId !== 'string' || !/^[a-f0-9-]{36}$/.test(workflowId) || !Array.isArray(nodes) || nodes.length > 50) throw new Error('Invalid browser tasks.')
+    for (const node of nodes) {
+      if (!node || typeof node.id !== 'string' || !/^[a-f0-9-]{36}$/.test(node.id) || typeof node.url !== 'string') throw new Error('Invalid browser task.')
+      await installPrelearnedBrowser(join(app.getPath('userData'), 'recordings'), workflowId, node.id, node.url)
+    }
+  })
   ipcMain.handle('recording:learned', async (event, workflowId: unknown, nodeIds: unknown) => {
     owner(event)
     if (typeof workflowId !== 'string' || !Array.isArray(nodeIds) || nodeIds.length > 500 || nodeIds.some(id => typeof id !== 'string')) throw new Error('Invalid workflow steps.')
@@ -197,7 +207,7 @@ export function registerTeachingBrowser() {
     return Promise.all(nodeIds.map(async nodeId => {
       const saved = await RecordingStore.restore(join(app.getPath('userData'), 'recordings'), workflowId, nodeId)
       if (!saved) return { nodeId, status: 'Needs teaching' }
-      let learned = false
+      let learned = !!(await prelearnedSource(saved))
       try {
         const replay = JSON.parse(await readFile(join(saved.directory, 'last-replay.json'), 'utf8'))
         const exported = JSON.parse(await saved.exportJSON())
@@ -207,11 +217,29 @@ export function registerTeachingBrowser() {
       return { nodeId, status: learned ? 'Learned' : 'Recorded' }
     }))
   })
+  ipcMain.handle('recording:teach-hosted', async (event, token) => {
+    const entry = get(event, token)
+    if (!entry || entry.replay || entry.recording.state !== 'recording' || entry.authenticationPaused) throw new Error('Start a task recording on the signed-in page first.')
+    const controller = new AbortController(); entry.replay = controller
+    try {
+      entry.owner.focus()
+      await teachHostedTask(entry.contents, controller.signal,
+        () => !!entry.captureReady && !entry.closing && entry.view.getVisible() && entry.recording.state === 'recording',
+        async () => {
+          const data = JSON.parse(await entry.recording.exportJSON())
+          return data.events.filter((item: {type: string; data: {state?: string}}) => item.type === 'download-done' && item.data.state === 'completed').length
+        })
+      await entry.frames.flush()
+      entry.recording.state = 'stopped'; entry.frames.setEnabled(false)
+      return await entry.recording.stop(true)
+    } finally { if (entry.replay === controller) entry.replay = undefined }
+  })
   ipcMain.handle('recording:status', (event, token) => { const entry = get(event, token); if (!entry) throw new Error('Session closed.'); return entry.recording.status() })
   ipcMain.handle('recording:sync-secrets', (event, token) => { const entry = get(event, token); if (!entry) throw new Error('Session closed.'); return entry.recording.syncSecrets() })
   ipcMain.handle('recording:export', async (event, token) => { const entry = get(event, token); if (!entry) throw new Error('Session closed.'); return entry.recording.exportJSON() })
   ipcMain.handle('recording:control', async (event, token, action: unknown) => {
     const entry = get(event, token); if (!entry) throw new Error('Session closed.')
+    if (entry.replay) throw new Error('Cancel the active browser task before changing recording state.')
     if (!['pause', 'resume', 'stop'].includes(String(action))) throw new Error('Unknown recording action.')
     if (entry.recording.state === 'stopped') return action === 'stop' ? entry.recording.stop(true) : entry.recording.status()
     if (action === 'resume' && entry.authenticationPaused) throw new Error('Finish signing in, then choose Start task recording to create a clean recording.')
@@ -229,7 +257,13 @@ export function registerTeachingBrowser() {
     if (entry.recording.state !== 'stopped') throw new Error('Stop recording before testing it.')
     const { events, inputs, inputSource } = await entry.recording.replayData()
     const plan = prepareReplay(events, inputs)
-    return { ...plan, preview: { ...plan.preview, inputSource } }
+    const login = plan.preview.startURL && !plan.steps.some(step => step.data.encryptedValue)
+      ? await vault.get(loginScope(entry)) ?? await preparedLogin(join(app.getPath('userData'), 'recordings'), entry.recording.workflowId, entry.recording.nodeId, plan.preview.startURL) : null
+    if (login) plan.preview.loginURL = login.loginURL
+    const source = await prelearnedSource(entry.recording)
+    if (source) (plan.preview.notes ??= []).push(`Pre-taught ${source.scenario.toUpperCase()} task: navigation and exports verified ${source.verifiedAt}. This run creates fresh downloads. The public demo login is available automatically.`)
+    const saved = plan.preview.interactions === 0 ? await RecordingStore.restore(join(app.getPath('userData'), 'recordings'), entry.recording.workflowId, entry.recording.nodeId) : null
+    return { ...plan, preview: { ...plan.preview, inputSource, savedRecordingAvailable: !!saved && saved.id !== entry.recording.id } }
   }
   ipcMain.handle('replay:inputs', async (event, token, inputs: SavedInput[]) => {
     const entry = get(event, token); if (!entry || entry.replay) throw new Error('Session unavailable or replay running.')
@@ -289,12 +323,12 @@ export function registerTeachingBrowser() {
         await entry.recording.saveReplay(status, planHash)
         if (!entry.owner.isDestroyed()) entry.owner.webContents.send('replay:status', { sessionId: entry.token, status: { ...status, recordingId: entry.recording.id, workflowId: entry.recording.workflowId } })
 
-      }, action => authorizeRecordedActions === true ? Promise.resolve(true) : new Promise<boolean>(resolve => { entry.approval = { sequence: action.sequence, resolve } }), () => entry.view.getVisible(), entry.frames, async targetURL => {
+      }, action => authorizeRecordedActions === true ? Promise.resolve(true) : new Promise<boolean>(resolve => { entry.approval = { sequence: action.sequence, resolve } }), () => entry.view.getVisible(), entry.frames, async (targetURL, progress) => {
         if (plan.steps.some(step => step.data.encryptedValue)) return
-        const login = await vault.get(loginScope(entry))
+        const login = await vault.get(loginScope(entry)) ?? await preparedLogin(join(app.getPath('userData'), 'recordings'), entry.recording.workflowId, entry.recording.nodeId, targetURL)
         if (!login) return
         if (new URL(targetURL).origin !== new URL(login.loginURL).origin) throw new Error('Saved login belongs to a different website. Update Login settings.')
-        await signInWithSavedLogin(entry.contents, entry.owner, login, controller.signal)
+        await signInWithSavedLogin(entry.contents, entry.owner, login, controller.signal, {demo:mode === 'demo', progress})
       }, event => entry.recording.decryptInput(event), { resume: checkpoint, authorized: authorizeRecordedActions === true, demo: mode === 'demo' }).catch(() => { entry.error = 'Unable to persist replay checkpoint. Replay stopped.'; publish(entry) }).finally(() => { entry.approval?.resolve(false); entry.approval = undefined; if (entry.replay === controller) entry.replay = undefined })
     } catch (error) { entry.replay = undefined; throw error }
   })
@@ -330,11 +364,16 @@ export function registerTeachingBrowser() {
     let recording: RecordingStore
     try {
       await Promise.all([...pendingSaves])
+      if (fresh !== true) await installPrelearnedBrowser(root, decodeURIComponent(workflowId), decodeURIComponent(nodeId), url)
       const restored = fresh === true ? null : await RecordingStore.restore(root, decodeURIComponent(workflowId), decodeURIComponent(nodeId))
       // The node's configured URL controls opening the browser. Replay retains
       // its own recorded start URL; restoring a recording must not override edits.
       if (cancelled || window.isDestroyed() || ownerContents.isDestroyed() || !isSessionLocation(ownerContents.getURL())) throw new Error('Teaching session closed.')
       recording = restored ?? new RecordingStore(root, decodeURIComponent(workflowId), decodeURIComponent(nodeId))
+      if (restored) {
+        const login = await preparedLogin(root, decodeURIComponent(workflowId), decodeURIComponent(nodeId), url)
+        if (login) url = login.loginURL
+      }
     } finally {
       if (pendingOpens.get(window.id) === request) pendingOpens.delete(window.id)
       ownerContents.removeListener('did-start-navigation', cancelNavigation)
