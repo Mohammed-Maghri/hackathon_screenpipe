@@ -2,6 +2,10 @@
 interface Window {
   ghost?: {
     nova: import('../../shared/novaPipeline').NovaAPI
+    slack: {
+      onReportReady: (listener: (value: { reused: boolean }) => void) => () => void
+      openChannel: () => Promise<void>
+    }
     results: import('../../shared/results').ResultsAPI
     scripts: import('../../shared/workflowScripts').WorkflowScriptsAPI
     runtimeLogic: import('../../shared/processingPlan').RuntimeLogicAPI
@@ -22,6 +26,7 @@ interface Window {
     updateWorkflow: (id: string, input: import('../../shared/discovery').WorkflowUpdate) => Promise<import('../../shared/discovery').WorkflowDetailResult>
     setAppearance?: (theme: 'light' | 'dark') => Promise<void>
     platform: string
+    demoCinematicFast: boolean
     controlWindow: (action: 'minimize' | 'maximize' | 'close') => void
   }
 }

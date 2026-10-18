@@ -3,6 +3,7 @@ import type { RecordedEvent, RecordingStatus, ReplayStatus, ReplayPreview } from
 import type { BrowserBounds, BrowserAction, BrowserState } from '../shared/browser'
 contextBridge.exposeInMainWorld('ghost', {
   platform: process.platform,
+  demoCinematicFast: process.env.GHOST_DEMO_FAST_CINEMATIC === '1',
   nova: {
     saveScenario: (input: Parameters<import('../shared/novaPipeline').NovaAPI['saveScenario']>[0]) => ipcRenderer.invoke('nova:saveScenario', input),
     approveScenario: (input: {runId:string;scenarioId:string}) => ipcRenderer.invoke('nova:approveScenario', input),
@@ -16,6 +17,14 @@ contextBridge.exposeInMainWorld('ghost', {
     approve: (id: string) => ipcRenderer.invoke('nova:approve', id),
     remove: (id: string) => ipcRenderer.invoke('nova:remove', id),
     reveal: (run: string, file: string) => ipcRenderer.invoke('nova:reveal', run, file),
+  },
+  slack: {
+    onReportReady: (listener: (value: { reused: boolean }) => void) => {
+      const receive = (_event: Electron.IpcRendererEvent, value: { reused: boolean }) => listener(value)
+      ipcRenderer.on('slack:report-ready', receive)
+      return () => ipcRenderer.removeListener('slack:report-ready', receive)
+    },
+    openChannel: () => ipcRenderer.invoke('slack:open-channel'),
   },
   results: {
     list: () => ipcRenderer.invoke('results:list'),
