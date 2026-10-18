@@ -1,4 +1,4 @@
-import {postNovaReport} from './screenpipeSlack'
+import {ghostSlackDestination,postNovaReport} from './screenpipeSlack'
 import { NovaPipeline } from './novaPipeline'
 import { ResultsStore } from './resultsStore'
 import { WorkflowScriptStore } from './workflowScripts'
@@ -10,7 +10,7 @@ import { WorkflowScheduler } from './workflowScheduler'
 import { graphSchema } from '../shared/dataProcessing'
 import { RuntimeLogicService } from './dataProcessing/runtimeLogic'
 import { LocalProcessingService } from './dataProcessing/service'
-import { app, BrowserWindow, dialog, ipcMain, nativeTheme, session, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, Notification, session, shell } from 'electron'
 import { deleteSavedWorkflow, prepareWorkflowDiscovery, listSavedWorkflows, getSavedWorkflow, mutateWorkflowBackend, mockWorkflowActivity } from './discoveryBackend'
 import { registerTeachingBrowser } from './teachingBrowser'
 import { appendFile, mkdir } from 'node:fs/promises'
@@ -83,6 +83,10 @@ app.whenReady().then(() => {
       throw new Error('Unauthorized backend request')
     }
   }
+  ipcMain.handle('slack:open-channel', event => {
+    authorizeBackend(event)
+    return shell.openExternal(`slack://channel?team=${encodeURIComponent(ghostSlackDestination.workspace)}&id=${encodeURIComponent(ghostSlackDestination.channel)}`)
+  })
   ipcMain.handle('appearance:set', (event, theme: unknown) => {
     authorizeBackend(event)
     if (theme !== 'light' && theme !== 'dark') throw new Error('Invalid appearance')
@@ -97,7 +101,26 @@ app.whenReady().then(() => {
   ipcMain.handle('scripts:generate', (event, workflow) => { authorizeBackend(event); return scripts.generate(workflow) })
   ipcMain.handle('scripts:read', (event, workflowId, revision, file) => { authorizeBackend(event); return scripts.read(workflowId, revision, file) })
   ipcMain.handle('scripts:reveal', async (event, workflowId, revision) => { authorizeBackend(event); shell.showItemInFolder(join(await scripts.path(workflowId, revision), 'manifest.json')) })
-  const nova = new NovaPipeline(join(app.getPath('userData'), 'nova-pipeline'), scripts, results, teaching.runSaved, postNovaReport)
+  const nova = new NovaPipeline(join(app.getPath('userData'), 'nova-pipeline'), scripts, results, teaching.runSaved, process.env.GHOST_SLACK_DELIVERY === 'draft' ? undefined : postNovaReport, receipt => {
+    const appToast = process.env.GHOST_DEMO_APP_TOAST === '1'
+    if (!appToast && !Notification.isSupported()) return
+    const show = () => {
+      if (appToast) {
+        BrowserWindow.getAllWindows().forEach(window => window.webContents.send('slack:report-ready', { reused: process.env.GHOST_DEMO_REUSE_SLACK_NOTIFICATION === '1' }))
+        return
+      }
+      const notification = new Notification({ title: 'Ghost', body: process.env.GHOST_DEMO_REUSE_SLACK_NOTIFICATION === '1' ? 'Latest NOVA report is in #daily-reports. Click to open Slack.' : 'Report sent to #daily-reports. Click to open Slack.' })
+      notification.on('click', () => {
+        const team = receipt.workspace ?? ghostSlackDestination.workspace
+        const channel = receipt.channel ?? ghostSlackDestination.channel
+        void shell.openExternal(`slack://channel?team=${encodeURIComponent(team)}&id=${encodeURIComponent(channel)}`).catch(error => logFailure('slack-link', error))
+      })
+      notification.show()
+    }
+    const delay = Number(process.env.GHOST_DEMO_NOTIFICATION_DELAY_MS)
+    if (Number.isInteger(delay) && delay > 0 && delay <= 30000) setTimeout(show, delay)
+    else show()
+  })
   for (const method of ['configure', 'run', 'list', 'scheduleTests', 'cancelSchedule', 'cancelRun', 'approve', 'remove', 'saveScenario', 'approveScenario'] as const) {
     ipcMain.handle('nova:' + method, (event, input) => { authorizeBackend(event); return (nova[method] as (input: unknown) => unknown).call(nova, input) })
   }
