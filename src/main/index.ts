@@ -1,3 +1,4 @@
+import { WorkflowScriptStore } from './workflowScripts'
 import { createActivityTimeline } from './activityTimeline'
 import { existsSync } from 'node:fs'
 import { loadEnvFile } from 'node:process'
@@ -84,6 +85,11 @@ app.whenReady().then(() => {
     if (theme !== 'light' && theme !== 'dark') throw new Error('Invalid appearance')
     BrowserWindow.fromWebContents(event.sender)!.setBackgroundColor(theme === 'dark' ? '#10151e' : '#ffffff')
   })
+  const scripts = new WorkflowScriptStore(join(app.getPath('userData'), 'workflow-scripts'))
+  ipcMain.handle('scripts:latest', (event, workflowId) => { authorizeBackend(event); return scripts.latest(workflowId) })
+  ipcMain.handle('scripts:generate', (event, workflow) => { authorizeBackend(event); return scripts.generate(workflow) })
+  ipcMain.handle('scripts:read', (event, workflowId, revision, file) => { authorizeBackend(event); return scripts.read(workflowId, revision, file) })
+  ipcMain.handle('scripts:reveal', async (event, workflowId, revision) => { authorizeBackend(event); shell.showItemInFolder(join(await scripts.path(workflowId, revision), 'manifest.json')) })
   const processing = new LocalProcessingService(app.getPath('userData'))
   const runtimeLogic = new RuntimeLogicService(app.getPath('userData'), processing)
   const scheduler = new WorkflowScheduler(app.getPath('userData'), async id => {

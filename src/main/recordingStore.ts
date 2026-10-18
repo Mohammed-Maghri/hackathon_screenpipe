@@ -45,7 +45,7 @@ export class RecordingStore {
   decryptInput(event: RecordedEvent) { return this.secrets.decrypt(event.data.encryptedValue, this.id + ':' + event.url) }
   status(): RecordingStatus { return { id: this.id, state: this.state, eventCount: this.count, path: this.directory, error: this.error, secretSync: this.secretSync } }
   async flush() { await this.queue; if (this.error) throw new Error(this.error) }
-  async stop(saveForNode = false) {
+  async stop(saveForNode = false, syncSecrets = true) {
     this.state = 'stopped'
     const saving = this.stopQueue.then(async () => {
       await this.flush()
@@ -59,7 +59,7 @@ export class RecordingStore {
           await rename(path + '.tmp', path)
         }
       }
-      if (saveForNode && (this.inputsDirty || this.secretSync !== 'saved')) await this.syncSecrets()
+      if (saveForNode && syncSecrets && (this.inputsDirty || this.secretSync !== 'saved')) await this.syncSecrets()
       return this.status()
     })
     this.stopQueue = saving.then(() => {}, () => {})

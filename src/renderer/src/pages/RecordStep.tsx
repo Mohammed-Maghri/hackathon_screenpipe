@@ -1,3 +1,4 @@
+import { hostedBrowserTask } from "../../../shared/hostedBrowserTask";
 import { browserInstructions } from "../../../shared/browserInstructions";
 import {
   useEffect,
@@ -120,9 +121,8 @@ export function RecordStep() {
     canGoForward: false,
     error: null,
   });
-  const [sessionAttempt, setSessionAttempt] = useState(
-    location.state?.fresh === true ? 1 : 0,
-  );
+  const [sessionAttempt, setSessionAttempt] = useState(0);
+  const [freshSession, setFreshSession] = useState(location.state?.fresh === true);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const [paused, setPaused] = useState(false);
@@ -244,9 +244,9 @@ export function RecordStep() {
       void browser
         .open(
           sessionId,
-          sessionAttempt && /^https?:/.test(state.url) ? state.url : startURL,
+          freshSession && /^https?:/.test(state.url) ? state.url : startURL,
           bounds(),
-          sessionAttempt > 0,
+          freshSession,
         )
         .then((initial) => {
           if (!disposed) {
@@ -314,7 +314,7 @@ export function RecordStep() {
       void browser.close(sessionId).catch(() => {});
     };
     // One native view per teaching route; UI state must not recreate the website.
-  }, [browser, id, nodeId, startURL, sessionAttempt, location.pathname]);
+  }, [browser, id, nodeId, startURL, sessionAttempt, freshSession, location.pathname]);
   // Router links can update the hash with pushState without a hashchange event.
   useEffect(() => {
     pendingBrowserOpen.current?.();
@@ -346,6 +346,16 @@ export function RecordStep() {
       setError("Browser action failed. Please try again.");
     }
   }
+  async function teachHosted() {
+    if (!browser) return;
+    setRecordingBusy(true); setError("");
+    try {
+      const status = await browser.teachHosted(token.current);
+      setRecordingStatus(status); setStopped(true); setPaused(false);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Automatic teaching failed.");
+    } finally { setRecordingBusy(false); }
+  }
   async function controlRecording(action: "pause" | "resume" | "stop") {
     if (!browser) return;
     setRecordingBusy(true);
@@ -372,6 +382,7 @@ export function RecordStep() {
     try {
       await browser.recordingControl(token.current, "stop");
       setPreview(null);
+      setFreshSession(true);
       setSessionAttempt((value) => value + 1);
     } catch (reason) {
       setError(
@@ -985,6 +996,13 @@ export function RecordStep() {
                   )}
                 </div>
               )}
+              {!stopped && !replaying && hostedBrowserTask(state.url) && (
+                <button className="dash-button dash-button--primary" disabled={!ready || recordingBusy || paused}
+                  onClick={() => void teachHosted()}>
+                  {recordingBusy ? "Capturing website actions…" : "Perform exports & save recording"}
+                </button>
+              )}
+              {recordingBusy && <button className="dash-button" onClick={() => void browser?.replayCancel(token.current)}>Cancel automatic task</button>}
               {replaying ? (
                 <button
                   className="stop-recording flex min-h-9 items-center justify-center gap-2 rounded-control border border-danger/20 bg-danger/5 px-3 py-2 font-sans text-xs text-danger transition-colors duration-150 enabled:hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-45"
@@ -1128,8 +1146,10 @@ export function RecordStep() {
           onClose={() => setPreview(null)}
         >
           <p className="modal-copy">
-            Replay {preview.steps} actions from {preview.startURL}. Recorded
-            login inputs are filled automatically.
+            {preview.interactions === 0
+              ? `No website interactions captured. ${preview.navigations ?? preview.steps} page navigations were recorded from ${preview.startURL ?? "the browser"}.`
+              : `Replay ${preview.interactions ?? preview.steps} interactions${preview.navigations ? ` and ${preview.navigations} page navigations` : ""} from ${preview.loginURL ?? preview.startURL}.`}
+            {preview.loginURL ? " Ghost will fill the saved email and password, click Sign in, then continue with the recorded task." : preview.inputs.some(input => input.secret && input.saved) && " Saved login inputs will be filled automatically."}
           </p>
           <p className="modal-copy">
             This repeats real website actions, including submitting forms,
@@ -1137,9 +1157,9 @@ export function RecordStep() {
             recorded actions for this run.
           </p>
           <p className="modal-copy" role="status">
-            {preview.inputSource === "backend"
-              ? "Saved inputs and passwords loaded from the server. They will be filled automatically."
-              : "Server unavailable. Using the saved inputs and passwords on this device."}
+            {!preview.inputs.length ? "This recording has no saved input fields."
+              : preview.inputSource === "backend" ? "Saved inputs loaded from the server."
+              : "Using inputs saved on this device. A server connection is not required for replay."}
           </p>
           {preview.notes?.map((note) => (
             <p className="modal-copy" key={note}>
@@ -1152,6 +1172,7 @@ export function RecordStep() {
             </p>
           ))}
           <div className="replay-preview-actions flex flex-wrap items-center gap-3">
+            {preview.savedRecordingAvailable && <button className="dash-button dash-button--primary" onClick={() => { setPreview(null); setFreshSession(false); setSessionAttempt(value => value + 1); }}>Use saved recording</button>}
             {preview.blockers.length > 0 && (
               <button
                 className="dash-button dash-button--primary"

@@ -37,3 +37,6 @@
 /* Keep wide tables and their absolute accessible labels inside the scroll area. */
 .nova-table-scroll{position:relative;max-width:100%}
 .nova-lower-grid>.nova-card{min-width:0}
+.nova-sample-data{flex-shrink:0;max-width:100%;font-size:12px;color:var(--nova-muted,#64748b)}
+.nova-sample-data summary{cursor:pointer;padding:8px 0}
+.nova-sample-data[open] .nova-button{margin-top:8px}

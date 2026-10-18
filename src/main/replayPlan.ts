@@ -92,6 +92,8 @@ export function buildReplayPlan(events: RecordedEvent[]): { steps: RecordedEvent
     event.data.requiresApproval = !t?.loginAction && ((event.type === 'click' && !consent && !event.data.focusOnly) || (event.type === 'keydown' && event.data.key === 'Enter'))
     steps.push(event)
   }
-  if (!steps.some(e => e.type !== 'navigation')) blockers.add('There are no replayable interactions in this recording.')
-  return { steps, preview: { notes, inputs: recordingInputs(steps), steps: steps.length, startURL: steps.find(e => e.type === 'navigation')?.url ?? steps[0]?.url ?? null, blockers: [...blockers] } }
+  const navigations = steps.filter(e => ['navigation', 'frame-navigation'].includes(e.type)).length
+  const interactions = steps.length - navigations
+  if (!interactions) blockers.add(`There are no replayable interactions in this recording. Captured ${navigations} page navigation${navigations === 1 ? '' : 's'}, but no clicks, inputs, selections or scrolling. Use your saved recording, or start a new recording and perform the website task before stopping.`)
+  return { steps, preview: { interactions, navigations, notes, inputs: recordingInputs(steps), steps: steps.length, startURL: steps.find(e => e.type === 'navigation')?.url ?? steps[0]?.url ?? null, blockers: [...blockers] } }
 }

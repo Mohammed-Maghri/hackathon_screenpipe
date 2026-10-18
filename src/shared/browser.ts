@@ -14,7 +14,9 @@ export interface TeachingBrowser {
   action: (sessionId: string, action: BrowserAction) => Promise<void>
   bounds: (sessionId: string, bounds: BrowserBounds) => void
   close: (sessionId: string) => Promise<void>
+  teachHosted: (sessionId: string) => Promise<RecordingStatus>
   recordingControl: (sessionId: string, action: 'pause' | 'resume' | 'stop') => Promise<RecordingStatus>
+  prepareHosted: (workflowId: string, nodes: {id: string; url: string}[]) => Promise<void>
   learnedSteps: (workflowId: string, nodeIds: string[]) => Promise<{ nodeId: string; status: 'Needs teaching' | 'Recorded' | 'Learned' }[]>
   syncSecrets: (sessionId: string) => Promise<RecordingStatus>
   recordingStatus: (sessionId: string) => Promise<RecordingStatus>

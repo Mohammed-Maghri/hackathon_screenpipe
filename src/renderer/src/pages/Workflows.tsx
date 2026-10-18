@@ -1,3 +1,4 @@
+import { workflowClient, preparedDiscovery } from "../data/workflowClient";
 import type { WorkflowSchedule } from "../../../shared/workflowSchedule";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { LayoutGrid, Plus, RefreshCw, Search } from "../components/ImageIcon";
@@ -86,9 +87,9 @@ export function Workflows() {
     setDeleting(true);
     setDeleteError("");
     try {
-      if (!window.ghost)
+      if (!window.ghost && !preparedDiscovery)
         throw new Error("Open Ghost desktop to delete workflows.");
-      const result = await window.ghost.deleteWorkflow(deleteTarget.id);
+      const result = await workflowClient.deleteWorkflow(deleteTarget.id);
       if (!result.ok) throw new Error(result.error);
       setDeleteTarget(null);
       setRefresh((value) => value + 1);
@@ -111,9 +112,9 @@ export function Workflows() {
     setError("");
     const timer = setTimeout(async () => {
       try {
-        if (!window.ghost)
+        if (!window.ghost && !preparedDiscovery)
           throw new Error("Open Ghost desktop to load your saved workflows.");
-        const result = await window.ghost.listWorkflows(page * pageSize, {
+        const result = await workflowClient.listWorkflows(page * pageSize, {
           limit: pageSize,
           status: tabs[tab],
           search: query,
@@ -154,9 +155,9 @@ export function Workflows() {
     setCreating(true);
     setCreateError("");
     try {
-      if (!window.ghost)
+      if (!window.ghost && !preparedDiscovery)
         throw new Error("Open Ghost desktop to create a workflow.");
-      const result = await window.ghost.createWorkflow({
+      const result = await workflowClient.createWorkflow({
         name,
         description: String(form.get("description") ?? "").trim(),
       });

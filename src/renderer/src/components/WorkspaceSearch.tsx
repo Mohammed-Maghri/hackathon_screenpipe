@@ -1,3 +1,4 @@
+import { workflowClient, preparedDiscovery } from "../data/workflowClient";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { ArrowUpRight, House, Search, Settings2, Workflow } from "lucide-react";
@@ -16,12 +17,12 @@ export function WorkspaceSearch({ onClose }: { onClose: () => void }) {
     setLoading(true);
     setError("");
     const timer = setTimeout(() => {
-      if (!window.ghost) {
+      if (!window.ghost && !preparedDiscovery) {
         setError("Open the desktop app to search saved workflows.");
         setLoading(false);
         return;
       }
-      void window.ghost
+      void workflowClient
         .listWorkflows(0, {
           limit: 20,
           ...(query.trim() ? { search: query.trim() } : {}),

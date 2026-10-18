@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
-import { useParams } from 'react-router'
+import { workflowClient, preparedDiscovery } from "../data/workflowClient";
+import { useCallback, useEffect, useState } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router'
 import { RecordStep } from './RecordStep'
 import { WorkflowEditor } from './WorkflowEditor'
 import { WorkflowSidebar } from '../components/WorkflowSidebar'
@@ -11,6 +12,9 @@ import type { SavedWorkflowDetail } from '../../../shared/discovery'
 
 export function SavedWorkflowPage({ recording = false }: { recording?: boolean }) {
   const { id = '' } = useParams()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const finishGeneration = useCallback(() => navigate(location.pathname, { replace: true, state: null }), [navigate, location.pathname])
   const [value, setValue] = useState<SavedWorkflowDetail | null>(null)
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
@@ -18,8 +22,8 @@ export function SavedWorkflowPage({ recording = false }: { recording?: boolean }
     let active = true
     setError('')
     setValue(null)
-    if (!window.ghost) { setError('Open Ghost desktop to load this workflow.'); return }
-    void window.ghost.getWorkflow(id).then(result => {
+    if (!window.ghost && !preparedDiscovery) { setError('Open Ghost desktop to load this workflow.'); return }
+    void workflowClient.getWorkflow(id).then(result => {
       if (!active) return
       if (!result.ok) { setError(result.error); return }
       const workflow = result.workflow
@@ -32,6 +36,6 @@ export function SavedWorkflowPage({ recording = false }: { recording?: boolean }
     return () => { active = false }
   }, [id, recording, attempt])
   if (value && recording) return <RecordStep key={`${id}:${value.updatedAt}`} />
-  if (value) return <WorkflowEditor key={id} backendWorkflow={value} />
+  if (value) return <WorkflowEditor key={id} backendWorkflow={value} generating={location.state?.assembling === id} onGenerationComplete={finishGeneration} />
   return <div className="editor-shell absolute inset-0 flex overflow-hidden bg-panel font-sans text-sm leading-6 text-ink"><WorkflowSidebar /><main className="editor-not-found grid h-full min-w-0 flex-1 place-content-center gap-6 bg-canvas p-8 text-center text-ink [&>h1]:text-2xl [&>h1]:font-medium [&>h1]:tracking-tight"><p role={error ? 'alert' : 'status'}>{error || 'Loading saved workflow…'}</p>{error && <button className="dash-button" onClick={() => setAttempt(current => current + 1)}>Retry</button>}</main></div>
 }

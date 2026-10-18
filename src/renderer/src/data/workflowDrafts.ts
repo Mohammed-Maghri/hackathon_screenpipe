@@ -1,3 +1,4 @@
+import { workflowClient, preparedDiscovery } from "./workflowClient";
 import type { SavedWorkflowDetail, WorkflowCreate, WorkflowDetailResult, WorkflowUpdate } from '../../../shared/discovery'
 import type { Workflow } from './workflows'
 
@@ -39,8 +40,8 @@ export function saveWorkflowDraft(id: string, update: WorkflowUpdate): Promise<W
   if (previous?.signature === signature) return previous.result
   const result = (previous?.result ?? Promise.resolve()).then(async (): Promise<WorkflowDetailResult> => {
     try {
-      if (!window.ghost) return { ok: false, error: 'Open Ghost desktop to save this draft.' }
-      const result = await window.ghost.updateWorkflow(id, update)
+      if (!window.ghost && !preparedDiscovery) return { ok: false, error: 'Open Ghost desktop to save this draft.' }
+      const result = await workflowClient.updateWorkflow(id, update)
       if (result.ok) {
         // A completed older write must not discard newer unsaved edits.
         try { if (JSON.stringify(pendingDraftEdit(id)) === signature) localStorage.removeItem(pendingKey(id)) } catch { /* A retained recovery copy is safe to retry. */ }

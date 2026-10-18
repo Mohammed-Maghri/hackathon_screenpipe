@@ -1,3 +1,4 @@
+import { workflowClient, preparedDiscovery } from "../data/workflowClient";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { ArrowUpRight, Copy, Workflow as WorkflowIcon } from "lucide-react";
@@ -22,11 +23,11 @@ export function WorkflowTemplates() {
     setCreating(template.id);
     setError("");
     try {
-      if (!window.ghost)
+      if (!window.ghost && !preparedDiscovery)
         throw new Error(
           "Open Ghost desktop to save a template as your own draft.",
         );
-      const result = await window.ghost.createWorkflow(templateDraft(template));
+      const result = await workflowClient.createWorkflow(templateDraft(template));
       if (!result.ok) throw new Error(result.error);
       if (mounted.current) navigate(`/workflows/${result.workflow.id}`);
     } catch (cause) {
