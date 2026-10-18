@@ -98,7 +98,7 @@ const GhostCanvasNode = memo(function GhostCanvasNode({
     "!size-3 !border-2 !border-[var(--surface-panel)] !bg-[var(--canvas-edge)] hover:!bg-[var(--accent-brand)] focus-visible:!outline-2 focus-visible:!outline-[var(--focus-ring)]";
   return (
     <div
-      className={`canvas-node group/node w-[280px] rounded-card border bg-panel px-4 py-4 text-left text-ink shadow-soft transition-[border-color,box-shadow] motion-reduce:transition-none ${selected ? "is-selected border-action ring-3 ring-action-soft" : "border-strong hover:border-action"} ${runState === "RUNNING" ? "!border-action ring-3 ring-action-soft" : ""} ${item.kind === "Data Processing" ? "data-processing-node" : ""} ${trigger ? "trigger-node !w-[200px] !rounded-full !py-3" : ""} node-${item.id}`}
+      className={`canvas-node group/node w-[280px] rounded-card border bg-panel px-4 py-4 text-left text-ink shadow-soft transition-[border-color,box-shadow] motion-reduce:transition-none ${selected ? "is-selected border-action ring-3 ring-action-soft" : "border-strong hover:border-action"} ${runState === "RUNNING" ? "!border-action ring-3 ring-action-soft" : ""} ${item.kind === "Data Processing" ? "data-processing-node" : ""} ${trigger ? "trigger-node !w-[200px] !py-3" : ""} node-${item.id}`}
       data-run-state={runState}
       data-generation-phase={data.generationPhase}
       aria-pressed={selected}
@@ -148,7 +148,7 @@ const GhostCanvasNode = memo(function GhostCanvasNode({
           </p>
           <footer className="mt-4 flex items-center justify-between gap-2">
             <NodeStatusBadge status={item.status} />
-            <span className="inline-flex items-center gap-1 text-xs text-muted opacity-0 group-hover/node:opacity-100 group-focus-within/node:opacity-100">
+            <span className="inline-flex items-center gap-1 text-xs text-muted node-settings-hint">
               <Settings2 size={12} />
               Settings
             </span>
@@ -175,12 +175,12 @@ const GhostCanvasNode = memo(function GhostCanvasNode({
 const nodeTypes = { ghost: GhostCanvasNode };
 const edgeDefaults = {
   type: "smoothstep",
-  style: { stroke: "var(--canvas-edge)", strokeWidth: 1.5 },
+  style: { stroke: "var(--accent-brand)", strokeWidth: 1.5 },
   markerEnd: {
     type: MarkerType.ArrowClosed,
     width: 14,
     height: 14,
-    color: "var(--canvas-edge)",
+    color: "var(--accent-brand)",
   },
 };
 
@@ -444,6 +444,12 @@ function Canvas({
             <button className="dash-button shrink-0" onClick={onGenerationComplete}>Show all steps</button>
           </div>
           <div className="generation-thinking-track mt-3"><span style={{width: `${Math.min(100, generationTick / (nodes.length * 5) * 100)}%`}} /></div>
+        </Panel>}
+        {!generating && <Panel position="top-right" className="canvas-ghost-panel !m-5 max-[760px]:!m-3">
+          <button type="button" className="canvas-ghost-guide" onClick={()=>void instance.fitView({padding:.25,duration:window.matchMedia('(prefers-reduced-motion: reduce)').matches?0:350})} title="Fit all workflow steps" aria-label="Fit all workflow steps">
+            <span className="canvas-ghost-character" aria-hidden="true"><GhostLogo compact/></span>
+            <span><strong>{nodes.length} steps <span aria-hidden="true">·</span> {connections.length} connections</strong><small>Fit workflow to view</small></span>
+          </button>
         </Panel>}
         <Background
           variant={BackgroundVariant.Dots}

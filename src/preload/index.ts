@@ -3,6 +3,25 @@ import type { RecordedEvent, RecordingStatus, ReplayStatus, ReplayPreview } from
 import type { BrowserBounds, BrowserAction, BrowserState } from '../shared/browser'
 contextBridge.exposeInMainWorld('ghost', {
   platform: process.platform,
+  nova: {
+    saveScenario: (input: Parameters<import('../shared/novaPipeline').NovaAPI['saveScenario']>[0]) => ipcRenderer.invoke('nova:saveScenario', input),
+    approveScenario: (input: {runId:string;scenarioId:string}) => ipcRenderer.invoke('nova:approveScenario', input),
+    preview: (runId:string,fileId:string) => ipcRenderer.invoke('nova:preview',runId,fileId),
+    configure: (workflow: import('../shared/novaPipeline').NovaWorkflow) => ipcRenderer.invoke('nova:configure', workflow),
+    run: (id: string) => ipcRenderer.invoke('nova:run', id),
+    list: () => ipcRenderer.invoke('nova:list'),
+    scheduleTests: (id: string) => ipcRenderer.invoke('nova:scheduleTests', id),
+    cancelSchedule: (id: string) => ipcRenderer.invoke('nova:cancelSchedule', id),
+    cancelRun: (id: string) => ipcRenderer.invoke('nova:cancelRun', id),
+    approve: (id: string) => ipcRenderer.invoke('nova:approve', id),
+    remove: (id: string) => ipcRenderer.invoke('nova:remove', id),
+    reveal: (run: string, file: string) => ipcRenderer.invoke('nova:reveal', run, file),
+  },
+  results: {
+    list: () => ipcRenderer.invoke('results:list'),
+    compare: (recordingId: string, runId: string) => ipcRenderer.invoke('results:compare', recordingId, runId),
+    reveal: (recordingId: string, runId: string, fileId: string) => ipcRenderer.invoke('results:reveal', recordingId, runId, fileId),
+  },
   scripts: {
     latest: (id: string) => ipcRenderer.invoke('scripts:latest', id),
     generate: (workflow: import('../shared/discovery').SavedWorkflowDetail) => ipcRenderer.invoke('scripts:generate', workflow),

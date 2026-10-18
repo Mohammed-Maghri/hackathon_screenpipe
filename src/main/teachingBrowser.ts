@@ -1,3 +1,4 @@
+import {migrateNovaDemoInventory} from './novaDemoInventory'
 import { installPrelearnedBrowser, prelearnedSource, preparedLogin } from './prelearnedBrowser'
 import { teachHostedTask } from './teachHostedTask'
 import { captureBrowserOutputs } from './dataProcessing/captureOutputs'
@@ -27,6 +28,7 @@ export function registerTeachingBrowser() {
   const vault = new LoginVault(join(app.getPath('userData'), 'saved-logins'), { available: () => safeStorage.isEncryptionAvailable() && (process.platform !== 'linux' || safeStorage.getSelectedStorageBackend() !== 'basic_text'), encrypt: value => safeStorage.encryptString(value), decrypt: value => safeStorage.decryptString(value) })
   const loginScope = (entry: Entry) => JSON.stringify([entry.recording.workflowId, entry.recording.nodeId])
   const entries = new Map<number, Entry>()
+  const runObservers = new Map<number, (status: import('../shared/recording').ReplayStatus) => void>()
   const closingEntries = new Set<Entry>()
   const pendingSaves = new Set<Promise<void>>()
   const pendingOpens = new Map<number, { token: string; cancel: () => void }>()
@@ -299,7 +301,7 @@ export function registerTeachingBrowser() {
     if (error) throw new Error(error)
   })
   ipcMain.handle('replay:preview', async (event, token) => { const entry = get(event, token); if (!entry) throw new Error('Session closed.'); return (await replayPlan(entry)).preview })
-  ipcMain.handle('replay:start', async (event, token, authorizeRecordedActions = false, resume = false, mode = 'fast') => {
+  async function startReplay(event: IpcMainInvokeEvent, token: string, authorizeRecordedActions = false, resume = false, mode = 'fast') {
     const entry = get(event, token); if (!entry) throw new Error('Session closed.')
     if (entry.replay) throw new Error('A replay is already running.')
     const controller = new AbortController(); entry.replay = controller
@@ -309,6 +311,7 @@ export function registerTeachingBrowser() {
       if (plan.preview.blockers.length) {
         const status = { state: 'failed' as const, completed: 0, total: plan.steps.length, sequence: null, action: 'Planning', error: plan.preview.blockers.join(' '), failureCode: 'ACTION_UNSUPPORTED' as const, resumable: false, currentActionIndex: 0, lastVerifiedCheckpoint: -1 }
         await entry.recording.saveReplay(status, planHash)
+        runObservers.get(entry.owner.id)?.(status)
         if (!entry.owner.isDestroyed()) entry.owner.webContents.send('replay:status', { sessionId: entry.token, status })
         throw new Error(status.error)
       }
@@ -321,6 +324,7 @@ export function registerTeachingBrowser() {
           catch (error) { status = { ...status, state: 'failed', error: error instanceof Error ? error.message : 'Output capture failed.' } }
         }
         await entry.recording.saveReplay(status, planHash)
+        runObservers.get(entry.owner.id)?.(status)
         if (!entry.owner.isDestroyed()) entry.owner.webContents.send('replay:status', { sessionId: entry.token, status: { ...status, recordingId: entry.recording.id, workflowId: entry.recording.workflowId } })
 
       }, action => authorizeRecordedActions === true ? Promise.resolve(true) : new Promise<boolean>(resolve => { entry.approval = { sequence: action.sequence, resolve } }), () => entry.view.getVisible(), entry.frames, async (targetURL, progress) => {
@@ -329,13 +333,22 @@ export function registerTeachingBrowser() {
         if (!login) return
         if (new URL(targetURL).origin !== new URL(login.loginURL).origin) throw new Error('Saved login belongs to a different website. Update Login settings.')
         await signInWithSavedLogin(entry.contents, entry.owner, login, controller.signal, {demo:mode === 'demo', progress})
+        if ((await prelearnedSource(entry.recording))?.scenario === 'nova' && new URL(entry.contents.getURL()).origin === 'https://hackathon-screenpipe.vercel.app') {
+          const raw = await entry.contents.executeJavaScript('localStorage.getItem("nova-store-v1")') as string|null
+          const migrated = migrateNovaDemoInventory(raw)
+          if(migrated) {
+            await progress('Preparing the NOVA sandbox restocking inventory')
+            await entry.contents.executeJavaScript(`(()=>{if(localStorage.getItem('nova-store-v1')!==${JSON.stringify(raw)})throw Error('Inventory changed during setup');localStorage.setItem('nova-store-before-restocking-v1',${JSON.stringify(raw)});localStorage.setItem('nova-store-v1',${JSON.stringify(migrated)})})()`)
+          }
+        }
       }, event => entry.recording.decryptInput(event), { resume: checkpoint, authorized: authorizeRecordedActions === true, demo: mode === 'demo' }).catch(() => { entry.error = 'Unable to persist replay checkpoint. Replay stopped.'; publish(entry) }).finally(() => { entry.approval?.resolve(false); entry.approval = undefined; if (entry.replay === controller) entry.replay = undefined })
     } catch (error) { entry.replay = undefined; throw error }
-  })
+  }
+  ipcMain.handle('replay:start', startReplay)
   ipcMain.handle('teaching:diagnostics', (event, token) => { const entry = get(event, token); if (!entry) throw new Error('Session closed.'); return { windowFocused: entry.owner.isFocused(), browserFocused: entry.contents.isFocused(), visible: entry.view.getVisible(), captureReady: !!entry.captureReady, eventCount: entry.recording.count, lastEventType: entry.lastEventType, bounds: entry.view.getBounds() } })
   ipcMain.handle('replay:approve', (event, token, sequence, approved) => { const entry = get(event, token); if (!entry?.approval || entry.approval.sequence !== sequence || typeof approved !== 'boolean') throw new Error('No matching pending approval.'); entry.approval.resolve(approved); entry.approval = undefined })
   ipcMain.handle('replay:cancel', (event, token) => { const entry = get(event, token); entry?.replay?.abort(); entry?.approval?.resolve(false) })
-  ipcMain.handle('teaching:open', async (event, token: unknown, address: unknown, bounds: BrowserBounds, fresh = false) => {
+  async function openTeaching(event: IpcMainInvokeEvent, token: unknown, address: unknown, bounds: BrowserBounds, fresh = false) {
     const window = owner(event)
     if (typeof token !== 'string' || token.length > 100 || !/#\/workflows\/[^/]+\/record\//.test(window.webContents.getURL())) throw new Error('Open a workflow teaching page first.')
     let url = initialBrowserURL(address)
@@ -447,7 +460,8 @@ export function registerTeachingBrowser() {
     contents.once('destroyed', () => { ownerContents.removeListener('render-process-gone', onDestroy); ownerContents.removeListener('did-navigate-in-page', onNavigate); ownerContents.removeListener('did-start-navigation', onNavigate); window.removeListener('closed', onDestroy) })
     load(entry, url)
     return snapshot(entry)
-  })
+  }
+  ipcMain.handle('teaching:open', openTeaching)
   ipcMain.handle('teaching:navigate', (event, token, address) => { const entry = get(event, token); if (entry) { if (entry.replay) throw new Error('Cancel replay before navigating.'); load(entry, resolveBrowserAddress(address)) } })
   ipcMain.handle('teaching:action', (event, token, action: unknown) => {
     const entry = get(event, token); if (!entry) return
@@ -479,4 +493,36 @@ export function registerTeachingBrowser() {
     if (pending && pending.token === token) pending.cancel()
     const entry = get(event, token); if (entry) return dispose(entry)
   })
+  return {
+    async runSaved(workflowId: string, nodeId: string, url: string, signal: AbortSignal, onStatus: (status: import('../shared/recording').ReplayStatus) => void = () => {}) {
+      if (!/^[a-f0-9-]{36}$/i.test(workflowId) || !/^[a-f0-9-]{36}$/i.test(nodeId)) throw Error('Invalid browser task identity.')
+      const window = new BrowserWindow({width:1280,height:900,title:'Ghost — NOVA workflow',autoHideMenuBar:true,webPreferences:{sandbox:true,contextIsolation:true,nodeIntegration:false}})
+      const token=randomUUID()
+      const cancel=()=>{entries.get(window.id)?.replay?.abort()}
+      signal.addEventListener('abort',cancel,{once:true})
+      let timer:ReturnType<typeof setTimeout>|undefined
+      try {
+        await window.loadURL('data:text/html,'+encodeURIComponent('<body style="background:#10151e;color:#b7ff4b;font:14px sans-serif;margin:12px">Ghost · Running NOVA — close this window to cancel</body>')+'#/workflows/'+workflowId+'/record/'+nodeId)
+        const event={sender:window.webContents,senderFrame:window.webContents.mainFrame} as IpcMainInvokeEvent
+        signal.throwIfAborted()
+        await openTeaching(event,token,url,{x:0,y:42,width:1280,height:810,visible:true})
+        const entry=entries.get(window.id)
+        if(!entry || entry.recording.state!=='stopped')throw Error('This browser node has no saved recording.')
+        const result=await new Promise<import('../shared/recording').ReplayStatus>((resolve,reject)=>{
+          const stop=()=>reject(Error('Browser execution cancelled.'))
+          signal.addEventListener('abort',stop,{once:true})
+          window.once('closed',stop)
+          runObservers.set(window.id,status=>{onStatus(status);if(['completed','failed','unknown','cancelled'].includes(status.state)){signal.removeEventListener('abort',stop);window.removeListener('closed',stop);status.state==='completed'?resolve({...status,recordingId:entry.recording.id,workflowId}):reject(Error(status.error??'Browser verification failed.'))}})
+          timer=setTimeout(()=>{cancel();stop()},180000)
+          void startReplay(event,token,true,false,'fast').catch(reject)
+        })
+        return result
+      } finally {
+        clearTimeout(timer);signal.removeEventListener('abort',cancel);runObservers.delete(window.id)
+        const entry=entries.get(window.id);if(entry)await dispose(entry)
+        if(!window.isDestroyed())window.destroy()
+      }
+    }
+  }
+
 }

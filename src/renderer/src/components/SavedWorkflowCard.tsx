@@ -46,6 +46,7 @@ export function SavedWorkflowCard({
             {workflow._count.nodes}
           </strong>
           {workflow._count.nodes === 1 ? "node" : "nodes"}
+          <span className="workflow-edge-count">· {workflow._count.edges} connections</span>
         </span>
         <NodeStatusBadge
           status={

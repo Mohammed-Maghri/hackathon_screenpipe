@@ -3,7 +3,9 @@ import { useContext, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router";
 import {
+  Users,
   Bug,
+  ChartNoAxesCombined,
   CircleHelp,
   House,
   Layers3,
@@ -28,7 +30,7 @@ export function WorkflowSidebar({
   active = "workflows",
   onPanelChange,
 }: {
-  active?: "home" | "workflows" | "settings";
+  active?: "home" | "workflows" | "results" | "team" | "settings";
   onPanelChange?: (panel: string) => void;
 }) {
   const location = useLocation();
@@ -181,6 +183,10 @@ export function WorkflowSidebar({
             <Workflow size={18} strokeWidth={1.7} />
             <span className={labels}>Workflows</span>
           </Link>
+          <Link to="/results" className={`${navClass} ${center}`} aria-label="Results" title="Results" aria-current={active === "results" ? "page" : undefined}>
+            <ChartNoAxesCombined size={18} strokeWidth={1.7}/><span className={labels}>Results</span>
+          </Link>
+          <Link to="/team" className={`${navClass} ${center}`} aria-label="Team" title="Team" aria-current={active === "team" ? "page" : undefined}><Users size={18} strokeWidth={1.7}/><span className={labels}>Team</span></Link>
         </nav>
         <section
           className={`sidebar-recents mt-10 min-h-0 flex-1 overflow-y-auto ${labels}`}

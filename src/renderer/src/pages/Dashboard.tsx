@@ -1,14 +1,17 @@
+import { appIdentity } from "../data/appIdentity";
+import { AppMark } from "../components/AppMark";
+import { HomeActivity } from "../components/HomeActivity";
+import "../styles/home-reference.css";
+import { HomeHeadline } from "../components/HomeHeadline";
 import { workflowClient, preparedDiscovery } from "../data/workflowClient";
 import { workflowPrompts, demoWorkflow, matchDemo, type DemoScenario } from "../data/demoDiscovery";
 import { ActivityTimeline } from "../components/ActivityTimeline";
-import { SavedWorkflowCard } from "../components/SavedWorkflowCard";
 import { Database, FileText, ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router";
 import {
   LoaderCircle,
   RefreshCw,
-  CalendarDays,
   ArrowDownToLine,
   ArrowRight,
   Bell,
@@ -39,6 +42,9 @@ type Panel =
 export function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [activityDialog,setActivityDialog]=useState(false);
+  const [overviewTab,setOverviewTab]=useState('workflows');
+  const [connection,setConnection]=useState('Checking Screenpipe…');
   const [prompt, setPrompt] = useState("");
   const demoMode = preparedDiscovery;
   const [demoChoice, setDemoChoice] = useState(false);
@@ -63,11 +69,11 @@ export function Dashboard() {
   const [workflowsLoading, setWorkflowsLoading] = useState(true);
   const [workflowsError, setWorkflowsError] = useState("");
   const [pageSize, setPageSize] = useState(() =>
-    window.innerWidth >= 900 ? 2 : 1,
+    window.innerHeight >= 850 ? 4 : window.innerHeight >= 700 ? 3 : 1,
   );
   useEffect(() => {
     const resize = () => {
-      setPageSize(window.innerWidth >= 900 ? 2 : 1);
+      setPageSize(window.innerHeight >= 850 ? 4 : window.innerHeight >= 700 ? 3 : 1);
       setWorkflowPage(0);
     };
     window.addEventListener("resize", resize);
@@ -82,7 +88,6 @@ export function Dashboard() {
   const [notice, setNotice] = useState("");
   const [importError, setImportError] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
-  const activityRef = useRef<HTMLDetailsElement>(null);
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const discoveryRef = useRef<HTMLElement>(null);
   const discovered = savedWorkflows.filter((workflow) =>
@@ -327,22 +332,14 @@ export function Dashboard() {
         }}
       />
       <div className="dashboard-body flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="dashboard-topbar relative flex h-16 shrink-0 items-center gap-4 !border-0 !px-10 max-[760px]:!px-6 [&>.titlebar]:absolute [&>.titlebar]:inset-0 [&>.titlebar]:h-full">
+        <header className="dashboard-topbar relative flex h-16 shrink-0 items-center gap-4 !border-0 px-10 max-[760px]:px-6 [&>.titlebar]:absolute [&>.titlebar]:inset-0 [&>.titlebar]:h-full">
           {window.ghost?.platform !== "darwin" && <TitleBar />}
           <span className="topbar-context relative z-10 mr-auto text-sm font-normal text-muted">
             Home
           </span>
           <button
             className="text-button relative z-10"
-            onClick={() => {
-              if (activityRef.current) {
-                activityRef.current.open = true;
-                activityRef.current.scrollIntoView({
-                  block: "start",
-                  behavior: "instant",
-                });
-              }
-            }}
+            onClick={() => setActivityDialog(true)}
           >
             View activity
           </button>
@@ -354,20 +351,10 @@ export function Dashboard() {
             <Bell size={17} />
           </button>
         </header>
-        <main className="dashboard-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
+        <main className="dashboard-scroll home-fixed-workspace min-h-0 flex-1 overflow-hidden">
           <div className="home-workspace-content mx-auto w-full max-w-[1060px] px-12 pb-10 max-[1200px]:px-8 max-[760px]:px-6">
+            <div className="home-welcome"><div><h1>Good {new Date().getHours()<12?'morning':new Date().getHours()<18?'afternoon':'evening'}.</h1><p>Turn your activity into workflows.</p></div><div className="home-welcome-actions"><span className="home-connection" data-connected={connection==='Screenpipe connected'}><i/>{connection}</span></div></div>
             <section className="dashboard-hero mx-auto mt-8 max-w-[760px] text-center max-[760px]:mt-4 [@media(max-height:760px)]:mt-3">
-              <span className="mx-auto mb-5 grid size-11 place-items-center rounded-card bg-action-soft text-brand [@media(max-height:760px)]:hidden">
-                <Workflow size={25} strokeWidth={1.5} />
-              </span>
-              <h1 className="text-5xl font-normal leading-[1.12] tracking-[-.04em] max-[1200px]:text-[40px] max-[760px]:text-4xl">
-                Your work.
-                <br />
-                <span className="text-muted">A little less busy.</span>
-              </h1>
-              <p className="mt-5 text-base text-muted max-[760px]:text-sm">
-                Turn a routine into a workflow. Start with what you do.
-              </p>
               {demoChoice && <div className="mt-3 flex justify-center gap-2">{(['nova','forma'] as const).map(scenario=><button className="dash-button" key={scenario} onClick={()=>void generateWorkflow({prompt,timeRange:range},scenario)}>{scenario==='nova'?'NOVA restocking':'Forma finance'}</button>)}</div>}
               <section
                 className="discovery-composer mt-8 text-left"
@@ -380,17 +367,18 @@ export function Dashboard() {
                     void generateWorkflow({ prompt, timeRange: range });
                   }}
                 >
+                  <HomeHeadline compact active={!!prompt.trim()} busy={preparing} onPrompt={() => promptRef.current?.focus()} />
                   <label className="sr-only" htmlFor="home-workflow-prompt">
                     What would you like to automate?
                   </label>
                   <textarea
                     id="home-workflow-prompt"
                     ref={promptRef}
-                    rows={2}
+                    rows={1}
                     aria-label="Describe the process to automate"
                     aria-describedby="home-discovery-source"
                     className="block min-h-12 w-full resize-none border-0 bg-transparent p-0 text-base leading-6 text-ink placeholder:text-muted outline-none focus-visible:outline-none"
-                    placeholder="What would you like to automate?"
+                    placeholder="What do you want to automate?"
                     required
                     maxLength={10000}
                     value={prompt}
@@ -443,6 +431,7 @@ export function Dashboard() {
                       type="submit"
                       disabled={preparing}
                       aria-busy={preparing}
+                      aria-label="Find my workflow"
                     >
                       {preparing ? (
                         <>
@@ -454,7 +443,7 @@ export function Dashboard() {
                         </>
                       ) : (
                         <>
-                          Find my workflow <ArrowRight size={16} />
+                          <span className="sr-only">Find my workflow</span><ArrowRight size={21} />
                         </>
                       )}
                     </button>
@@ -485,15 +474,15 @@ export function Dashboard() {
                   More examples
                 </button>
               </div>
-              <p className="mt-4 text-xs text-muted">
-                Review the steps before anything runs.
-              </p>
+
               {generationMessage && (
                 <p className="mt-4 text-sm text-danger" role="alert">
                   {generationMessage}
                 </p>
               )}
             </section>
+            <div className="home-overview-tabs"><button aria-pressed={overviewTab==='workflows'} onClick={()=>setOverviewTab('workflows')}>Recent workflows</button><button aria-pressed={overviewTab==='activity'} onClick={()=>setOverviewTab('activity')}>Latest activity</button></div>
+            <div className="home-overview" data-tab={overviewTab}>
             <section
               className="discovery-panel mt-10"
               ref={discoveryRef}
@@ -501,7 +490,7 @@ export function Dashboard() {
               aria-busy={workflowsLoading}
             >
               <div className="panel-heading !mb-5 !gap-3 [&>h2]:!text-base [&>h2]:!font-medium">
-                <h2 id="discovery-title">Pick up where you left off</h2>
+                <h2 id="discovery-title">Recent workflows</h2>
                 <div className="home-workflow-actions ml-auto flex items-center gap-1">
                   <button
                     className="icon-button"
@@ -588,7 +577,7 @@ export function Dashboard() {
                       workflow.id === newWorkflowId || undefined
                     }
                   >
-                    <SavedWorkflowCard workflow={workflow} compact />
+                    <button className="home-workflow-row" onClick={()=>navigate('/workflows/'+workflow.id)}><span className="home-workflow-apps">{[...new Set((workflow.applicationIcons?.length?workflow.applicationIcons:workflow.applications??[]).map(appIdentity))].slice(0,3).map(app=><AppMark key={app} app={app}/>)}{!workflow.applicationIcons?.length&&!workflow.applications?.length&&<span className="home-workflow-initial" aria-label="Workflow">{workflow.name.charAt(0).toUpperCase()}</span>}</span><span className="home-workflow-info"><strong>{workflow.name}</strong><small>{(workflow.applications??[]).join(' · ')||'Open to configure steps'}</small></span><span className="home-workflow-state">{workflow.status==='DRAFT'?'Draft':'Open'}</span><ArrowRight size={15}/></button>
                   </div>
                 ))}
               </div>
@@ -625,30 +614,18 @@ export function Dashboard() {
                   </button>
                 </div>
               )}
-              {!workflowsLoading && !workflowsError && !discovered.length && (
-                <div className="empty-state">
-                  <Workflow size={25} />
-                  <h3 className="text-base font-medium text-ink">
-                    {query
-                      ? "No matching workflows"
-                      : "Your first workflow starts here"}
-                  </h3>
-                  <p>
-                    {query
-                      ? "Try a different name or clear your search."
-                      : "Describe a routine above to create a workflow."}
-                  </p>
-                  <button
-                    className="dash-button mt-2"
-                    onClick={() => {
-                      if (query) setQuery("");
-                      else promptRef.current?.focus();
-                    }}
-                  >
-                    {query ? "Clear search" : "Describe a workflow"}
-                  </button>
+              {!workflowsLoading && !savedWorkflows.length && !query && (
+                <div className="home-demo-workflows">
+                  <small className="text-muted">Demo workflows · Select one to prepare it</small>
+                  {[
+                    {name:'NOVA — Weekly restocking',app:'Chrome',apps:'Chrome · Excel · Slack',prompt:workflowPrompts.nova},
+                    {name:'Forma — Review payments',app:'Gmail',apps:'Chrome · Excel',prompt:workflowPrompts.forma},
+                    {name:'Weekly team report',app:'Slack',apps:'Slack · Chrome · Excel',prompt:'Prepare a weekly team report from my activity'},
+                    {name:'Organize customer follow-ups',app:'Gmail',apps:'Gmail · Chrome',prompt:'Review customer follow-ups and prepare a summary'},
+                  ].slice(0,pageSize).map(item=><button key={item.name} className="home-workflow-row" onClick={()=>{setPrompt(item.prompt);promptRef.current?.focus()}}><AppMark app={item.app}/><span className="home-workflow-info"><strong>{item.name}</strong><small>{item.apps}</small></span><span className="home-workflow-state">Prepare</span><ArrowRight size={15}/></button>)}
                 </div>
               )}
+              {!workflowsLoading && !!query && !discovered.length && <p className="home-panel-message">No matching workflows. Try a different name.</p>}
               {workflowTotal > pageSize && (
                 <div className="workflow-pagination mt-4 flex items-center gap-4 text-xs tabular-nums text-muted">
                   <button
@@ -674,7 +651,7 @@ export function Dashboard() {
                   </button>
                 </div>
               )}
-              <details className="mt-5">
+              <details className="home-workflow-filter mt-5">
                 <summary className="w-fit cursor-pointer text-xs text-muted">
                   Filter recent workflows
                 </summary>
@@ -691,19 +668,11 @@ export function Dashboard() {
                 </label>
               </details>
             </section>
-            <details
-              ref={activityRef}
-              className="home-activity mt-10 border-t border-line pt-5"
-            >
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-control text-sm text-muted [&::-webkit-details-marker]:hidden">
-                <span className="inline-flex items-center gap-2">
-                  <CalendarDays size={17} />
-                  Explore your recorded activity
-                </span>
-                <ChevronDown size={15} />
-              </summary>
-              <div className="mt-6">
-                {demoMode ? <p className="text-sm text-muted">Live activity is not connected in this configuration.</p> : <ActivityTimeline
+            <HomeActivity onConnection={setConnection}/>
+            </div>
+            <ActivityTimeline recent busy={preparing} onDiscover={(selectedRange)=>void generateWorkflow({prompt:prompt.trim()||"Identify the workflow in my recorded activity during the selected time range.",timeRange:"Last 7 days",selectedRange})}/>
+
+            {activityDialog&&<DashboardDialog title="Screenpipe activity" onClose={()=>setActivityDialog(false)}>{<ActivityTimeline
                   busy={preparing}
                   onDiscover={(selectedRange) =>
                     void generateWorkflow({
@@ -714,9 +683,8 @@ export function Dashboard() {
                       selectedRange,
                     })
                   }
-                />}
-              </div>
-            </details>
+                />}</DashboardDialog>}
+
           </div>
         </main>
       </div>

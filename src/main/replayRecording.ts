@@ -152,7 +152,7 @@ export async function replayRecording(contents: WebContents, owner: BrowserWindo
       const value = event.data.encryptedValue ? decryptInput!(event) : String(event.data.value ?? '')
       return state.value?.replace(/\r\n/g, '\n') === value.replace(/\r\n/g, '\n')
     }
-    if (event.type === 'scroll') { const state = await page({ op: 'inspect', target }); return state.found === true && Math.abs((state.scrollX ?? 0) - Number(event.data.scrollLeft)) <= 2 && Math.abs((state.scrollY ?? 0) - Number(event.data.scrollTop)) <= 2 }
+    if (event.type === 'scroll') { const state = await page({ op: 'inspect', target }); return state.found === true && Math.abs((state.scrollX ?? 0) - Math.min(Number(event.data.scrollLeft), state.scrollMaxX ?? Infinity)) <= 2 && Math.abs((state.scrollY ?? 0) - Math.min(Number(event.data.scrollTop), state.scrollMaxY ?? Infinity)) <= 2 }
     if (event.data.focusTarget && (event.data.background || (event.type === 'keydown' && event.data.key === 'Tab'))) return (await page({ op: 'inspect', target: event.data.focusTarget as TargetDescriptor })).focused === true
     if (event.data.focusOnly) return (await page({ op: 'inspect', target })).focused === true
     if (event.type === 'keydown' && event.data.key === 'Tab') return (await page({ op: 'inspect', target })).focused === false
@@ -280,7 +280,7 @@ export async function replayRecording(contents: WebContents, owner: BrowserWindo
             await page({ op: 'scroll', target, x: Number(event.data.scrollLeft), y: Number(event.data.scrollTop) })
             await verifyCurrent(event, index)
           }
-          result.evidence = 'Scroll offset verified.'
+          result.evidence = 'Scroll offset verified within the live scrollable extent.'
         } else {
           const evidence = (event.data.evidence ?? []) as PageEvidence[]
           const next = transition(index)

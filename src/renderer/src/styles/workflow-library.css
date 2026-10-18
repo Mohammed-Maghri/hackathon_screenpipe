@@ -1,0 +1,62 @@
+/* Workflow library: the same crisp surfaces and controls as Home. */
+.workflows-page .workflows-page-content { padding-top:30px; padding-bottom:32px; }
+.workflows-page .library-heading { display:flex; align-items:center; gap:16px; }
+.workflows-page .library-heading h1 { font-size:26px; font-weight:550; letter-spacing:-.035em; }
+.workflows-page .library-heading p { margin-top:6px; font-size:13px; }
+.workflows-page .library-ghost { display:inline-flex; flex:none; pointer-events:none; animation:library-ghost-drift 4.5s ease-in-out infinite; }
+.workflows-page .library-ghost svg { width:32px; height:38px; }
+.workflows-page .dash-button,
+.workflows-page .table-search { border-radius:4px; box-shadow:none; }
+.workflows-page .workflow-tabs { margin-top:28px; }
+.workflows-page .workflows-page-filters { margin-top:18px; margin-bottom:18px; }
+.workflows-page .table-search { background:var(--surface-panel); }
+.workflows-page .workflow-card-grid { gap:16px; }
+.workflows-page .workflow-library-card {
+ padding:18px 18px 0; min-height:216px; border-radius:4px;
+ background:var(--surface-panel); border:1px solid var(--border-subtle);
+ box-shadow:none; transition:border-color .15s;
+}
+.workflows-page .workflow-library-card:hover { border-color:var(--border-strong); box-shadow:none; }
+.workflows-page .workflow-library-card:focus-within { border-color:var(--accent-action); }
+.workflows-page .workflow-library-card > header { margin-bottom:14px; }
+.workflows-page .workflow-library-node-count { padding:0; background:none; border-radius:0; font-size:11px; color:var(--text-secondary); }
+.workflow-edge-count { font-weight:400; font-size:10px; }
+.workflows-page .workflow-library-card .node-status { font-size:11px; }
+.workflows-page .workflow-library-card h2 { font-size:16px; font-weight:550; line-height:1.45; }
+.workflows-page .workflow-library-title::after { border-radius:4px; }
+.workflows-page .workflow-library-description { margin-top:7px; line-height:1.6; }
+.workflows-page .workflow-library-card .app-mark { width:25px; height:25px; padding:2px; border-radius:3px; }
+.workflows-page .workflow-library-card > footer { min-height:46px; font-size:11px; }
+.workflows-page .workflow-card-actions { gap:3px; }
+.workflows-page .workflow-card-actions button { border-radius:3px; }
+.workflows-page .workflow-card-actions button:hover { background:var(--surface-hover); }
+.workflows-page .workflow-card-actions button:focus-visible { outline:2px solid var(--accent-action); outline-offset:2px; }
+@keyframes library-ghost-drift { 0%,100% { transform:translateY(1px) rotate(-3deg); } 50% { transform:translateY(-4px) rotate(3deg); } }
+@media(max-width:650px) {
+ .workflows-page .workflows-page-content { padding:24px 16px; }
+ .workflows-page .library-heading { gap:12px; }
+ .workflows-page .library-heading h1 { font-size:23px; }
+ .workflows-page .library-heading p { font-size:12px; }
+ .workflows-page .workflows-page-title { gap:16px; }
+ .workflows-page .workflow-library-card { min-height:200px; padding:15px 15px 0; }
+ .workflows-page .workflows-page-filters { gap:12px; }
+}
+@media(prefers-reduced-motion:reduce) { .workflows-page .library-ghost { animation:none; } }
+/* Use the full workspace with compact cards instead of two stretched columns. */
+.workflows-page .workflows-page-content { width:100%; max-width:none; margin-inline:0; padding-inline:28px; }
+.workflows-page .workflow-card-grid { grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr)); gap:16px; align-items:stretch; }
+.workflows-page .workflow-library-card { min-height:210px; padding:16px 16px 0; }
+.workflows-page .workflow-library-card h2 { font-size:15px; }
+.workflows-page .workflow-library-card > header { flex-wrap:wrap; gap:8px; }
+@media(min-width:1500px) {
+ .workflows-page .workflow-card-grid { grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); }
+}
+@media(max-width:650px) {
+ .workflows-page .workflows-page-content { padding-inline:16px; }
+ .workflows-page .workflow-card-grid { grid-template-columns:minmax(0,1fr); gap:12px; }
+}
+/* Keep pagination at the bottom even when the library contains a single card. */
+.workflows-page .workflows-page-body { display:flex; flex-direction:column; }
+.workflows-page .workflows-page-content { display:flex; flex:1 0 auto; flex-direction:column; }
+.workflows-page .workflows-page-pagination { margin-top:auto; padding-top:18px; border-top:1px solid var(--border-subtle); }
+.workflows-page .workflows-library { padding-bottom:24px; }

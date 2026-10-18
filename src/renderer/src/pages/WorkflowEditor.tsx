@@ -1,7 +1,6 @@
+import {novaDiscoveryDemo} from '../../../shared/novaDiscoveryDemo';
 import { WorkflowScripts } from '../components/WorkflowScripts';
 import { workflowClient, preparedDiscovery } from "../data/workflowClient";
-import { WorkflowEvidence } from "../components/WorkflowEvidence";
-import { evidenceSchema } from "../../../shared/screenpipeDiscovery";
 import { browserInstructions } from "../../../shared/browserInstructions";
 import { DataProcessingInspector } from "../components/DataProcessingInspector";
 import {
@@ -144,20 +143,6 @@ export function WorkflowEditor({
   const failedSave = useRef("");
   const edgeIds = useRef(new globalThis.Map<string, string>());
   const selected = nodes.find((node) => node.id === selectedId);
-  const selectedSource = backendWorkflow?.nodes.find(
-    (node) => node.id === selectedId,
-  )?.config;
-  const selectedEvidence = (
-    Array.isArray(selectedSource?.evidence) ? selectedSource.evidence : []
-  ).flatMap((value) => {
-    const parsed = evidenceSchema.safeParse(value);
-    return parsed.success ? [parsed.data] : [];
-  });
-  const selectedMissing = (
-    Array.isArray(selectedSource?.missingInformation)
-      ? selectedSource.missingInformation
-      : []
-  ).filter((value): value is string => typeof value === "string");
   const runningNode = nodes.find(
     (node) => processingStatus[node.id]?.status === "RUNNING",
   );
@@ -568,6 +553,22 @@ export function WorkflowEditor({
     }
     return saveBoard(next);
   }
+  async function runNova() {
+    if(!backendWorkflow||!window.ghost?.nova||running)return;
+    if(savedBoard!==boardSignature && !(await saveBoard()))return;
+    setDialog(null);setRunning(true);setLogOpen(true);setNotice("Running browser, calculations and report generation…");
+    try {
+      await window.ghost.nova.configure({...backendWorkflow,...workflowPayload(backendWorkflow,title,nodes,connections,edgeIds.current)});
+      const run=await window.ghost.nova.run(backendWorkflow.id);
+      setLogs(run.nodes.map(n=>({action:n.label,status:n.state==='verified'?'VERIFIED':n.state==='failed'?'FAILED':undefined,detail:n.detail??n.state,time:new Date().toLocaleTimeString()})));
+      if(run.state==='needs_review'){
+        setNotice("Browser exports converted to JSON. Buying report ready for your approval.");
+        navigate('/results?workflow='+backendWorkflow.id);
+      }else{
+        setNotice(run.error??`Workflow ${run.state}. Review the run log before continuing.`);
+      }
+    }catch(error){setNotice(error instanceof Error?error.message:'Workflow failed.')}finally{setRunning(false)}
+  }
   async function runProcessing() {
     if (!id || !window.ghost || saving) return;
     if (
@@ -653,7 +654,7 @@ export function WorkflowEditor({
           inert={running || (writing && !autosaveDraft)}
         >
           <nav aria-label="Node inspector">
-            {["Node", "Details", "Evidence"].map((item) => (
+            {["Node", "Details"].map((item) => (
               <button
                 key={item}
                 className={inspectorTab === item ? "is-active" : ""}
@@ -693,27 +694,48 @@ export function WorkflowEditor({
               </div>
               {inspectorTab === "Node" && (
                 <>
-                  <textarea
-                    className="node-description-editor min-h-24 w-full min-w-0 resize-y rounded-control border border-line bg-canvas px-3 py-2.5 font-sans text-xs leading-5 text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action"
-                    aria-label="Node description"
-                    value={selected.description}
-                    onChange={(event) =>
-                      updateNode({ description: event.target.value })
-                    }
-                  />
-                  {selected.kind === "Browser action" && (
-                    <label className="editor-field font-sans my-5 grid gap-2 text-xs text-subtle [&_small]:text-xs [&_small]:leading-6 [&_small]:text-muted">
-                      Step name
-                      <input
-                        className="w-full min-w-0 rounded-control border border-line bg-canvas px-3 py-2.5 font-sans text-xs leading-5 text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action disabled:opacity-50"
-                        aria-label="Browser step name"
-                        value={selected.title}
-                        onChange={(event) =>
-                          updateNode({ title: event.target.value })
-                        }
-                      />
-                    </label>
+                  {backendWorkflow?.nodes.find(node=>node.id===selected.id)?.config.novaOperation==='request'&&<section className="node-local-execution"><header><strong>Discovery context</strong><span>Prepared demo</span></header><p>This is the detailed context used to explain the saved NOVA process. No live Screenpipe request is made.</p><details><summary>Read the full response</summary><pre className="node-discovery-response">{novaDiscoveryDemo.response}</pre></details><h4>Process created from this context</h4><ol>{novaDiscoveryDemo.stages.map(stage=><li key={stage}>{stage}</li>)}</ol></section>}
+
+                  {backendWorkflow?.nodes.find(node=>node.id===selected.id)?.config.novaOperation === 'calculate' && (
+                    <section className="node-local-execution">
+                      <header><strong>Runs on your computer</strong><span>Local script</span></header>
+                      <p>Uses the verified downloads from the browser step in this run. No CSV data is sent to AI for this calculation.</p>
+                      <h4>Convert exports to readable JSON</h4>
+                      <ul><li><code>nova-restock-sales.csv</code> — product IDs, quantities and sales dates</li><li><code>nova-restock-inventory.csv</code> — stock, incoming deliveries, supplier lead times and budget</li><li><code>nova-shopping-list.xlsx</code> — reference Excel sheets, converted to JSON when downloaded</li></ul>
+                      <h4>What the calculation does</h4>
+                      <ol><li>Validates both exports and their reporting periods.</li><li>Calculates sales per day for each product.</li><li>Accounts for remaining stock, eligible incoming deliveries, lead time and safety days.</li><li>Recommends quantities, estimates costs and flags urgent products.</li></ol>
+                      <h4>Output to the next node</h4>
+                      <p>The script converts CSV rows and the reference Excel sheets into readable JSON. The buying calculation uses the raw sales and inventory CSVs, not the reference shopping list. It saves browser-exports.json locally, then passes the buying recommendation and planning assumptions to the report node.</p>
+                      <WorkflowScripts nodeId={selected.id} workflow={{...backendWorkflow,...workflowPayload(backendWorkflow,title,nodes,connections,edgeIds.current)}}/>
+                      <small>Runs automatically after the browser step during workflow execution. Missing or invalid exports stop the calculation.</small>
+                    </section>
                   )}
+                  <label className="editor-field font-sans my-5 grid gap-2 text-xs text-subtle [&_small]:text-xs [&_small]:leading-6 [&_small]:text-muted">
+                    Status
+                    <select
+                      className={`w-full min-w-0 rounded-control border border-line bg-canvas px-3 py-2.5 font-sans text-xs leading-5 text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action disabled:opacity-50 [&.is-ready]:bg-mint [&.is-ready]:text-success [&.needs-attention]:bg-peach [&.needs-attention]:text-warning ${["Ready", "Learned"].includes(selected.status) ? "is-ready bg-mint text-success" : "needs-attention bg-peach text-warning"}`}
+                      value={selected.status}
+                      onChange={(event) =>
+                        updateNode({
+                          status: event.target.value as NodeStatus,
+                        })
+                      }
+                    >
+                      <option className="bg-panel text-ink">
+                        Needs teaching
+                      </option>
+                      <option className="bg-panel text-ink">
+                        Needs configuration
+                      </option>
+                      <option className="bg-panel text-ink">Ready</option>
+                      <option className="bg-panel text-ink" disabled>
+                        Recorded
+                      </option>
+                      <option className="bg-panel text-ink" disabled>
+                        Learned
+                      </option>
+                    </select>
+                  </label>
                   {selected.kind === "Browser action" && (
                     <label className="editor-field font-sans my-5 grid gap-2 text-xs text-subtle [&_small]:text-xs [&_small]:leading-6 [&_small]:text-muted">
                       Starting dashboard / page URL
@@ -735,6 +757,82 @@ export function WorkflowEditor({
                       </small>
                     </label>
                   )}
+                  <div className="node-primary-actions">
+                  {selected.kind === "Browser action" && (
+                    <>
+                      <button
+                        className="dash-button dash-button--primary recording-button mt-4 w-full min-h-11 text-sm"
+                        disabled={saving}
+                        onClick={() => void teachNode(selected.id)}
+                      >
+                        <CircleDot size={16} />
+                        {saving
+                          ? "Saving…"
+                          : selected.status === "Learned"
+                            ? "View learned recording"
+                            : selected.status === "Recorded"
+                              ? "View saved recording"
+                              : "Start recording"}
+                      </button>
+                      <button
+                        className="dash-button recording-button mt-4 w-full min-h-11 text-sm"
+                        disabled={saving}
+                        onClick={() => {
+                          if (backendWorkflow) void saveBoard();
+                          else if (id) {
+                            editorSnapshots.set(id, {
+                              nodes,
+                              title,
+                              connections,
+                            });
+                            setNotice(
+                              "Node changes saved in this local preview.",
+                            );
+                          }
+                        }}
+                      >
+                        {saving ? "Saving…" : "Save Changes"}
+                      </button>
+                      <small>
+                        Changes are also saved before opening the browser. To
+                        replace recorded actions, use Record again.
+                      </small>
+                      {["Learned", "Recorded"].includes(selected.status) && (
+                        <button
+                          className="dash-button recording-button mt-4 w-full min-h-11 text-sm"
+                          disabled={saving}
+                          onClick={() => void teachNode(selected.id, true)}
+                        >
+                          <Plus size={16} />
+                          Record again
+                        </button>
+                      )}
+                    </>
+                  )}
+                  </div>
+                  <details className="node-secondary-settings"><summary>Instructions & advanced settings</summary>
+                  <textarea
+                    className="node-description-editor min-h-24 w-full min-w-0 resize-y rounded-control border border-line bg-canvas px-3 py-2.5 font-sans text-xs leading-5 text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action"
+                    aria-label="Node description"
+                    value={selected.description}
+                    onChange={(event) =>
+                      updateNode({ description: event.target.value })
+                    }
+                  />
+                  {selected.kind === "Browser action" && (
+                    <label className="editor-field font-sans my-5 grid gap-2 text-xs text-subtle [&_small]:text-xs [&_small]:leading-6 [&_small]:text-muted">
+                      Step name
+                      <input
+                        className="w-full min-w-0 rounded-control border border-line bg-canvas px-3 py-2.5 font-sans text-xs leading-5 text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action disabled:opacity-50"
+                        aria-label="Browser step name"
+                        value={selected.title}
+                        onChange={(event) =>
+                          updateNode({ title: event.target.value })
+                        }
+                      />
+                    </label>
+                  )}
+
                   {selected.kind === "Browser action" && (
                     <details>
                       <summary>
@@ -777,32 +875,7 @@ export function WorkflowEditor({
                       </small>
                     </details>
                   )}
-                  <label className="editor-field font-sans my-5 grid gap-2 text-xs text-subtle [&_small]:text-xs [&_small]:leading-6 [&_small]:text-muted">
-                    Status
-                    <select
-                      className={`w-full min-w-0 rounded-control border border-line bg-canvas px-3 py-2.5 font-sans text-xs leading-5 text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action disabled:opacity-50 [&.is-ready]:bg-mint [&.is-ready]:text-success [&.needs-attention]:bg-peach [&.needs-attention]:text-warning ${["Ready", "Learned"].includes(selected.status) ? "is-ready bg-mint text-success" : "needs-attention bg-peach text-warning"}`}
-                      value={selected.status}
-                      onChange={(event) =>
-                        updateNode({
-                          status: event.target.value as NodeStatus,
-                        })
-                      }
-                    >
-                      <option className="bg-panel text-ink">
-                        Needs teaching
-                      </option>
-                      <option className="bg-panel text-ink">
-                        Needs configuration
-                      </option>
-                      <option className="bg-panel text-ink">Ready</option>
-                      <option className="bg-panel text-ink" disabled>
-                        Recorded
-                      </option>
-                      <option className="bg-panel text-ink" disabled>
-                        Learned
-                      </option>
-                    </select>
-                  </label>
+
                   <div className="instruction-heading font-sans mb-2.5 text-sm font-medium text-subtle">
                     Instructions
                   </div>
@@ -825,57 +898,7 @@ export function WorkflowEditor({
                       </li>
                     ))}
                   </ol>
-                  {selected.kind === "Browser action" && (
-                    <>
-                      <button
-                        className="dash-button recording-button mt-4 w-full min-h-11 text-sm"
-                        disabled={saving}
-                        onClick={() => {
-                          if (backendWorkflow) void saveBoard();
-                          else if (id) {
-                            editorSnapshots.set(id, {
-                              nodes,
-                              title,
-                              connections,
-                            });
-                            setNotice(
-                              "Node changes saved in this local preview.",
-                            );
-                          }
-                        }}
-                      >
-                        {saving ? "Saving…" : "Save Changes"}
-                      </button>
-                      <small>
-                        Changes are also saved before opening the browser. To
-                        replace recorded actions, use Record again.
-                      </small>
-                      <button
-                        className="dash-button dash-button--primary recording-button mt-4 w-full min-h-11 text-sm"
-                        disabled={saving}
-                        onClick={() => void teachNode(selected.id)}
-                      >
-                        <CircleDot size={16} />
-                        {saving
-                          ? "Saving…"
-                          : selected.status === "Learned"
-                            ? "View learned recording"
-                            : selected.status === "Recorded"
-                              ? "View saved recording"
-                              : "Start recording"}
-                      </button>
-                      {["Learned", "Recorded"].includes(selected.status) && (
-                        <button
-                          className="dash-button recording-button mt-4 w-full min-h-11 text-sm"
-                          disabled={saving}
-                          onClick={() => void teachNode(selected.id, true)}
-                        >
-                          <Plus size={16} />
-                          Record again
-                        </button>
-                      )}
-                    </>
-                  )}
+                  </details>
                   {(selected.contract ||
                     selected.kind === "AI logic" ||
                     selected.kind === "Human review") && (
@@ -905,20 +928,6 @@ export function WorkflowEditor({
                       </>
                     )}
                   </div>
-                  <div className="evidence-heading mt-6 flex items-center justify-between gap-3 [&>h3]:m-0">
-                    <h3>Evidence ({selectedEvidence.length})</h3>
-                    <button
-                      className="text-button"
-                      onClick={() => setInspectorTab("Evidence")}
-                    >
-                      View all <ArrowRight size={14} />
-                    </button>
-                  </div>
-                  <p className="evidence-empty mt-3 mb-5 rounded-control border border-line bg-canvas p-4 text-sm leading-6 text-muted">
-                    {selectedEvidence.length
-                      ? `${selectedEvidence.length} Screenpipe source references · ${selectedSource?.basis === "inferred" ? "includes inferred steps" : "observed activity"}`
-                      : "No recorded evidence attached yet."}
-                  </p>
                   <button
                     className="delete-node flex items-center gap-2.5 text-sm text-danger"
                     onClick={() => setDialog("Delete node")}
@@ -1024,18 +1033,7 @@ export function WorkflowEditor({
                   </button>
                 </>
               )}
-              {inspectorTab === "Evidence" && (
-                <WorkflowEvidence
-                  agent={selectedSource?.source === "screenpipe_pipe"}
-                  inferred={selectedSource?.basis === "inferred"}
-                  references={(Array.isArray(selectedSource?.sourceReferences)
-                    ? selectedSource.sourceReferences
-                    : []
-                  ).filter((v): v is string => typeof v === "string")}
-                  evidence={selectedEvidence}
-                  missing={selectedMissing}
-                />
-              )}
+
             </div>
           ) : (
             <div className="inspector-empty px-5 py-8 text-center text-sm leading-7 text-muted [&>svg]:text-muted">
@@ -1153,6 +1151,7 @@ export function WorkflowEditor({
                         : "Save changes"}
                   </button>
                 )}
+              {backendWorkflow && <button className="dash-button" onClick={()=>navigate("/results?workflow="+backendWorkflow.id)}>View results</button>}
               {backendWorkflow && <WorkflowScripts workflow={{...backendWorkflow,...workflowPayload(backendWorkflow,title,nodes,connections,edgeIds.current)}} />}
               <button
                 className="dash-button"
@@ -1629,6 +1628,10 @@ export function WorkflowEditor({
             dialog === "Teach this step" ||
             dialog === "Record" ? (
             <>
+              {backendWorkflow?.nodes.some(n=>n.config.novaOperation) ? <>
+                <p className="modal-copy">Run the saved browser actions, calculate the shopping list from fresh exports, generate the Excel report and prepare a message draft. The report will wait for your approval in Results. No message is sent.</p>
+                <button className="dash-button dash-button--primary" disabled={saving||running} onClick={()=>void runNova()}>Start complete workflow</button>
+              </> : <>
               {nodes.some((n) => n.kind === "Data Processing") && (
                 <>
                   <p className="modal-copy">
@@ -1662,6 +1665,7 @@ export function WorkflowEditor({
                 <Play size={15} />
                 Validate steps locally
               </button>
+              </>}
             </>
           ) : dialog === "Add node" ? (
             <>

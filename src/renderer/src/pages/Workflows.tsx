@@ -1,3 +1,5 @@
+import "../styles/workflow-library.css";
+import { GhostLogo } from "../components/GhostLogo";
 import { workflowClient, preparedDiscovery } from "../data/workflowClient";
 import type { WorkflowSchedule } from "../../../shared/workflowSchedule";
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -185,13 +187,14 @@ export function Workflows() {
         {window.ghost?.platform !== "darwin" && <TitleBar />}
         <main className="workflows-page-content mx-auto max-w-[1300px] px-12 py-12 max-[1200px]:px-8 max-[760px]:px-6 max-[760px]:py-8">
           <div className="workflows-page-title flex items-center justify-between gap-6 max-[650px]:flex-wrap">
-            <div>
-              <h1 className="text-[32px] font-medium leading-tight tracking-tight max-[760px]:text-[28px]">
+            <div className="library-heading">
+              <span className="library-ghost" aria-hidden="true"><GhostLogo compact/></span>
+              <div><h1 className="text-[32px] font-medium leading-tight tracking-tight max-[760px]:text-[28px]">
                 Workflows
               </h1>
               <p className="mt-3 text-sm text-muted">
                 Your routines, ready when you need them.
-              </p>
+              </p></div>
             </div>
             <button
               className="dash-button dash-button--primary"

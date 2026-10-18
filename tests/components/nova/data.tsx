@@ -4,11 +4,11 @@ export type Order = { id:string; customer:string; email:string; country:string; 
 export type Campaign = { id:string; name:string; audience:string; status:'Draft'|'Scheduled'; date:string }
 export type NovaData = { restocking?: { settings: RestockSettings; suppliers: Record<string, Omit<StockItem, 'id' | 'name' | 'stock'>> }; products:Product[]; orders:Order[]; campaigns:Campaign[]; discounts:{code:string; percent:number}[]; storeName:string; notices:string[] }
 export const seedProducts:Product[] = [
- {id:'hoodie',name:'Oversized Hoodie – Black',price:89,stock:47,image:0,sold:342},
- {id:'tee',name:'Essential T-Shirt – White',price:24.99,stock:126,image:1,sold:281},
- {id:'cargo',name:'Cargo Pants – Beige',price:46,stock:18,image:2,sold:198},
- {id:'cap',name:'Cap – Nova Logo',price:39,stock:8,image:3,sold:156},
- {id:'shoes',name:'Running Shoes – Grey',price:60,stock:24,image:4,sold:142},
+ {id:'hoodie',name:'Oversized Hoodie – Black',price:89,stock:1,image:0,sold:342},
+ {id:'tee',name:'Essential T-Shirt – White',price:24.99,stock:2,image:1,sold:281},
+ {id:'cargo',name:'Cargo Pants – Beige',price:46,stock:1,image:2,sold:198},
+ {id:'cap',name:'Cap – Nova Logo',price:39,stock:0,image:3,sold:156},
+ {id:'shoes',name:'Running Shoes – Grey',price:60,stock:60,image:4,sold:142},
  {id:'tote',name:'Everyday Tote – Sand',price:39.5,stock:6,image:5,sold:87},
 ]
 const names=['Sophie Laurent','Yassine El Amrani','Emma Dubois','Lucas Martin','Chloé Bernard','Mehdi Rahimi','Inès Moreau','Alex Turner','Nora Wilson','Adam Benali','Léa Petit','Thomas Roy']
