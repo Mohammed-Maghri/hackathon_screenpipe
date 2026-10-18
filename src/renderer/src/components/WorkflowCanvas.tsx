@@ -210,11 +210,12 @@ function Canvas({
   useEffect(() => {
     if (!generating) return;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const timeScale = window.ghost?.demoCinematicFast ? 0.7 : 1;
     const done = generationIndex >= nodes.length;
     const timer = window.setTimeout(() => {
       if (done) onGenerationComplete?.();
       else setGenerationTick(value => value + 1);
-    }, reduced ? 40 : done ? 1400 : [1100, 750, 1300, 750, 1400][generationPhase]);
+    }, reduced ? 40 : done ? 1400 : [1100, 750, 1300, 750, 1400][generationPhase] * timeScale);
     return () => window.clearTimeout(timer);
   }, [generating, generationTick, generationIndex, generationPhase, nodes.length, onGenerationComplete]);
   const instance = useReactFlow<GhostNode, Edge>();

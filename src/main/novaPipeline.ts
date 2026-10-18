@@ -1,4 +1,4 @@
-import type {postNovaReport} from './screenpipeSlack'
+import {ghostSlackDestination, type postNovaReport, type SlackReceipt} from './screenpipeSlack'
 import {novaDiscoveryDemo} from '../shared/novaDiscoveryDemo'
 import {buyingPlan,buyingPlanRows} from '../shared/buyingPlan'
 import type {BuyingScenario} from '../shared/novaPipeline'
@@ -24,7 +24,7 @@ export class NovaPipeline {
  private ticking=false
  private writes=Promise.resolve()
  readonly ready:Promise<void>
- constructor(private root:string,private scripts:WorkflowScriptStore,private results:ResultsStore,private browser:BrowserRunner,private deliver?:typeof postNovaReport){this.ready=this.load()}
+ constructor(private root:string,private scripts:WorkflowScriptStore,private results:ResultsStore,private browser:BrowserRunner,private deliver?:typeof postNovaReport,private onReportSent?:(receipt:SlackReceipt)=>void){this.ready=this.load()}
  private async load(){
   await mkdir(this.root,{recursive:true,mode:0o700})
   try{const saved=JSON.parse(await readFile(join(this.root,'state.json'),'utf8'));this.workflows=saved.workflows;this.runs=saved.runs;this.schedules=saved.schedules
@@ -163,7 +163,7 @@ export class NovaPipeline {
    }
    run.state='needs_review'
   }catch(error){run.state=controller.signal.aborted?'cancelled':'failed';run.error=controller.signal.aborted?'Cancelled; inspect any browser actions already performed.':error instanceof Error?error.message:'Pipeline failed.';const node=run.nodes.find(n=>n.state==='running');if(node){node.state='failed';node.detail=run.error}}
-  finally{run.finishedAt=new Date().toISOString();try{await this.save()}finally{this.active=null}}
+  finally{run.finishedAt=new Date().toISOString();try{await this.save();const sent=run.delivery?.state==='sent',reuse=process.env.GHOST_DEMO_REUSE_SLACK_NOTIFICATION==='1';const receipt=sent||reuse?{workspace:run.delivery?.workspace??ghostSlackDestination.workspace,channel:run.delivery?.channel??ghostSlackDestination.channel,ts:run.delivery?.ts??'0.0'}:undefined;if(run.state==='needs_review'&&receipt)try{this.onReportSent?.(receipt)}catch{}}finally{this.active=null}}
   return structuredClone(run)
  }
  async approve(id:string){await this.ready;const run=this.runs.find(r=>r.id===uuid.parse(id));if(!run||run.state!=='needs_review')throw Error('Only completed reports awaiting review can be approved.');run.state='approved';run.approvedAt=new Date().toISOString();run.nodes.at(-1)!.state='verified';run.nodes.at(-1)!.output={approval:'approved',approvedAt:run.approvedAt,messageSent:run.delivery?.state==='sent'};await this.save()}
