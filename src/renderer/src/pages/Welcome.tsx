@@ -1,7 +1,7 @@
 import '../styles/welcome.css';
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { ArrowDown, ArrowRight, CircleHelp } from "lucide-react";
+import { ArrowRight, CircleHelp } from "lucide-react";
 import { AppMark } from "../components/AppMark";
 import { AppearanceSelector } from "../components/AppearanceSelector";
 import { TitleBar } from "../components/TitleBar";
@@ -24,40 +24,35 @@ const introduction = [
 ];
 
 const exampleSteps = [
-  { app: "Google Chrome", title: "Collect the numbers", detail: "Open the report in your browser" },
-  { app: "Excel", title: "Prepare the summary", detail: "Turn the data into a clear report" },
-  { app: "Slack", title: "Share with your team", detail: "Post the summary in Slack" },
+  { title: "Collect", apps: ["Chrome", "Screenpipe", "Drive"], detail: "Pages, activity & files" },
+  { title: "Prepare", apps: ["Excel", "Notion"], detail: "Tables & summaries" },
+  { title: "Share", apps: ["Slack", "Gmail", "Outlook"], detail: "Channels & email" },
 ];
 
 /** An instructional example, kept separate from saved workflows and execution state. */
 function ExampleWorkflow() {
   return (
-    <figure className="welcome-example w-full max-w-[360px]">
-      <figcaption className="mb-8 [@media(max-height:740px)]:mb-6">
-        <p className="mb-3 text-xs font-medium text-muted">Example workflow</p>
-        <h2 className="text-2xl font-medium tracking-tight">The weekly team report.</h2>
-        <p className="mt-3 max-w-[32ch] text-sm leading-relaxed text-muted">
-          A familiar routine, broken into steps you can see and shape.
-        </p>
+    <figure className="welcome-flow-preview">
+      <figcaption className="welcome-orbit-heading">
+        <div className="welcome-orbit" aria-hidden="true"><div className="welcome-orbit-ghost"><GhostLogo compact/></div></div>
+        <span className="welcome-preview-label">FROM ROUTINE TO WORKFLOW</span>
+        <h2>A report, without the repetition.</h2>
+        <p>Collect the data. Prepare the report. Keep your team informed.</p>
       </figcaption>
-      <ol className="m-0 list-none p-0" aria-label="Weekly team report example">
-        {exampleSteps.map((step, index) => (
-          <li key={step.app}>
-            {index > 0 && (
-              <div aria-hidden="true" className="flex h-10 items-center pl-8 text-action [@media(max-height:740px)]:h-7 [@media(max-height:740px)]:pl-7">
-                <ArrowDown size={18} strokeWidth={1.5} />
-              </div>
-            )}
-            <div className="welcome-example-node flex items-center gap-4 rounded-card border border-line bg-panel p-5 shadow-soft [@media(max-height:740px)]:p-4 [&_.app-mark]:size-10 [&_.app-mark]:rounded-control [&_.app-mark]:border-0 [&_.app-mark]:bg-sidebar [&_.app-mark]:p-2">
-              <AppMark app={step.app} />
-              <div className="min-w-0">
-                <h3 className="text-sm font-medium tracking-normal">{step.title}</h3>
-                <p className="mt-1 text-xs leading-relaxed text-muted">{step.detail}</p>
-              </div>
-            </div>
-          </li>
-        ))}
-      </ol>
+      <div className="welcome-preview-board">
+        <div className="welcome-preview-top"><span>Weekly team report</span><small>Illustrative workflow</small></div>
+        <ol aria-label="Weekly team report example" className="welcome-preview-chain">
+          {exampleSteps.map((step,index)=><li key={step.title}>
+            <span className="welcome-preview-number">0{index+1}</span>
+            <div className="welcome-preview-apps" aria-label={step.title+': '+step.apps.join(', ')}>{step.apps.map(app=><div className="welcome-preview-app" key={app}><AppMark app={app}/></div>)}</div>
+            <strong>{step.title}</strong>
+            <small>{step.detail}</small>
+            {index<exampleSteps.length-1&&<span className="welcome-preview-connector" aria-hidden="true"><ArrowRight size={13}/></span>}
+          </li>)}
+        </ol>
+        <div className="welcome-preview-outcome"><span>One routine. Multiple tasks.</span><strong>You review the result.</strong></div>
+      </div>
+      <p className="welcome-preview-caption">Example app combinations · Availability depends on connected integrations.</p>
     </figure>
   );
 }
@@ -102,11 +97,11 @@ export function Welcome() {
             </button>
           </div>
         </section>
-        <aside className="flex items-center justify-center border-l border-line bg-sidebar px-12 py-12 max-[1250px]:px-8 max-[1099px]:hidden [@media(max-height:740px)]:py-6" aria-label="A workflow example">
+        <aside className="welcome-visual-section flex items-center justify-center px-12 py-12 max-[1250px]:px-8 max-[1099px]:hidden [@media(max-height:740px)]:py-6" aria-label="A workflow example">
           <ExampleWorkflow />
         </aside>
       </main>
-      <footer className="welcome-footer flex min-h-20 shrink-0 items-center justify-between gap-6 border-t border-line bg-canvas px-8 py-4 max-[850px]:px-6">
+      <footer className="welcome-footer flex min-h-20 shrink-0 items-center justify-between gap-6 px-8 py-4 max-[850px]:px-6">
         <div className="flex items-center gap-4">
           <span className="text-xs text-muted">Appearance</span>
           <AppearanceSelector compact />
